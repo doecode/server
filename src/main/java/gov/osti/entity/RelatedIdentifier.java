@@ -14,17 +14,13 @@ import javax.persistence.Enumerated;
  * @author ensornl
  */
 @Embeddable
-public class Identifier implements Serializable {
+public class RelatedIdentifier implements Serializable {
     /**
      * Enumeration of valid Types for an Identifier.
      */
     public enum Type implements Serializable {
         DOI,
-        URL,
-        BRCode,
-        FWPNumber,
-        Email,
-        Other;
+        URL;
         
         public String getName() {
             return this.name();
@@ -74,11 +70,11 @@ public class Identifier implements Serializable {
     // the Relationship Type (if any) for this Identifier
     private RelationType relationType;
 
-    public Identifier() {
+    public RelatedIdentifier() {
         
     }
     
-    public Identifier(Type idType, String value, RelationType relType) {
+    public RelatedIdentifier(Type idType, String value, RelationType relType) {
         this.identifierType = idType;
         this.identifierValue = value;
         this.relationType = relType;

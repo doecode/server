@@ -55,7 +55,7 @@ public class DOECodeMetadata implements Serializable {
     private List<ResearchOrganization> researchOrganizations = new ArrayList<>();
 
     // Child table -- identifiers
-    private List<Identifier> identifiers = new ArrayList<>();
+    private List<RelatedIdentifier> relatedIdentifiers = new ArrayList<>();
 
     private Date dateOfIssuance = null;
     private String softwareTitle = null;
@@ -250,17 +250,17 @@ public class DOECodeMetadata implements Serializable {
             this.description = description;
     }
 
-    public void setIdentifiers(List<Identifier> identifiers) {
-        this.identifiers = identifiers;
+    public void setRelatedIdentifiers(List<RelatedIdentifier> identifiers) {
+        this.relatedIdentifiers = identifiers;
     }
 
     @ElementCollection
     @CollectionTable(
-            name="IDENTIFIERS",
+            name="RELATED_IDENTIFIERS",
             joinColumns=@JoinColumn(name="CODE_ID")
     )
-    public List<Identifier> getIdentifiers() {
-        return this.identifiers;
+    public List<RelatedIdentifier> getRelatedIdentifiers() {
+        return this.relatedIdentifiers;
     }
 
     public String getCountryOfOrigin() {

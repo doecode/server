@@ -10,7 +10,8 @@ import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.Contributor;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
-import gov.osti.entity.Identifier;
+import gov.osti.entity.FundingIdentifier;
+import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.ResearchOrganization;
 import gov.osti.entity.SponsoringOrganization;
 import java.io.File;
@@ -120,19 +121,19 @@ public class MetadataYamlTest {
         assertEquals("Description wrong", "An example testing repository for submissions of YAML and other associated testing projects related to the development of DOECode.\n",
                 metadata.getDescription());
         
-        List<Identifier> identifiers = metadata.getIdentifiers();
+        List<RelatedIdentifier> identifiers = metadata.getRelatedIdentifiers();
         assertEquals("There should be 2 identifiers", 2, identifiers.size());
         
-        Identifier identifier = identifiers.get(0);
-        assertEquals ("ID#1 type wrong", Identifier.Type.URL, identifier.getIdentifierType());
+        RelatedIdentifier identifier = identifiers.get(0);
+        assertEquals ("ID#1 type wrong", RelatedIdentifier.Type.URL, identifier.getIdentifierType());
         assertEquals ("ID#1 value wrong", "http://github.com/doecode/doecode", identifier.getIdentifierValue());
-        assertEquals ("ID#1 relation wrong", Identifier.RelationType.IsPreviousVersionOf, identifier.getRelationType());
+        assertEquals ("ID#1 relation wrong", RelatedIdentifier.RelationType.IsPreviousVersionOf, identifier.getRelationType());
         
         identifier = identifiers.get(1);
         
-        assertEquals("ID#2 type wrong", Identifier.Type.DOI, identifier.getIdentifierType());
+        assertEquals("ID#2 type wrong", RelatedIdentifier.Type.DOI, identifier.getIdentifierType());
         assertEquals("ID#2 value wrong", "10.5072/doecode2017/dev-test-repo/2", identifier.getIdentifierValue());
-        assertEquals("ID#2 relation wrong", Identifier.RelationType.Cites, identifier.getRelationType());
+        assertEquals("ID#2 relation wrong", RelatedIdentifier.RelationType.Cites, identifier.getRelationType());
         
         assertEquals("Keywords wrong", "software, DOECode, hosting repositories", metadata.getKeywords());
         assertEquals("disclaimers wrong", "open source", metadata.getDisclaimers());
@@ -152,19 +153,21 @@ public class MetadataYamlTest {
         SponsoringOrganization sponsor = sponsors.get(0);
         assertEquals("Name is wrong", "DOE OSTI", sponsor.getOrganizationName());
         assertTrue  ("Should be DOE", sponsor.isDOE());
-        List<String> award_numbers = sponsor.getAwardNumbers();
-        assertEquals("There should be 2 award numbers", 2, award_numbers.size());
-        assertEquals("First award wrong", "DE-865234", award_numbers.get(0));
-        assertEquals("Second award wrong", "DE-8293", award_numbers.get(1));
+        List<FundingIdentifier> funding_identifiers = sponsor.getFundingIdentifiers();
+        assertEquals("There should be 2 award numbers", 2, funding_identifiers.size());
+        assertEquals("First award wrong", "DE-865234", funding_identifiers.get(0).getIdentifierValue());
+        assertEquals("First type wrong", FundingIdentifier.Type.AwardNumber, funding_identifiers.get(0).getIdentifierType());
+        assertEquals("Second award wrong", "DE-8293", funding_identifiers.get(1).getIdentifierValue());
+        assertEquals("Second type wrong", FundingIdentifier.Type.AwardNumber, funding_identifiers.get(1).getIdentifierType());
         
         sponsor = sponsors.get(1);
         assertEquals("Name is wrong", "University of Miami, FL", sponsor.getOrganizationName());
         assertFalse ("Should NOT be DOE", sponsor.isDOE());
-        award_numbers = sponsor.getAwardNumbers();
-        assertEquals("There should be 3 awards", 3, award_numbers.size());
-        assertEquals("award number 1 wrong", "UWIN-234", award_numbers.get(0));
-        assertEquals("award number 2 wrong", "UWIN-888", award_numbers.get(1));
-        assertEquals("award number 3 wrong", "UFL-11", award_numbers.get(2));
+        funding_identifiers = sponsor.getFundingIdentifiers();
+        assertEquals("There should be 3 awards", 3, funding_identifiers.size());
+        assertEquals("award number 1 wrong", "UWIN-234", funding_identifiers.get(0).getIdentifierValue());
+        assertEquals("award number 2 wrong", "UWIN-888", funding_identifiers.get(1).getIdentifierValue());
+        assertEquals("award number 3 wrong", "UFL-11", funding_identifiers.get(2).getIdentifierValue());
         
         List<Contributor> contributors = metadata.getContributors();
         

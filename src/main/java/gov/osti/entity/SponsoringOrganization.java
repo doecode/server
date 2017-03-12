@@ -5,7 +5,6 @@ package gov.osti.entity;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.CollectionTable;
-import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -19,27 +18,18 @@ import javax.persistence.JoinColumn;
 //public class SponsoringOrganization implements Serializable {
 @Entity 
 public class SponsoringOrganization extends Organization {
-    // Award numbers
-    private List<String> awardNumbers = new ArrayList<>();
+    private List<FundingIdentifier> fundingIdentifiers = new ArrayList<>();
     
-    /**
-     * Set of AWARD NUMBERS for this Sponsor
-     * @return the awardNumbers
-     */
     @ElementCollection
     @CollectionTable(
-            name = "AWARD_NUMBERS",
+            name = "FUNDING_IDENTIFIERS",
             joinColumns=@JoinColumn(name="ORG_ID")
     )
-    @Column (name="AWARD_NUMBERS")
-    public List<String> getAwardNumbers() {
-        return awardNumbers;
+    public List<FundingIdentifier> getFundingIdentifiers() {
+        return fundingIdentifiers;
     }
-
-    /**
-     * @param awardNumbers the awardNumbers to set
-     */
-    public void setAwardNumbers(List<String> awardNumbers) {
-        this.awardNumbers = awardNumbers;
+    
+    public void setFundingIdentifiers(List<FundingIdentifier> list) {
+        this.fundingIdentifiers = list;
     }
 }

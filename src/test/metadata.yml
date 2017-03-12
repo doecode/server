@@ -1,5 +1,5 @@
 #Metadata template for DOECode users
-#Version: 1.2
+#Version: 1.3
 
 ---
 repository_link: https://github.com/doecode/dev-test-repo
@@ -20,7 +20,7 @@ developers:
   first_name: Thomas
   last_name: Welsch
   email: welscht@osti.gov
-identifiers:
+related_identifiers:
 - identifier_type: URL
   identifier_value: http://github.com/doecode/doecode
   relation_type: IsPreviousVersionOf
@@ -45,14 +45,19 @@ research_organizations:
 sponsoring_organizations:
 - organization_name: DOE OSTI
   DOE: true
-  award_numbers:
-  - DE-865234
-  - DE-8293
+  funding_identifiers:
+      - identifier_type: AwardNumber
+        identifier_value: DE-865234
+      - identifier_type: AwardNumber
+        identifier_value: DE-8293
 - organization_name: University of Miami, FL
-  award_numbers:
-  - UWIN-234
-  - UWIN-888
-  - UFL-11
+  funding_identifiers:
+      - identifier_type: AwardNumber
+        identifier_value: UWIN-234
+      - identifier_type: AwardNumber
+        identifier_value: UWIN-888
+      - identifier_type: AwardNumber
+        identifier_value: UFL-11
 software_title: Sample development and testing repository for DOECode
 acronym: dev-test-repo
 doi: 10.5072/23892
