@@ -10,6 +10,11 @@
         <param-name>persistence_unit</param-name>
         <param-value>DOECode</param-value>
     </context-param>
+    <context-param>
+        <description>Base API hostname for external resources</description>
+        <param-name>api.host</param-name>
+        <param-value>${serviceapi.host}</param-value>
+    </context-param>
     <listener>
         <description>ServletContextListener</description>
         <listener-class>gov.osti.listeners.DoeServletContextListener</listener-class>
@@ -19,7 +24,7 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>
-            <param-value>gov.osti.services.Metadata,gov.osti.services.Types</param-value>
+            <param-value>gov.osti.services.Metadata,gov.osti.services.Types,gov.osti.services.Validation</param-value>
         </init-param>
     </servlet>
     <servlet-mapping>

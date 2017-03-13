@@ -135,6 +135,11 @@
                     <directory>src/main/resources</directory>
                     <filtering>true</filtering>
                 </resource>
+                <resource>
+                    <directory>src/main/webapp</directory>
+                    <filtering>true</filtering>
+                    <targetPath>../filtered-resources</targetPath>
+                </resource>
             </resources>
 
 		<plugins>
@@ -161,6 +166,9 @@
                               <scanIntervalSeconds>10</scanIntervalSeconds>
                               <webApp>
                                 <contextPath>/doecode</contextPath>
+                                <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
+                                  <resourcesAsCSV>target/filtered-resources</resourcesAsCSV>
+                                </baseResource>
                               </webApp>
                             </configuration>
                     </plugin>
@@ -195,11 +203,15 @@
                             <configuration>
                                 <webResources>
                                     <resource>
-                                        <directory>src/main/webapp/META-INF</directory>
+                                        <directory>src/main/webapp</directory>
                                         <filtering>true</filtering>
-                                        <targetPath>META-INF</targetPath>
+                                        <includes>
+                                          <include>**/web.xml</include>
+                                        </includes>
                                     </resource>
                                 </webResources>
+                                <warSourceDirectory>src/main/webapp</warSourceDirectory>
+                                <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
                             </configuration>
                         </plugin>
 		</plugins>
