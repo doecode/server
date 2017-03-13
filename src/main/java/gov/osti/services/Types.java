@@ -4,7 +4,9 @@ package gov.osti.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.osti.entity.Contributor;
+import gov.osti.entity.FundingIdentifier;
 import gov.osti.entity.RelatedIdentifier;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
@@ -57,17 +59,23 @@ public class Types {
         }
     }
     
+    /**
+     * Enumerate the RELATED IDENTIFIERS types and relations as JSON.
+     * 
+     * @return JSON with two arrays: "types" consisting of the valid RELATED
+     * IDENTIFIER TYPES, and "relation_types" with all the valid RELATION TYPES.
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/identifiers")
-    public Response getIdentifierTypes() {
+    @Path("/related-identifiers")
+    public Response getRelatedIdentifierTypes() {
         try {
         return Response
                 .ok()
                 .entity(mapper
                         .createObjectNode()
                         .putPOJO("types", mapper.writeValueAsString(RelatedIdentifier.Type.values()))
-                        .putPOJO("relation_types", mapper.writeValueAsString(RelatedIdentifier.RelationType.values())))
+                        .putPOJO("relation_types", mapper.writeValueAsString(RelatedIdentifier.RelationType.values())).toString())
                 .build();
         } catch ( JsonProcessingException e ) {
             log.warn("JSON Error: " + e.getMessage());
@@ -77,14 +85,21 @@ public class Types {
         }
     }
     
+    /**
+     * Enumerate the valid FUNDING IDENTIFIERS types.
+     * 
+     * @return JSON containing a single array "types" listing all the valid FUNDING IDENTIFIER TYPES.
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/relations")
-    public Response getRelationTypes() {
+    @Path("/funding-identifiers")
+    public Response getFundingIdentifierTypes() {
         try {
             return Response
                     .ok()
-                    .entity(mapper.writeValueAsString(RelatedIdentifier.RelationType.values()))
+                    .entity(mapper
+                            .createObjectNode()
+                            .putPOJO("types", mapper.writeValueAsString(FundingIdentifier.Type.values())).toString())
                     .build();
         } catch ( JsonProcessingException e ) {
             log.warn("JSON Error: " + e.getMessage());

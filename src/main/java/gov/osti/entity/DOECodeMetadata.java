@@ -172,7 +172,7 @@ public class DOECodeMetadata implements Serializable {
 //        name="CONTRIBUTORS",
 //        joinColumns=@JoinColumn(name="CODE_ID")
 //    )
-    @OneToMany (cascade = CascadeType.ALL)
+    @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<Contributor> getContributors() {
         return this.contributors;
@@ -187,7 +187,7 @@ public class DOECodeMetadata implements Serializable {
 //            name="SPONSORING_ORGANIZATIONS",
 //            joinColumns=@JoinColumn(name="CODE_ID")
 //    )
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name ="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<SponsoringOrganization> getSponsoringOrganizations() {
         return this.sponsoringOrganizations;
@@ -202,7 +202,7 @@ public class DOECodeMetadata implements Serializable {
 //            name="CONTRIBUTING_ORGANIZATIONS",
 //            joinColumns=@JoinColumn(name="CODE_ID")
 //    )
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name = "OWNER_ID", referencedColumnName = "CODE_ID")
     public List<ContributingOrganization> getContributingOrganizations() {
         return this.contributingOrganizations;
@@ -217,7 +217,7 @@ public class DOECodeMetadata implements Serializable {
 //            name="RESEARCH_ORGANIZATIONS",
 //            joinColumns=@JoinColumn(name="CODE_ID")
 //    )
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<ResearchOrganization> getResearchOrganizations() {
         return this.researchOrganizations;
@@ -299,7 +299,7 @@ public class DOECodeMetadata implements Serializable {
 //            name="DEVELOPERS",
 //            joinColumns=@JoinColumn(name="CODE_ID")
 //    )
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<Developer> getDevelopers() {
             return developers;

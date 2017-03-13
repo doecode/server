@@ -23,8 +23,6 @@ import javax.persistence.MappedSuperclass;
 public class Organization implements Serializable {
     // primary Key
     private Long orgId = 0L;
-    // linked owner ID
-    private Long ownerId;
     // attributes
     private Integer place = 0;
     private String organizationName;
@@ -43,16 +41,6 @@ public class Organization implements Serializable {
         this.orgId = id;
     }
     
-    @Column (name = "OWNER_ID", nullable = false)
-    @JsonIgnore
-    public Long getOwnerId() {
-        return this.ownerId;
-    }
-    
-    public void setOwnerId(Long id) {
-        this.ownerId = id;
-    }
-    
     /**
      * @return the organizationName
      */
@@ -69,15 +57,18 @@ public class Organization implements Serializable {
     }
     
     /**
-     * @return the isDOE
+     * Whether or not this ORGANIZATION is DOE-based.
+     * 
+     * @return true if this is a DOE organization, false if not
      */
-    @Column (name="DOE")
+    @Column (name="doe")
     public boolean isDOE() {
         return isDOE;
     }
 
     /**
-     * @param isDOE the isDOE to set
+     * Set whether or not this is a DOE-based ORGANIZATION
+     * @param isDOE whether or not this ORGANIZATION is DOE
      */
     public void setIsDOE(boolean isDOE) {
         this.isDOE = isDOE;

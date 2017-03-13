@@ -28,6 +28,8 @@ public class FundingIdentifier implements Serializable {
     private String identifierValue;
 
     /**
+     * The TYPE of this identifier.
+     * 
      * @return the type
      */
     @Enumerated (EnumType.STRING)
@@ -36,6 +38,7 @@ public class FundingIdentifier implements Serializable {
     }
 
     /**
+     * Set a TYPE for this identifier
      * @param type the type to set
      */
     public void setIdentifierType(Type type) {
@@ -43,6 +46,7 @@ public class FundingIdentifier implements Serializable {
     }
 
     /**
+     * Get the VALUE of the identifier
      * @return the value
      */
     @Column (name="IDENTIFIER_VALUE", length = 1000)
@@ -51,6 +55,7 @@ public class FundingIdentifier implements Serializable {
     }
 
     /**
+     * Set the VALUE of the identifier
      * @param value the value to set
      */
     public void setIdentifierValue(String value) {

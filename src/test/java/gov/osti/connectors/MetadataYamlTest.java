@@ -166,8 +166,11 @@ public class MetadataYamlTest {
         funding_identifiers = sponsor.getFundingIdentifiers();
         assertEquals("There should be 3 awards", 3, funding_identifiers.size());
         assertEquals("award number 1 wrong", "UWIN-234", funding_identifiers.get(0).getIdentifierValue());
+        assertEquals("type1 wrong", FundingIdentifier.Type.AwardNumber, funding_identifiers.get(0).getIdentifierType());
         assertEquals("award number 2 wrong", "UWIN-888", funding_identifiers.get(1).getIdentifierValue());
+        assertEquals("type2 wrong", FundingIdentifier.Type.AwardNumber, funding_identifiers.get(1).getIdentifierType());
         assertEquals("award number 3 wrong", "UFL-11", funding_identifiers.get(2).getIdentifierValue());
+        assertEquals("type3 wrong", FundingIdentifier.Type.AwardNumber, funding_identifiers.get(2).getIdentifierType());
         
         List<Contributor> contributors = metadata.getContributors();
         

@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 public class Agent implements Serializable {
     private static Logger log = LoggerFactory.getLogger(Agent.class);
     private Long agentId = 0L;
-    private Long ownerId;
     private Integer place = 0;
     private String email = "";
     private String affiliations = "";
@@ -43,16 +42,6 @@ public class Agent implements Serializable {
     
     public void setAgentId(Long id) {
         this.agentId = id;
-    }
-
-    @Column (name="OWNER_ID", nullable = false)
-    @JsonIgnore
-    public Long getOwnerId() {
-        return this.ownerId;
-    }
-    
-    public void setOwnerId(Long id) {
-        this.ownerId = id;
     }
     
     public String getFirstName() {
