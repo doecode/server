@@ -121,6 +121,7 @@ public class DOECodeMetadata implements Serializable {
             this.codeId = codeId;
     }
 
+    @Column (name="SITE_OWNERSHIP_CODE")
     public String getSiteOwnershipCode() {
             return siteOwnershipCode;
     }
@@ -128,12 +129,14 @@ public class DOECodeMetadata implements Serializable {
             this.siteOwnershipCode = siteOwnershipCode;
     }
 
+    @Column (name="OPEN_SOURCE")
     public Boolean getOpenSource() {
             return openSource;
     }
     public void setOpenSource(Boolean openSource) {
             this.openSource = openSource;
     }
+    @Column (name="REPOSITORY_LINK")
     public String getRepositoryLink() {
             return repositoryLink;
     }
@@ -167,11 +170,6 @@ public class DOECodeMetadata implements Serializable {
      * Get all the Contributors for this Metadata.
      * @return the Contributor List
      */
-//    @ElementCollection
-//    @CollectionTable(
-//        name="CONTRIBUTORS",
-//        joinColumns=@JoinColumn(name="CODE_ID")
-//    )
     @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<Contributor> getContributors() {
@@ -182,11 +180,6 @@ public class DOECodeMetadata implements Serializable {
      * Get all the Sponsoring Organizations for this Metadata
      * @return a List of Sponsoring Organizations
      */
-//    @ElementCollection
-//    @CollectionTable(
-//            name="SPONSORING_ORGANIZATIONS",
-//            joinColumns=@JoinColumn(name="CODE_ID")
-//    )
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name ="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<SponsoringOrganization> getSponsoringOrganizations() {
@@ -197,11 +190,6 @@ public class DOECodeMetadata implements Serializable {
      * Get all the Contributing Organizations
      * @return the List of Contributing Organizations
      */
-//    @ElementCollection
-//    @CollectionTable(
-//            name="CONTRIBUTING_ORGANIZATIONS",
-//            joinColumns=@JoinColumn(name="CODE_ID")
-//    )
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name = "OWNER_ID", referencedColumnName = "CODE_ID")
     public List<ContributingOrganization> getContributingOrganizations() {
@@ -212,18 +200,13 @@ public class DOECodeMetadata implements Serializable {
      * Get all the Research Organizations
      * @return a List of Research Organizations
      */
-//    @ElementCollection
-//    @CollectionTable(
-//            name="RESEARCH_ORGANIZATIONS",
-//            joinColumns=@JoinColumn(name="CODE_ID")
-//    )
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<ResearchOrganization> getResearchOrganizations() {
         return this.researchOrganizations;
     }
 
-    @Column (length = 1000)
+    @Column (name = "SOFTWARE_TITLE", length = 1000)
     public String getSoftwareTitle() {
             return softwareTitle;
     }
@@ -263,6 +246,7 @@ public class DOECodeMetadata implements Serializable {
         return this.relatedIdentifiers;
     }
 
+    @Column (name = "COUNTRY_OF_ORIGIN")
     public String getCountryOfOrigin() {
             return countryOfOrigin;
     }
@@ -294,11 +278,6 @@ public class DOECodeMetadata implements Serializable {
      * Get all the Developers for this Metadata
      * @return the List of Developers
      */
-//    @ElementCollection
-//    @CollectionTable(
-//            name="DEVELOPERS",
-//            joinColumns=@JoinColumn(name="CODE_ID")
-//    )
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     public List<Developer> getDevelopers() {
@@ -408,24 +387,28 @@ public class DOECodeMetadata implements Serializable {
             this.developers = devlist;
     }
 
+    @Column (name = "RECIPIENT_NAME")
     public String getRecipientName() {
             return recipientName;
     }
     public void setRecipientName(String recipientName) {
             this.recipientName = recipientName;
     }
+    @Column (name="RECIPIENT_EMAIL")
     public String getRecipientEmail() {
             return recipientEmail;
     }
     public void setRecipientEmail(String recipientEmail) {
             this.recipientEmail = recipientEmail;
     }
+    @Column (name="RECIPIENT_PHONE")
     public String getRecipientPhone() {
             return recipientPhone;
     }
     public void setRecipientPhone(String recipientPhone) {
             this.recipientPhone = recipientPhone;
     }
+    @Column (name = "RECIPIENT_ORGANIZATION")
     public String getRecipientOrg() {
             return recipientOrg;
     }
@@ -433,6 +416,7 @@ public class DOECodeMetadata implements Serializable {
             this.recipientOrg = recipientOrg;
     }
 
+    @Column (name="SITE_ACCESSION_NUMBER")
     public String getSiteAccessionNumber() {
             return siteAccessionNumber;
     }
@@ -440,12 +424,14 @@ public class DOECodeMetadata implements Serializable {
             this.siteAccessionNumber = siteAccessionNumber;
     }
 
+    @Column (name="OTHER_SPECIAL_REQUIREMENTS")
     public String getOtherSpecialRequirements() {
             return otherSpecialRequirements;
     }
     public void setOtherSpecialRequirements(String otherSpecialRequirements) {
             this.otherSpecialRequirements = otherSpecialRequirements;
     }
+    @Column (name="RELATED_SOFTWARE")
     public String getRelatedSoftware() {
             return relatedSoftware;
     }

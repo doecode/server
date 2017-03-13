@@ -85,6 +85,7 @@ public class RelatedIdentifier implements Serializable {
      * @return the type
      */
     @Enumerated (EnumType.STRING)
+    @Column (name = "IDENTIFIER_TYPE")
     public Type getIdentifierType() {
         return identifierType;
     }
@@ -116,7 +117,7 @@ public class RelatedIdentifier implements Serializable {
     /**
      * @return the value
      */
-    @Column (length = 1000)
+    @Column (name = "IDENTIFIER_VALUE", length = 1000)
     public String getIdentifierValue() {
         return identifierValue;
     }
@@ -132,6 +133,7 @@ public class RelatedIdentifier implements Serializable {
      * @return the relation
      */
     @Enumerated (EnumType.STRING)
+    @Column (name = "RELATION_TYPE")
     public RelationType getRelationType() {
         return relationType;
     }

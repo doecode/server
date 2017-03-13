@@ -44,18 +44,21 @@ public class Agent implements Serializable {
         this.agentId = id;
     }
     
+    @Column (name = "FIRST_NAME")
     public String getFirstName() {
             return firstName;
     }
     public void setFirstName(String firstName) {
             this.firstName = firstName;
     }
+    @Column (name = "LAST_NAME")
     public String getLastName() {
             return lastName;
     }
     public void setLastName(String lastName) {
             this.lastName = lastName;
     }
+    @Column (name = "MIDDLE_NAME")
     public String getMiddleName() {
             return middleName;
     }

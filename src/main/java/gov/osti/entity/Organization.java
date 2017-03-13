@@ -61,7 +61,7 @@ public class Organization implements Serializable {
      * 
      * @return true if this is a DOE organization, false if not
      */
-    @Column (name="doe")
+    @Column (name="DOE")
     public boolean isDOE() {
         return isDOE;
     }

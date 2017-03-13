@@ -1,5 +1,6 @@
 package gov.osti.entity;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -12,7 +13,7 @@ import javax.persistence.Enumerated;
  * 
  * @author ensornl
  */
-@Entity
+@Entity (name = "CONTRIBUTORS")
 //public class Contributor implements Serializable {
 public class Contributor extends Agent {
     /**
@@ -41,12 +42,10 @@ public class Contributor extends Agent {
         WorkPackageLeader,
         Other 
     }
-    private String firstName = "";
-    private String lastName = "";
-    private String middleName = "";
     private Type contributorType;
 
     @Enumerated (EnumType.STRING)
+    @Column (name = "CONTRIBUTOR_TYPE")
     public Type getContributorType() {
             return contributorType;
     }
@@ -54,24 +53,4 @@ public class Contributor extends Agent {
     public void setContributorType(Type contributorType) {
             this.contributorType = contributorType;
     }
-
-    public String getFirstName() {
-            return firstName;
-    }
-    public void setFirstName(String firstName) {
-            this.firstName = firstName;
-    }
-    public String getLastName() {
-            return lastName;
-    }
-    public void setLastName(String lastName) {
-            this.lastName = lastName;
-    }
-    public String getMiddleName() {
-            return middleName;
-    }
-    public void setMiddleName(String middleName) {
-            this.middleName = middleName;
-    }
-
 }

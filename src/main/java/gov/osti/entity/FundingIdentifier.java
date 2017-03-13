@@ -33,6 +33,7 @@ public class FundingIdentifier implements Serializable {
      * @return the type
      */
     @Enumerated (EnumType.STRING)
+    @Column (name = "IDENTIFIER_TYPE")
     public Type getIdentifierType() {
         return identifierType;
     }

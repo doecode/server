@@ -7,7 +7,7 @@ import javax.persistence.Entity;
  * 
  * @author ensornl
  */
-@Entity
+@Entity (name = "DEVELOPERS")
 public class Developer extends Agent {
 
     public Developer() {

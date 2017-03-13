@@ -10,7 +10,7 @@ import javax.persistence.Entity;
  * 
  * @author ensornl
  */
-@Entity
+@Entity (name = "RESEARCH_ORGANIZATIONS")
 public class ResearchOrganization extends Organization {
     
 }

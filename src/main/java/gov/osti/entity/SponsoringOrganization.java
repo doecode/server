@@ -14,9 +14,7 @@ import javax.persistence.JoinColumn;
  * 
  * @author ensornl
  */
-//@Embeddable
-//public class SponsoringOrganization implements Serializable {
-@Entity 
+@Entity (name = "SPONSORING_ORGANIZATIONS")
 public class SponsoringOrganization extends Organization {
     private List<FundingIdentifier> fundingIdentifiers = new ArrayList<>();
     
