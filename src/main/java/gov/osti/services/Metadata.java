@@ -11,12 +11,13 @@ import gov.osti.connectors.ConnectorFactory;
 import gov.osti.connectors.GitHub;
 import gov.osti.connectors.SourceForge;
 import gov.osti.entity.DOECodeMetadata;
+import gov.osti.entity.OstiMetadata;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringReader;
 import javax.persistence.EntityManager;
+import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.GET;
@@ -28,6 +29,14 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +58,9 @@ import org.slf4j.LoggerFactory;
  */
 @Path("metadata")
 public class Metadata {
+    // inject a Context
+    @Context ServletContext context;
+    
     // logger instance
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
@@ -65,9 +77,6 @@ public class Metadata {
             log.warn("Unable to start ConnectorFactory: " + e.getMessage());
         }
     }
-    
-    @Context
-    private UriInfo context;
     
     /**
      * Creates a new instance of MetadataResource
@@ -128,7 +137,96 @@ public class Metadata {
     }
     
     /**
-     * POST a Metadata JSON object to the persistence layer.
+     * SUBMIT endpoint; saves Software record to DOECode and sends results to
+     * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
+     * 
+     * @param object the JSON of the record to PUBLISH/SUBMIT.
+     * @return a Response containing the resulting JSON metadata sent to OSTI,
+     * including any DOI registered.
+     */
+    @POST
+    @Consumes ( MediaType.APPLICATION_JSON )
+    @Produces ( MediaType.APPLICATION_JSON )
+    @Path ("/submit")
+    public Response publish(String object) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            em.getTransaction().begin();
+            
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+            
+            if (0==md.getCodeId())
+                em.persist(md);
+            else
+                em.merge(md);
+            
+            // send this to OSTI
+            OstiMetadata omd = new OstiMetadata();
+            omd.set(md);
+            
+            // if configured, post this to OSTI
+            String publishing_host = context.getInitParameter("publishing.host");
+            if (null!=publishing_host) {
+                // set some reasonable default timeouts
+                RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
+                // create an HTTP client to request through
+                CloseableHttpClient hc = 
+                        HttpClientBuilder
+                        .create()
+                        .setDefaultRequestConfig(rc)
+                        .build();
+                HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
+                post.setHeader("Content-Type", "application/json");
+                post.setHeader("Accept", "application/json");
+                post.setEntity(new StringEntity(omd.toJsonString()));
+                
+                try {
+                    HttpResponse response = hc.execute(post);
+                    String text = EntityUtils.toString(response.getEntity());
+
+                    if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode()) {
+                        log.warn("OSTI Error: " + text);
+                        throw new IOException ("OSTI software publication error");
+                    }
+                    // the TEXT coming back should contain JSON
+                    JsonNode node = mapper.readTree(text);
+                    JsonNode metadata = node.get("metadata");
+                    if (null!=metadata) {
+                        OstiMetadata m = OstiMetadata.fromJson(new StringReader(metadata.asText()));
+                        // if we have no DOI, get one
+                        if (null==md.getDoi()) {
+                            md.setDoi(m.getDoi());
+                            // save that
+                            em.merge(md);
+                        }
+                    }
+                } finally {
+                    hc.close();
+                }
+            }
+            // if we make it this far, go ahead and commit the transaction
+            em.getTransaction().commit();
+            
+            // and we're happy
+            return Response
+                    .status(200)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( IOException e ) {
+            if ( em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Persistence Error Publishing: " + e.getMessage());
+            throw new InternalServerErrorException("IO Error: " + e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * POST a Metadata JSON object to the persistence layer. ("PUBLISH" only to
+     * DOECode persistence layer).
      * 
      * @param object the JSON to post
      * @return the JSON after persistence; perhaps containing assigned codeId, etc.

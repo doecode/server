@@ -13,6 +13,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -65,7 +66,18 @@ public class Validation {
         HttpGet get = new HttpGet(apiHost + "/api/contract/validate/" + contractNo);
         try {
             HttpResponse response = hc.execute(get);
-            return Response.ok().entity(EntityUtils.toString(response.getEntity())).build();
+            int response_code = response.getStatusLine().getStatusCode();
+            
+            if (HttpStatus.SC_OK==response_code) {
+                return Response
+                        .ok()
+                        .entity(EntityUtils.toString(response.getEntity()))
+                        .build();
+            } else {
+                return Response
+                        .status(response_code)
+                        .build();
+            }
         } finally {
             hc.close();
         }

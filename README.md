@@ -18,6 +18,8 @@ ${database.driver} | the JDBC database driver to use
 ${database.url} | the JDBC URL to access
 ${database.username} | the database user (with create/alter schema permission)
 ${database.password} | the user's password
+${serviceapi.host} | base URL for validation services
+${publishing.host} | base URL for submitting final metadata to OSTI (via /submit API)
 
 Execute the back-end via 
 

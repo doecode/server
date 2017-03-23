@@ -131,7 +131,7 @@ public class DOECodeMetadata implements Serializable {
 
     @Column (name="OPEN_SOURCE")
     public Boolean getOpenSource() {
-            return openSource;
+            return (null==openSource) ? false : openSource;
     }
     public void setOpenSource(Boolean openSource) {
             this.openSource = openSource;

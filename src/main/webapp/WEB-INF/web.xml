@@ -15,6 +15,11 @@
         <param-name>api.host</param-name>
         <param-value>${serviceapi.host}</param-value>
     </context-param>
+    <context-param>
+        <description>Base API host name for publishing to OSTI</description>
+        <param-name>publishing.host</param-name>
+        <param-value>${publishing.host}</param-value>
+    </context-param>
     <listener>
         <description>ServletContextListener</description>
         <listener-class>gov.osti.listeners.DoeServletContextListener</listener-class>
