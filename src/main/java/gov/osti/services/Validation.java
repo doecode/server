@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringReader;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -31,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * Must be non-inner-class for Jackson.
  */
 class ValidationRequest {
-    private String value;
+    private String[] values;
     private String[] validations;
 
     public ValidationRequest() {
@@ -39,27 +42,32 @@ class ValidationRequest {
     }
 
     /**
-     * @return the value
+     * Acquire the set of VALUES to validate.
+     * 
+     * @return the set of Values to check
      */
-    public String getValue() {
-        return value;
+    public String[] getValues() {
+        return values;
     }
 
     /**
-     * @param value the value to set
+     * Request a set of String VALUES to validate
+     * @param values the values to set
      */
-    public void setValue(String value) {
-        this.value = value;
+    public void setValues(String[] values) {
+        this.values = values;
     }
 
     /**
-     * @return the validations
+     * A String set of validations to apply to the values
+     * @return the validations to check
      */
     public String[] getValidations() {
         return validations;
     }
 
     /**
+     * Set the type of validations to perform
      * @param validations the validations to set
      */
     public void setValidations(String[] validations) {
@@ -74,11 +82,11 @@ class ValidationRequest {
  * 
  * @author ensornl
  */
-class ValidationResponse {
+class ApiResponse {
     private Boolean isValid;
     private String site;
 
-    public ValidationResponse() {
+    public ApiResponse() {
 
     }
     
@@ -112,6 +120,39 @@ class ValidationResponse {
 }
 
 /**
+ * Set of "error message" responses for the indicated validations.
+ * 
+ * A simple Class for easier Jackson serialization, and future extension should
+ * errors require more information or resolution.
+ * 
+ * @author ensornl
+ */
+class ValidationResponse {
+    // set of errors; empty String means "ok"
+    private List<String> errors = new ArrayList<>();
+    
+    public ValidationResponse() {
+        
+    }
+    
+    /**
+     * Get the List of error messages.
+     * @return an ArrayList of String error messages
+     */
+    public List<String> getErrors() {
+        return errors;
+    }
+    
+    /**
+     * Add an "error message"; blank means validation passed.
+     * @param message the message to add
+     */
+    public void add(String message) {
+        errors.add(message);
+    }
+}
+
+/**
  *
  * REST web services for validation purposes.
  * 
@@ -140,16 +181,17 @@ public class Validation {
      * Determine whether or not a contract number is valid.
      * 
      * Receive JSON: 
-     * { "value":"value-to-validate",
+     * { "values":["value1", "value2", ...],
      *   "validations:[ "rules", "to", "apply" ] }
      * 
      * Return:
      * 
-     * { "errors":"error-message-if-any" }
+     * { "errors":["value1-error-message", "value2-error-message", ... ] }
      * 
-     * Empty "errors" implies value was accepted and passes indicated validation
+     * Empty "error messages" implies value was accepted and passes indicated validation
      * rule(s).  Currently supported "rules" are "Award" (validate award number)
-     * and "DOI" (validate reachable DOI).
+     * and "DOI" (validate reachable DOI).  There should exist one output error
+     * message per incoming value, in the order received.
      * 
      * @param object the String containing JSON of the validation request
      * 
@@ -162,7 +204,7 @@ public class Validation {
     @Produces(MediaType.APPLICATION_JSON)
     public Response request(String object) throws IOException {
         String apiHost = context.getInitParameter("api.host");
-        String error_message = "";
+        ValidationResponse validationResponse = new ValidationResponse();
         
         // set some reasonable default timeouts
         RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
@@ -183,38 +225,43 @@ public class Validation {
              * "Award" -- call known validation endpoint with value, check for "isValid" true response
              * 
              */
-            for ( String validation : validationRequest.getValidations() ) {
-                if ("DOI".equals(validation)) {
-                    // for now, just try an HTTP connection via DOI_BASE_URL + value
-                    HttpGet get = new HttpGet(DOI_BASE_URL + validationRequest.getValue());
-                    HttpResponse response = hc.execute(get);
+            for ( String value : validationRequest.getValues() ) {
+                // apply each validation rule to each value to validate
+                for ( String validation : validationRequest.getValidations() ) {
+                    if ("DOI".equals(validation)) {
+                        // for now, just try an HTTP connection via DOI_BASE_URL + value
+                        HttpGet get = new HttpGet(DOI_BASE_URL + value);
+                        HttpResponse response = hc.execute(get);
 
-                    if (HttpStatus.SC_OK != response.getStatusLine().getStatusCode())
-                        error_message += validationRequest.getValue() + " is not a valid DOI.";
-                } else if ("Award".equals(validation)) {
-                    // ensure we're configured for that
-                    if (null==apiHost) {
-                        return Response.status(Response.Status.NOT_FOUND).build();
+                        // add empty String for no error, or error message if not found
+                        validationResponse.add( HttpStatus.SC_OK==response.getStatusLine().getStatusCode() ?
+                                "" :
+                                value + " is not a valid DOI.");
+                    } else if ("Award".equals(validation)) {
+                        // ensure we're configured for that
+                        if (null==apiHost) {
+                            return Response.status(Response.Status.NOT_FOUND).build();
+                        }
+                        // call the VALIDATION API to get a response
+                        HttpGet get = new HttpGet(apiHost + "/api/contract/validate/" + value);
+                        HttpResponse response = hc.execute(get);
+                        // get the RESPONSE
+                        ApiResponse apiResponse = mapper.readValue(response.getEntity().getContent(), ApiResponse.class);
+
+                        // add either empty String (no error) or error message as appropriate
+                        validationResponse.add( (apiResponse.isValid()) ? "" : value + " is not a valid Award Number.");
+                    } else {
+                        log.warn("Invalid validation request type: " + validation);
+                        return Response
+                                .status(HttpStatus.SC_BAD_REQUEST)
+                                .build();
                     }
-                    // call the VALIDATION API to get a response
-                    HttpGet get = new HttpGet(apiHost + "/api/contract/validate/" + validationRequest.getValue());
-                    HttpResponse response = hc.execute(get);
-                    // get the RESPONSE
-                    ValidationResponse validationResponse = mapper.readValue(response.getEntity().getContent(), ValidationResponse.class);
-                    
-                    if (!validationResponse.isValid())
-                        error_message += validationRequest.getValue() + " is not a valid Award Number.";
-                } else {
-                    log.warn("Invalid validation request type: " + validation);
-                    return Response
-                            .status(HttpStatus.SC_BAD_REQUEST)
-                            .build();
                 }
             }
             // at the end, return any error message
             return Response
                     .ok()
-                    .entity(mapper.createObjectNode().put("errors", error_message).toString())
+                    .entity(mapper.valueToTree(validationResponse).toString())
                     .build();
         } catch ( JsonParseException | JsonMappingException e ) {
             log.warn("Bad Request: " + object);
