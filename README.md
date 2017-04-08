@@ -61,3 +61,17 @@ Post the metadata to OSTI, attempt to register a DOI if possible, and persist
 the information on DOECode.  If workflow validations pass, the JSON will be returned
 with appropriate unique identifier information and DOI values posted in the
 JSON object "metadata".
+
+POST /services/validation
+
+Send JSON detailing a set of award number values or DOIs to validate.
+
+    { "values":["10.5072/2134", "10.5072/238923", ...],
+      "validations":["DOI"] }
+
+Each value will be checked, and JSON "errors" array returned.  Each value of the 
+array should correspond with the passed-in "values" items.  If the position in the
+"errors" array is blank, that value may be assumed valid; otherwise, an error
+message will be returned.
+
+    { "errors":["10.5072/2134 is not a valid DOI.", "", ...] }
