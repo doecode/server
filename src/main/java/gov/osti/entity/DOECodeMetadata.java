@@ -23,6 +23,8 @@ import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.OneToMany;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
@@ -36,6 +38,12 @@ import org.slf4j.LoggerFactory;
 public class DOECodeMetadata implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
 
+    // Status values
+    public enum Status {
+        Saved,
+        Published
+    }
+    
     // Attributes
     private Long codeId = 0L;
     private String siteOwnershipCode = null;
@@ -73,6 +81,7 @@ public class DOECodeMetadata implements Serializable {
     private String siteAccessionNumber = null;
     private String otherSpecialRequirements = null;
     private String relatedSoftware = null;
+    private Status workflowStatus = null;
     // persistence dates
     private Date dateRecordAdded;
     private Date dateRecordUpdated;
@@ -437,6 +446,26 @@ public class DOECodeMetadata implements Serializable {
     }
     public void setRelatedSoftware(String relatedSoftware) {
             this.relatedSoftware = relatedSoftware;
+    }
+    
+    /**
+     * Obtain the WORKFLOW STATUS on this record (initially New, then Saved; after
+     * a record is Published or Submitted, it may no longer be Saved.)
+     * 
+     * @return the Status value for this record
+     */
+    @Enumerated (EnumType.STRING)
+    @Column (name="WORKFLOW_STATUS")
+    public Status getWorkflowStatus() {
+        return workflowStatus;
+    }
+    
+    /**
+     * Set the WORKFLOW STATUS on this record.
+     * @param status the Status value to set
+     */
+    public void setWorkflowStatus(Status status) {
+        workflowStatus = status;
     }
     
     public void setDateOfIssuance(Date date) {

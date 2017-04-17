@@ -11,6 +11,7 @@ import gov.osti.connectors.ConnectorFactory;
 import gov.osti.connectors.GitHub;
 import gov.osti.connectors.SourceForge;
 import gov.osti.entity.DOECodeMetadata;
+import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
@@ -137,17 +138,38 @@ public class Metadata {
     }
     
     /**
-     * SUBMIT endpoint; saves Software record to DOECode and sends results to
-     * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
+     * Persist the DOECodeMetadata Object to the persistence layer.  Assumes an
+     * open Transaction is already in progress, and it's up to the caller to
+     * handle Exceptions or commit as appropriate.
      * 
-     * @param object the JSON of the record to PUBLISH/SUBMIT.
-     * @return a Response containing the resulting JSON metadata sent to OSTI,
-     * including any DOI registered.
+     * If the "code ID" is already present in the Object to store, it will 
+     * attempt to merge changes; otherwise, a new Object will be instantiated
+     * in the database.
+     * 
+     * @param em the EntityManager to interface with the persistence layer
+     * @param md the Object to store
+     */
+    private void store(EntityManager em, DOECodeMetadata md) {
+        if ( 0==md.getCodeId() )
+            em.persist(md);
+        else
+            em.merge(md);
+    }
+    
+    /**
+     * PUBLISH a Metadata Object; this operation signifies the project is 
+     * ready to be posted to DOECode's output search services.  This endpoint
+     * DOES NOT transmit the project to OSTI's software services for publication 
+     * there.
+     * 
+     * @param object JSON of the DOECodeMetadata object to PUBLISH
+     * @return a Response containing the persisted metadata entity in JSON
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
      */
     @POST
     @Consumes ( MediaType.APPLICATION_JSON )
     @Produces ( MediaType.APPLICATION_JSON )
-    @Path ("/submit")
+    @Path ("/publish")
     public Response publish(String object) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
@@ -156,10 +178,57 @@ public class Metadata {
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
             
-            if (0==md.getCodeId())
-                em.persist(md);
-            else
-                em.merge(md);
+            // set the WORKFLOW STATUS
+            md.setWorkflowStatus(Status.Published);
+            
+            // store it
+            store(em, md);
+            
+            // commit it
+            em.getTransaction().commit();
+            
+            // we are done here
+            return Response
+                    .status(200)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( IOException e ) {
+            if ( em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Persistence Error Publishing: " + e.getMessage());
+            throw new InternalServerErrorException("IO Error: " + e.getMessage());
+        } finally {
+            em.close();  
+        }
+    }
+    
+    /**
+     * SUBMIT endpoint; saves Software record to DOECode and sends results to
+     * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
+     * 
+     * @param object the JSON of the record to PUBLISH/SUBMIT.
+     * @return a Response containing the resulting JSON metadata sent to OSTI,
+     * including any DOI registered.
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @POST
+    @Consumes ( MediaType.APPLICATION_JSON )
+    @Produces ( MediaType.APPLICATION_JSON )
+    @Path ("/submit")
+    public Response submit(String object) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            em.getTransaction().begin();
+            
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+            
+            // set the WORKFLOW STATUS
+            md.setWorkflowStatus(Status.Published);
+            
+            // persist this to the database
+            store(em, md);
             
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
@@ -225,8 +294,9 @@ public class Metadata {
     }
     
     /**
-     * POST a Metadata JSON object to the persistence layer. ("PUBLISH" only to
-     * DOECode persistence layer).
+     * POST a Metadata JSON object to the persistence layer. 
+     * Saves the object to persistence layer; if the entity is already Published,
+     * this operation is invalid.
      * 
      * @param object the JSON to post
      * @return the JSON after persistence; perhaps containing assigned codeId, etc.
@@ -241,11 +311,22 @@ public class Metadata {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+            
+            // if this Entity is already Published, we cannot save
+            if (0!=md.getCodeId()) {
+                DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
+                
+                if (null!=emd && Status.Published==emd.getWorkflowStatus())
+                    return Response
+                            .status(Response.Status.BAD_REQUEST)
+                            .entity("Unable to Save a Published Metadata Object.")
+                            .build();
+            }
+            // set the WORKFLOW STATUS
+            md.setWorkflowStatus(Status.Saved);
 
-            if ( 0==md.getCodeId() )
-                em.persist(md);
-            else
-                em.merge(md);
+            // store it
+            store(em, md);
             
             em.getTransaction().commit();
             
