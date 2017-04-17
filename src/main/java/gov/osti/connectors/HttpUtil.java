@@ -79,4 +79,8 @@ public class HttpUtil {
             return null;
         }
     }
+    
+    public static String writeMetadataYaml(DOECodeMetadata in) throws IOException {
+        return mapper.writeValueAsString(in);
+    }
 }

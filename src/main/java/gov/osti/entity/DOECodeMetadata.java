@@ -45,7 +45,7 @@ public class DOECodeMetadata implements Serializable {
     }
     
     // Attributes
-    private Long codeId = 0L;
+    private Long codeId;
     private String siteOwnershipCode = null;
     private Boolean openSource = null;
     private String  repositoryLink = null;

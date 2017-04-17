@@ -202,6 +202,9 @@ public class MetadataYamlTest {
         
         assertNotNull("Date is missing", issue_date);
         assertEquals ("Date is wrong", "06/02/1999", sdf.format(issue_date));
+        
+        log.info("Writing back out:");
+        log.info(HttpUtil.writeMetadataYaml(metadata));
     }
     
 }

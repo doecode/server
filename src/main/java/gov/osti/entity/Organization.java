@@ -27,7 +27,7 @@ public class Organization implements Serializable {
     private Integer place = 0;
     private String organizationName;
     @JsonProperty (value="DOE")
-    private boolean isDOE = false;
+    private boolean doe = false;
     
     @Id
     @GeneratedValue (strategy = GenerationType.AUTO)
@@ -63,15 +63,15 @@ public class Organization implements Serializable {
      */
     @Column (name="DOE")
     public boolean isDOE() {
-        return isDOE;
+        return doe;
     }
-
+    
     /**
      * Set whether or not this is a DOE-based ORGANIZATION
      * @param isDOE whether or not this ORGANIZATION is DOE
      */
     public void setIsDOE(boolean isDOE) {
-        this.isDOE = isDOE;
+        this.doe = isDOE;
     }
 
     /**

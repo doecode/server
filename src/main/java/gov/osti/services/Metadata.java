@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
 import gov.osti.connectors.GitHub;
+import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Status;
@@ -120,6 +121,43 @@ public class Metadata {
     }
     
     /**
+     * Look up the METADATA if possible by its codeID value, and return the
+     * result as YAML.
+     * 
+     * Accept: text/yaml
+     * 
+     * @param codeId the Metadata codeId to look for
+     * @return YAML of the Metadata information if possible
+     */
+    @GET
+    @Path ("{codeId}")
+    @Produces ("text/yaml")
+    public Response loadYaml(@PathParam ("codeId") Long codeId ) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+            
+            if ( null==md )
+                throw new NotFoundException ("ID not on file.");
+            
+            // send back the YAML
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(HttpUtil.writeMetadataYaml(md))
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("YAML Output Error: " + e.getMessage());
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("YAML Output Error")
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
      * Call to auto-populate Metadata information via Connector, if possible.
      * 
      * @param url the REPOSITORY URL to look up information from
@@ -154,6 +192,33 @@ public class Metadata {
             em.persist(md);
         else
             em.merge(md);
+    }
+    
+    /**
+     * Convert incoming JSON object of Metadata information to YAML if possible.
+     * 
+     * @param object JSON of the Metadata information
+     * @return YAML of that JSON object, if mappable
+     */
+    @POST
+    @Consumes (MediaType.APPLICATION_JSON)
+    @Produces ("text/yaml")
+    @Path ("/yaml")
+    public Response asYAML(String object) {
+        try {
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+            
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(HttpUtil.writeMetadataYaml(md))
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("YAML conversion error: " + e.getMessage());
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("YAML conversion error")
+                    .build();
+        }
     }
     
     /**
