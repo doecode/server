@@ -188,7 +188,7 @@ public class Metadata {
      * @param md the Object to store
      */
     private void store(EntityManager em, DOECodeMetadata md) {
-        if ( 0==md.getCodeId() )
+        if ( null==md.getCodeId() )
             em.persist(md);
         else
             em.merge(md);
@@ -378,7 +378,7 @@ public class Metadata {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
             
             // if this Entity is already Published, we cannot save
-            if (0!=md.getCodeId()) {
+            if (null!=md.getCodeId()) {
                 DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
                 
                 if (null!=emd && Status.Published==emd.getWorkflowStatus())
