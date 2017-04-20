@@ -3,6 +3,7 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import javax.persistence.Column;
@@ -20,6 +21,7 @@ import javax.persistence.MappedSuperclass;
  * @author ensornl
  */
 @MappedSuperclass
+@JsonIgnoreProperties ( ignoreUnknown = true )
 public class Organization implements Serializable {
     // primary Key
     private Long orgId = 0L;

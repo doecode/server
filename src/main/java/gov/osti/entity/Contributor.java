@@ -1,5 +1,6 @@
 package gov.osti.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -14,7 +15,7 @@ import javax.persistence.Enumerated;
  * @author ensornl
  */
 @Entity (name = "CONTRIBUTORS")
-//public class Contributor implements Serializable {
+@JsonIgnoreProperties ( ignoreUnknown = true )
 public class Contributor extends Agent {
     /**
      * Static Type of Contributor.  Based on DataCite accepted mapping values.

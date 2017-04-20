@@ -1,6 +1,7 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
  * @author ensornl
  */
 @MappedSuperclass
+@JsonIgnoreProperties ( ignoreUnknown = true )
 public class Agent implements Serializable {
     private static Logger log = LoggerFactory.getLogger(Agent.class);
     private Long agentId = 0L;

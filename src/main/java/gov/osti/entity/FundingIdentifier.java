@@ -1,6 +1,7 @@
 
 package gov.osti.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -13,6 +14,7 @@ import javax.persistence.Enumerated;
  * @author nensor
  */
 @Embeddable
+@JsonIgnoreProperties ( ignoreUnknown = true )
 public class FundingIdentifier implements Serializable {
     public enum Type {
         AwardNumber,

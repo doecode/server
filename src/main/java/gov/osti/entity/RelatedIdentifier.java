@@ -2,6 +2,7 @@
  */
 package gov.osti.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -14,6 +15,7 @@ import javax.persistence.Enumerated;
  * @author ensornl
  */
 @Embeddable
+@JsonIgnoreProperties ( ignoreUnknown = true )
 public class RelatedIdentifier implements Serializable {
     /**
      * Enumeration of valid Types for an Identifier.

@@ -5,6 +5,10 @@
 repository_link: https://github.com/doecode/dev-test-repo
 access_limitations:
 - UNL
+licenses:
+- GNU v.3
+- Apache 2.0
+- Creative Commons License
 developers:
 - affiliations: Oak Ridge National Laboratory
   first_name: Jay Jay

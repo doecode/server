@@ -121,6 +121,17 @@ public class MetadataYamlTest {
         assertEquals("Description wrong", "An example testing repository for submissions of YAML and other associated testing projects related to the development of DOECode.\n",
                 metadata.getDescription());
         
+        List<String> licenses = metadata.getLicenses();
+        assertEquals("Should be 3 licenses", 3, licenses.size());
+        
+        for ( String l : licenses ) {
+            log.info("License: " + l);
+        }
+        
+        assertTrue  ("Missing GNU", licenses.contains("GNU v.3"));
+        assertTrue  ("Missing apache", licenses.contains("Apache 2.0"));
+        assertTrue  ("Missing CC license", licenses.contains("Creative Commons License"));
+        
         List<RelatedIdentifier> identifiers = metadata.getRelatedIdentifiers();
         assertEquals("There should be 2 identifiers", 2, identifiers.size());
         
