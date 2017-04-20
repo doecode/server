@@ -188,7 +188,7 @@ public class Metadata {
      * @param md the Object to store
      */
     private void store(EntityManager em, DOECodeMetadata md) {
-        if ( null==md.getCodeId() )
+        if ( null==md.getCodeId() || 0==md.getCodeId() )
             em.persist(md);
         else
             em.merge(md);
