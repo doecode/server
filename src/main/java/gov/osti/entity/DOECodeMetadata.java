@@ -1,6 +1,7 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 @Entity
 @Table(name="metadata")
+@JsonIgnoreProperties (ignoreUnknown = true)
 public class DOECodeMetadata implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
 
@@ -73,7 +75,7 @@ public class DOECodeMetadata implements Serializable {
     private String countryOfOrigin = null;
     private String keywords = null;
     private String disclaimers = null;
-    private String license = null;
+    private List<String> licenses = new ArrayList<>();
     private String recipientName = null;
     private String recipientEmail = null;
     private String recipientPhone = null;
@@ -276,11 +278,17 @@ public class DOECodeMetadata implements Serializable {
     public void setDisclaimers(String disclaimers) {
             this.disclaimers = disclaimers;
     }
-    public String getLicense() {
-            return license;
+    @ElementCollection
+    @CollectionTable(
+            name = "LICENSES",
+            joinColumns=@JoinColumn(name="CODE_ID")
+    )
+    @Column (name = "LICENSE")
+    public List<String> getLicenses() {
+            return licenses;
     }
-    public void setLicense(String license) {
-            this.license = license;
+    public void setLicenses(List<String> licenses) {
+            this.licenses = licenses;
     }
 
     /**

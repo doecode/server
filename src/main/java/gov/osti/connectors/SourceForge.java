@@ -11,6 +11,8 @@ import gov.osti.entity.Developer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,12 +102,11 @@ public class SourceForge implements ConnectorInterface {
 
              License[] licenses = response.getCategories().getLicense();
 
-             StringBuilder license_text = new StringBuilder();
+             List<String> license_values = new ArrayList<>();
              for ( License license : licenses ) {
-                 license_text.append( (0==license_text.length()) ? "" : ",");
-                 license_text.append(license.getFullname());
+                 license_values.add(license.getFullname());
              }
-             md.setLicense(license_text.toString());
+             md.setLicenses(license_values);
 
              Person[] developers = response.getDevelopers();
 
