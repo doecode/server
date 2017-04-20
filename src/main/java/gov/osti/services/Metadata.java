@@ -144,6 +144,7 @@ public class Metadata {
             // send back the YAML
             return Response
                     .status(Response.Status.OK)
+                    .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
                     .entity(HttpUtil.writeMetadataYaml(md))
                     .build();
         } catch ( IOException e ) {
