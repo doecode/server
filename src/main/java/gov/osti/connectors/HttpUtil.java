@@ -83,4 +83,8 @@ public class HttpUtil {
     public static String writeMetadataYaml(DOECodeMetadata in) throws IOException {
         return mapper.writeValueAsString(in);
     }
+    
+    public static String writeMetadataYaml(JsonNode json) throws IOException {
+        return mapper.writeValueAsString(json);
+    }
 }

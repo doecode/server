@@ -23,6 +23,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
@@ -91,48 +92,21 @@ public class Metadata {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     
     /**
-     * Attempt to look up and return a Metadata record.
+     * Look up the METADATA if possible by its codeID value, and return the 
+     * result in the desired format.
      * 
-     * Produces:  application/json
+     * Based on Accept: header; either "application/json" (default) or 
+     * "text/yaml".
      * 
      * @param codeId the Metadata codeId to look for
-     * @return JSON of the Metadata if found
+     * @param accept the HTTP Accept header determining the output return format
+     * (JSON is default)
+     * @return the Metadata information in the desired format
      */
     @GET
     @Path ("{codeId}")
-    @Produces (MediaType.APPLICATION_JSON)
-    public Response load(@PathParam ("codeId") Long codeId ) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        
-        try {
-            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
-            
-            if ( null==md )
-                throw new NotFoundException("ID not on file.");
-            
-            // just send it back
-            return Response
-                    .status(Response.Status.OK)
-                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
-                    .build();
-        } finally {
-            em.close();
-        }
-    }
-    
-    /**
-     * Look up the METADATA if possible by its codeID value, and return the
-     * result as YAML.
-     * 
-     * Accept: text/yaml
-     * 
-     * @param codeId the Metadata codeId to look for
-     * @return YAML of the Metadata information if possible
-     */
-    @GET
-    @Path ("{codeId}")
-    @Produces ("text/yaml")
-    public Response loadYaml(@PathParam ("codeId") Long codeId ) {
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
+    public Response load(@PathParam ("codeId") Long codeId, @HeaderParam ("accept") String accept ) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
@@ -141,17 +115,22 @@ public class Metadata {
             if ( null==md )
                 throw new NotFoundException ("ID not on file.");
             
-            // send back the YAML
-            return Response
+            // based on Accept: pass back the desired information
+            return ("text/yaml".equals(accept)) ?
+                    Response
                     .status(Response.Status.OK)
                     .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
                     .entity(HttpUtil.writeMetadataYaml(md))
+                    .build() :
+                    Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( IOException e ) {
-            log.warn("YAML Output Error: " + e.getMessage());
+            log.warn("Format conversion error: " + e.getMessage());
             return Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("YAML Output Error")
+                    .entity("Output conversion error")
                     .build();
         } finally {
             em.close();
@@ -161,19 +140,39 @@ public class Metadata {
     /**
      * Call to auto-populate Metadata information via Connector, if possible.
      * 
+     * Based on the Accept: HTTP header, might return JSON (the default) or
+     * YAML.
+     * 
      * @param url the REPOSITORY URL to look up information from
-     * @return a Metadata instance (JSON) if information was found
+     * @param accept the value of the HTTP "Accept" header, if set
+     * @return a Metadata instance in the desired output format if information was found
      */
     @GET
     @Path ("/autopopulate")
-    @Produces (MediaType.APPLICATION_JSON)
-    public Response autopopulate(@QueryParam("repo") String url) {
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
+    public Response autopopulate(@QueryParam("repo") String url, @HeaderParam("accept") String accept) {
         JsonNode result = factory.read(url);
         
-        // no connector information, return nothing
-        return (null==result) ?
-                Response.status(Response.Status.NO_CONTENT).build() :
-                Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();
+        if (null==result)
+            return Response.status(Response.Status.NO_CONTENT).build();
+        
+        // if asked for YAML, send it back.
+        if ("text/yaml".equals(accept)) {
+            // make sure nothing untoward happens converting values
+            try {
+                return Response
+                        .status(Response.Status.OK)
+                        .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
+                        .entity(HttpUtil.writeMetadataYaml(result))
+                        .build();
+            } catch ( IOException e ) {
+                log.warn("YAML conversion error: " + e.getMessage());
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+            }
+        }
+        
+        // send back the default JSON response
+        return Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();
     }
     
     /**
