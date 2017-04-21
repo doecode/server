@@ -1,6 +1,7 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -497,8 +498,7 @@ public class DOECodeMetadata implements Serializable {
 
     @Column (name="date_record_added", nullable = false)
     @Temporal(javax.persistence.TemporalType.TIMESTAMP)
-    @JsonFormat
-      (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'hh:mm:ss'Z'")
+    @JsonIgnore
     public Date getDateRecordAdded() {
         return dateRecordAdded;
     }
@@ -513,8 +513,7 @@ public class DOECodeMetadata implements Serializable {
 
     @Column (name="date_record_updated", nullable = false)
     @Temporal (TemporalType.TIMESTAMP)
-    @JsonFormat
-      (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'hh:mm:ss'Z'")
+    @JsonIgnore
     public Date getDateRecordUpdated() {
         return dateRecordUpdated;
     }
