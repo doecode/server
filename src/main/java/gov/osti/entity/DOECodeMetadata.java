@@ -1,7 +1,6 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,10 +27,7 @@ import javax.persistence.ElementCollection;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.OneToMany;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,9 +81,6 @@ public class DOECodeMetadata implements Serializable {
     private String otherSpecialRequirements = null;
     private String relatedSoftware = null;
     private Status workflowStatus = null;
-    // persistence dates
-    private Date dateRecordAdded;
-    private Date dateRecordUpdated;
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -486,53 +479,6 @@ public class DOECodeMetadata implements Serializable {
     @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
     public Date getDateOfIssuance() {
         return this.dateOfIssuance;
-    }
-
-    public void setDateRecordAdded(Date date) {
-        this.dateRecordAdded = date;
-    }
-
-    public void setDateRecordAdded() {
-        setDateRecordAdded(new Date());
-    }
-
-    @Column (name="date_record_added", nullable = false)
-    @Temporal(javax.persistence.TemporalType.TIMESTAMP)
-    @JsonIgnore
-    public Date getDateRecordAdded() {
-        return dateRecordAdded;
-    }
-
-    public void setDateRecordUpdated(Date date) {
-        this.dateRecordUpdated = date;
-    }
-
-    public void setDateRecordUpdated() {
-        setDateRecordUpdated(new Date());
-    }
-
-    @Column (name="date_record_updated", nullable = false)
-    @Temporal (TemporalType.TIMESTAMP)
-    @JsonIgnore
-    public Date getDateRecordUpdated() {
-        return dateRecordUpdated;
-    }
-
-    /**
-     * method to automatically set both date added and updated at persistence time.
-     */
-    @PrePersist
-    void createdAt() {
-        setDateRecordAdded();
-        setDateRecordUpdated();
-    }
-
-    /**
-     * Set the date updated prior to update.
-     */
-    @PreUpdate
-    void updatedAt() {
-        setDateRecordUpdated();
     }
         
 }
