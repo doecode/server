@@ -5,6 +5,7 @@ package gov.osti.entity;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.CollectionTable;
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -17,6 +18,26 @@ import javax.persistence.JoinColumn;
 @Entity (name = "SPONSORING_ORGANIZATIONS")
 public class SponsoringOrganization extends Organization {
     private List<FundingIdentifier> fundingIdentifiers = new ArrayList<>();
+    private String primaryAward;
+    
+    /**
+     * Get the PRIMARY award number.
+     * 
+     * @return the PRIMARY AWARD NUMBER (required)
+     */
+    @Column (length = 500, name = "PRIMARY_AWARD")
+    public String getPrimaryAward() {
+        return primaryAward;
+    }
+    
+    /**
+     * Set the PRIMARY AWARD number.
+     * 
+     * @param award the PRIMARY AWARD NUMBER
+     */
+    public void setPrimaryAward(String award) {
+        primaryAward = award;
+    }
     
     @ElementCollection
     @CollectionTable(

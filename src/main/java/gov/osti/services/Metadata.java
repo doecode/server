@@ -52,10 +52,13 @@ import org.slf4j.LoggerFactory;
  * metadata/{codeId} - retrieve instance of JSON for codeId
  * metadata/autopopulate?repo={url} - attempt an auto-populate Connector call for
  * indicated URL
+ * metadata/yaml/{codeId} - get the YAML for a given codeId
+ * metadata/autopopulate/yaml?repo={url} - get auto-populate information in YAML
  * 
  * POST
  * metadata - send JSON for persisting to the storage layer
  * metadata/submit - send JSON for posting to both ELINK and persistence layer
+ * metadata/yaml - send JSON, get YAML back
  *
  * @author ensornl
  */
@@ -92,21 +95,16 @@ public class Metadata {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     
     /**
-     * Look up the METADATA if possible by its codeID value, and return the 
-     * result in the desired format.
+     * Look up the METADATA if possible by its codeId; return the result as
+     * a YAML file download.
      * 
-     * Based on Accept: header; either "application/json" (default) or 
-     * "text/yaml".
-     * 
-     * @param codeId the Metadata codeId to look for
-     * @param accept the HTTP Accept header determining the output return format
-     * (JSON is default)
-     * @return the Metadata information in the desired format
+     * @param codeId the CODE ID to look for
+     * @return YAML of that Metadata, if possible
      */
     @GET
-    @Path ("{codeId}")
-    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
-    public Response load(@PathParam ("codeId") Long codeId, @HeaderParam ("accept") String accept ) {
+    @Path ("/yaml/{codeId}")
+    @Produces ("text/yaml")
+    public Response loadYaml(@PathParam ("codeId") Long codeId) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
@@ -115,16 +113,12 @@ public class Metadata {
             if ( null==md )
                 throw new NotFoundException ("ID not on file.");
             
-            // based on Accept: pass back the desired information
-            return ("text/yaml".equals(accept)) ?
+            // return the YAML
+            return
                     Response
                     .status(Response.Status.OK)
                     .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
                     .entity(HttpUtil.writeMetadataYaml(md))
-                    .build() :
-                    Response
-                    .status(Response.Status.OK)
-                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( IOException e ) {
             log.warn("Format conversion error: " + e.getMessage());
@@ -138,38 +132,77 @@ public class Metadata {
     }
     
     /**
-     * Call to auto-populate Metadata information via Connector, if possible.
+     * Look up the METADATA if possible by its codeID value, and return the 
+     * result in the desired format.
      * 
-     * Based on the Accept: HTTP header, might return JSON (the default) or
-     * YAML.
-     * 
-     * @param url the REPOSITORY URL to look up information from
-     * @param accept the value of the HTTP "Accept" header, if set
-     * @return a Metadata instance in the desired output format if information was found
+     * @param codeId the Metadata codeId to look for
+     * @return the Metadata information in the desired format
      */
     @GET
-    @Path ("/autopopulate")
-    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
-    public Response autopopulate(@QueryParam("repo") String url, @HeaderParam("accept") String accept) {
+    @Path ("{codeId}")
+    @Produces (MediaType.APPLICATION_JSON)
+    public Response load(@PathParam ("codeId") Long codeId) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+            
+            if ( null==md )
+                throw new NotFoundException ("ID not on file.");
+            
+            // send back the JSON
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Request the AUTOPOPULATE repository information back as a YAML attachment.
+     * 
+     * @param url the repository URL to attempt to read from
+     * @return YAML of the repository information or nothing if not readable
+     */
+    @GET
+    @Path ("/autopopulate/yaml")
+    @Produces ("text/yaml")
+    public Response autopopulateYaml(@QueryParam("repo") String url) {
         JsonNode result = factory.read(url);
         
         if (null==result)
             return Response.status(Response.Status.NO_CONTENT).build();
         
         // if asked for YAML, send it back.
-        if ("text/yaml".equals(accept)) {
-            // make sure nothing untoward happens converting values
-            try {
-                return Response
-                        .status(Response.Status.OK)
-                        .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                        .entity(HttpUtil.writeMetadataYaml(result))
-                        .build();
-            } catch ( IOException e ) {
-                log.warn("YAML conversion error: " + e.getMessage());
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-            }
+        // make sure nothing untoward happens converting values
+        try {
+            return Response
+                    .status(Response.Status.OK)
+                    .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
+                    .entity(HttpUtil.writeMetadataYaml(result))
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("YAML conversion error: " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+    }
+    
+    /**
+     * Call to auto-populate Metadata information via Connector, if possible.
+     * 
+     * @param url the REPOSITORY URL to look up information from
+     * @return a Metadata instance in the desired output format if information was found
+     */
+    @GET
+    @Path ("/autopopulate")
+    @Produces (MediaType.APPLICATION_JSON)
+    public Response autopopulate(@QueryParam("repo") String url) {
+        JsonNode result = factory.read(url);
+        
+        if (null==result)
+            return Response.status(Response.Status.NO_CONTENT).build();
         
         // send back the default JSON response
         return Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();

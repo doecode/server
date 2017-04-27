@@ -42,6 +42,10 @@ GET /services/metadata/{ID}
 
 Retrieves a specified Metadata by its unique ID value, in JSON format.
 
+GET /services/metadata/yaml/{ID}
+
+Retrieve a specified Metadata by its unique ID value, in YAML format.
+
 GET /services/metadata/autopopulate?repo={URL}
 
 Calls the Connector services to attempt to scrape/auto-populate metadata information
@@ -49,18 +53,34 @@ if possible by deriving the appropriate repository from the URL.  Empty JSON is
 returned if the determination cannot be made or the project does not exist or
 is otherwise inaccessible.
 
+GET /services/metadata/autopopulate/yaml?repo={URL}
+
+As above, but returns YAML.
+
 POST /services/metadata
 
 Store a given metadata JSON to the DOECode persistence layer in an incomplete or 
 pending status.  The resulting JSON information is returned as the JSON object "metadata",
-including the generated unique IDs as appropriate if the operation was successful.
+including the generated unique IDs as appropriate if the operation was successful. Record
+is placed in the "Saved" work flow.
+
+POST /services/metadata/yaml
+
+Takes in JSON format metadata information, and returns that information in the YAML 
+format.  Does not persist any data.
+
+POST /services/metadata/publish
+
+Store the metadata information to the DOECode persistence layer with a "Published" 
+work flow.  JSON is returned as with the "Saved" service above, and this record
+is marked as available to the DOECode search output services.
 
 POST /services/metadata/submit
 
 Post the metadata to OSTI, attempt to register a DOI if possible, and persist
 the information on DOECode.  If workflow validations pass, the JSON will be returned
 with appropriate unique identifier information and DOI values posted in the
-JSON object "metadata".
+JSON object "metadata".  Data is placed in "Published" state.
 
 POST /services/validation
 

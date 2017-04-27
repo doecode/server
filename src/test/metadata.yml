@@ -49,12 +49,14 @@ research_organizations:
 sponsoring_organizations:
 - organization_name: DOE OSTI
   DOE: true
+  primary_award: DE-654321
   funding_identifiers:
       - identifier_type: AwardNumber
         identifier_value: DE-865234
       - identifier_type: AwardNumber
         identifier_value: DE-8293
 - organization_name: University of Miami, FL
+  primary_award: UFL-1234
   funding_identifiers:
       - identifier_type: AwardNumber
         identifier_value: UWIN-234

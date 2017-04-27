@@ -164,6 +164,7 @@ public class MetadataYamlTest {
         SponsoringOrganization sponsor = sponsors.get(0);
         assertEquals("Name is wrong", "DOE OSTI", sponsor.getOrganizationName());
         assertTrue  ("Should be DOE", sponsor.isDOE());
+        assertEquals("Primary award number wrong", "DE-654321", sponsor.getPrimaryAward());
         List<FundingIdentifier> funding_identifiers = sponsor.getFundingIdentifiers();
         assertEquals("There should be 2 award numbers", 2, funding_identifiers.size());
         assertEquals("First award wrong", "DE-865234", funding_identifiers.get(0).getIdentifierValue());
@@ -174,6 +175,7 @@ public class MetadataYamlTest {
         sponsor = sponsors.get(1);
         assertEquals("Name is wrong", "University of Miami, FL", sponsor.getOrganizationName());
         assertFalse ("Should NOT be DOE", sponsor.isDOE());
+        assertEquals("Primary award number wrong", "UFL-1234", sponsor.getPrimaryAward());
         funding_identifiers = sponsor.getFundingIdentifiers();
         assertEquals("There should be 3 awards", 3, funding_identifiers.size());
         assertEquals("award number 1 wrong", "UWIN-234", funding_identifiers.get(0).getIdentifierValue());
