@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletContext;
@@ -23,6 +25,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
@@ -230,7 +233,7 @@ public class Validation {
                 for ( String validation : validationRequest.getValidations() ) {
                     if ("DOI".equals(validation)) {
                         // for now, just try an HTTP connection via DOI_BASE_URL + value
-                        HttpGet get = new HttpGet(DOI_BASE_URL + value);
+                        HttpGet get = new HttpGet(DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
                         HttpResponse response = hc.execute(get);
 
                         // add empty String for no error, or error message if not found
@@ -243,7 +246,7 @@ public class Validation {
                             return Response.status(Response.Status.NOT_FOUND).build();
                         }
                         // call the VALIDATION API to get a response
-                        HttpGet get = new HttpGet(apiHost + "/api/contract/validate/" + value);
+                        HttpGet get = new HttpGet(apiHost + "/api/contract/validate/" + URLEncoder.encode(value.trim(), "UTF-8"));
                         HttpResponse response = hc.execute(get);
                         // get the RESPONSE
                         ApiResponse apiResponse = mapper.readValue(response.getEntity().getContent(), ApiResponse.class);
