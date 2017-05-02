@@ -1,3 +1,5 @@
+.settings/
+.classpath
 nb-configuration.xml
 nbproject/
 /target/
