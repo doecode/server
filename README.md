@@ -98,6 +98,33 @@ message will be returned.
 
     { "errors":["10.5072/2134 is not a valid DOI.", "", ...] }
 
+## Configuring settings.xml
+
+Database parameters are provided through the ~/.m2/settings.xml file. The following is a sample using the full (non-embedded) Derby Database:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <profiles>
+        <profile>
+            <id>doecode</id>
+            <properties>
+                <github.apikey>your-key-goes-here</github.apikey>
+                <github.user>username</github.user>
+                <!-- The following line configures the URL to the full Derby database that is running on the network. -->
+                <database.url>jdbc:derby://localhost:1527/DOECode;create=true</database.url>
+                <database.driver>org.apache.derby.jdbc.ClientDriver</database.driver>
+                <database.user></database.user>
+                <database.password></database.password>
+                <database.dialect>org.hibernate.dialect.DerbyDialect</database.dialect>
+                <database.schema>doecode</database.schema>
+            </properties>
+        </profile>
+    </profiles>
+</settings>
+
+```
+
 ## Creating a Derby Database in Eclipse
 
 It is often useful to have a simple database for testing that is not your institutions fully deployed database. The following steps outline how to create such a database in Eclipse.
@@ -105,3 +132,6 @@ It is often useful to have a simple database for testing that is not your instit
 2) Install Apache Derby (either by downloading it manually or installing it via a package manager).
 3) In Eclipse, open the "Database Development" perspective.
 4) Follow the [Eclipse Documentation](http://help.eclipse.org/kepler/index.jsp?topic=%2Forg.eclipse.datatools.common.doc.user%2Fdoc%2Fhtml%2Fasc1229700387729.html) to create a Derby Connector, create a connection profile, and connect to Derby.
+
+In step 4, be sure to select "Derby Client Driver" instead of "Derby Embedded Driver." DOE Code is not currently configured to work with the Embedded driver.
+
