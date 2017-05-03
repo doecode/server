@@ -36,6 +36,8 @@ mvn -P *your-profile* -Dcatalina.base=$HOME jetty:run
 
 to have logs in $HOME/logs/doecode.log via log4j default configuration.
 
+The value of ${database.driver} is org.apache.derby.jdbc.EmbeddedDriver for Derby.
+
 ## API services
 
 GET /services/metadata/{ID}
@@ -95,3 +97,11 @@ array should correspond with the passed-in "values" items.  If the position in t
 message will be returned.
 
     { "errors":["10.5072/2134 is not a valid DOI.", "", ...] }
+
+## Creating a Derby Database in Eclipse
+
+It is often useful to have a simple database for testing that is not your institutions fully deployed database. The following steps outline how to create such a database in Eclipse.
+1) Install Eclipse Data Platform from the Help->Install New Software Menu if you do not already have it. The full list of update sites is available at http://www.eclipse.org/datatools/downloads.php.
+2) Install Apache Derby (either by downloading it manually or installing it via a package manager).
+3) In Eclipse, open the "Database Development" perspective.
+4) Follow the [Eclipse Documentation](http://help.eclipse.org/kepler/index.jsp?topic=%2Forg.eclipse.datatools.common.doc.user%2Fdoc%2Fhtml%2Fasc1229700387729.html) to create a Derby Connector, create a connection profile, and connect to Derby.
