@@ -51,7 +51,9 @@ public class ConnectorFactoryTest {
             "https://sourceforge.net/projects/desmume",
             "https://github.com/doecode/doecode",
             "github.com/doecode/dev-test-repo",
-            "bitbucket.org/ensorn/chorus-reader"
+            "bitbucket.org/ensorn/chorus-reader",
+            "bitbucket.org/busted",
+            "bitbucket.org"
         };
         
         for ( String url : urls ) {

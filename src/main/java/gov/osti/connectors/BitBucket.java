@@ -109,6 +109,10 @@ public class BitBucket implements ConnectorInterface {
             md.setAcronym(response.getName());
             md.setDescription(response.getDescription());
             
+            // nothing or invalid response, return
+            if (null==response.getOwner())
+                throw new IOException ("Invalid response, empty.");
+            
             // if the "owner" is type "user", that's the only developer we can get
             // if it's a "team", go fetch team information for developers
             if ( "user".equals(response.getOwner().getType()) ) {
