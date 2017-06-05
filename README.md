@@ -102,6 +102,33 @@ message will be returned.
 
     { "errors":["10.5072/2134 is not a valid DOI.", "", ...] }
 
+## Configuring settings.xml
+
+Database parameters are provided through the ~/.m2/settings.xml file. The following is a sample using the full (non-embedded) Derby Database:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <profiles>
+        <profile>
+            <id>doecode</id>
+            <properties>
+                <github.apikey>your-key-goes-here</github.apikey>
+                <github.user>username</github.user>
+                <!-- The following line configures the URL to the full Derby database that is running on the network. -->
+                <database.url>jdbc:derby://localhost:1527/DOECode;create=true</database.url>
+                <database.driver>org.apache.derby.jdbc.ClientDriver</database.driver>
+                <database.user></database.user>
+                <database.password></database.password>
+                <database.dialect>org.hibernate.dialect.DerbyDialect</database.dialect>
+                <database.schema>doecode</database.schema>
+            </properties>
+        </profile>
+    </profiles>
+</settings>
+
+```
+
 ## Creating a Derby Database in Eclipse
 
 It is often useful to have a simple database for testing that is not your institutions fully deployed database. The following steps outline how to create such a database in Eclipse.
@@ -109,3 +136,59 @@ It is often useful to have a simple database for testing that is not your instit
 2) Install Apache Derby (either by downloading it manually or installing it via a package manager).
 3) In Eclipse, open the "Database Development" perspective.
 4) Follow the [Eclipse Documentation](http://help.eclipse.org/kepler/index.jsp?topic=%2Forg.eclipse.datatools.common.doc.user%2Fdoc%2Fhtml%2Fasc1229700387729.html) to create a Derby Connector, create a connection profile, and connect to Derby.
+
+In step 4, be sure to select "Derby Client Driver" instead of "Derby Embedded Driver." DOE Code is not currently configured to work with the Embedded driver.
+
+## Running on AWS
+
+The DOE Code server works well on AWS. For the default RHEL 7 instance, the server can be executed with a Derby database for storing using the following rough steps:
+1) Create the instance. Make sure your security group is configured to let the necessary ports through (normally 8080).
+2) SSH into the instance using your key. Issue the following commands to download and install prerequisites including Java, Git, and Derby.
+```bash
+sudo yum install git java-1.8.0* wget
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+wget ftp://mirror.reverse.net/pub/apache/maven/maven-3/3.5.0/binaries/apache-maven-3.5.0-bin.tar.gz
+wget http://mirror.stjschools.org/public/apache//db/derby/db-derby-10.13.1.1/db-derby-10.13.1.1-bin.tar.gz
+tar -xzvf apache-maven-3.5.0-bin.tar.gz
+sudo mkdir /opt/Apache
+sudo cp db-derby-10.13.1.1-bin.zip /opt/Apache/
+cd /opt/Apache/ 
+sudo unzip db-derby-10.13.1.1-bin.zip
+```
+3) Checkout the server code
+```bash
+git clone https://github.com/doecode/server
+```
+4) Use an editor to add the following line to your .bashrc file:
+```bash
+export DERBY_INSTALL=/opt/Apache/db-derby-10.13.1.1-bin
+```
+5) Start Derby 
+sudo /opt/Apache/db-derby-10.13.1.1-bin/bin/startNetworkServer &
+6) Edit your local Maven settings file to point it to Derby using the following content
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <profiles>
+        <profile>
+            <id>doecode</id>
+            <properties>
+                <github.apikey>your-key-goes-here</github.apikey>
+                <github.user>username</github.user>
+                <database.url>jdbc:derby://localhost:1527/DOECode;create=true</database.url>
+                <database.driver>org.apache.derby.jdbc.ClientDriver</database.driver>
+                <database.user>toby</database.user>
+                <database.password>keith</database.password>
+                <database.dialect>org.hibernate.dialect.DerbyDialect</database.dialect>
+                <database.schema>doecode</database.schema>
+            </properties>
+        </profile>
+    </profiles>
+</settings>
+```
+7) Start the server in test mode
+```
+cd ~/server
+~/apache-maven-3.5.0/bin/mvn -P doecode jetty:run
+```
