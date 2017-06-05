@@ -20,6 +20,8 @@ ${database.username} | the database user (with create/alter schema permission)
 ${database.password} | the user's password
 ${serviceapi.host} | base URL for validation services
 ${publishing.host} | base URL for submitting final metadata to OSTI (via /submit API)
+${datacite.username} | (optional) DataCite user account name for registering DOIs
+${datacite.password} | (optional) DataCite account password for DOI registration
 
 Execute the back-end via 
 
@@ -75,7 +77,9 @@ POST /services/metadata/publish
 
 Store the metadata information to the DOECode persistence layer with a "Published" 
 work flow.  JSON is returned as with the "Saved" service above, and this record
-is marked as available to the DOECode search output services.
+is marked as available to the DOECode search output services.  If DataCite information
+has been configured, this step will attempt to register any DOI entered and update
+metadata information with DataCite.
 
 POST /services/metadata/submit
 

@@ -55,8 +55,12 @@ public class GitHub implements ConnectorInterface {
             stream = GitHub.class.getClassLoader().getResourceAsStream("github-connector.properties");
             config.load(stream);
             
-            API_KEY=config.getProperty("github.apikey");
-            API_USER=config.getProperty("github.user");
+            // default values to empty String if not present
+            API_KEY=config.getProperty("github.apikey", "");
+            API_USER=config.getProperty("github.user", "");
+            // if properties are not configured, disable this feature
+            if (API_KEY.startsWith("$")) API_KEY = "";
+            if (API_USER.startsWith("$")) API_USER = "";
         } finally {
             if (null!=stream) stream.close(); stream = null;
         }
