@@ -7,6 +7,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.NewCookie;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationException;
@@ -35,6 +36,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		
 
 		if (cookieVal != null) {
+			System.out.println("processing cookie");
 			Claims claims = JWTCrypt.parseJWT(cookieVal);
 			String xsrfToken = (String) claims.get("xsrfToken");
 			String xsrfHeader = req.getHeader("X-XSRF-TOKEN");
@@ -88,11 +90,10 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		//String userId = (String) subject.getPrincipal();
 		//System.out.println("User ID after success is... " + userId);
 		System.out.println(bat.getXsrfToken());
-		String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT("123", bat.getXsrfToken()) + "\" }";
-		Cookie cookie = new Cookie("accessToken", accessToken);
-		cookie.setSecure(true);
+		String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT((String) bat.getPrincipal(), bat.getXsrfToken()) + "\" }";
+		NewCookie cookie = JWTCrypt.generateNewCookie(accessToken);
 		//cookie.
-		res.addCookie(cookie);
+		res.setHeader("SET-COOKIE", cookie.toString());
 		System.out.println("Bingo");
 		return true;
 	}

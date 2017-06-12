@@ -6,6 +6,9 @@ import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Date;
 
+import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.NewCookie;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -33,5 +36,12 @@ public class JWTCrypt {
 	public static Claims parseJWT(String jwt) {
 		Claims claims = Jwts.parser().setSigningKey("Secret").parseClaimsJws(jwt).getBody();
 		return claims;
+	}
+	
+	public static NewCookie generateNewCookie(String accessToken) {
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.MINUTE, 30);
+
+		return new NewCookie(new Cookie("accessToken", accessToken), "", 60*30, c.getTime(),true,true);
 	}
 }

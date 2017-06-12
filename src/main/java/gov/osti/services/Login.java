@@ -38,10 +38,7 @@ public Response login(String object) {
 	String xsrfToken = JWTCrypt.nextRandomString();
 	String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT("123", xsrfToken) + "\" }";
 	String xsrfTokenJson = "{\"xsrfToken\": \"" + xsrfToken + "\" }";
-	Calendar c = Calendar.getInstance();
-	c.add(Calendar.MINUTE, 30);
-
-	NewCookie cookie = new NewCookie(new Cookie("accessToken", accessToken), "", 60*30, c.getTime(),true,true);
+	NewCookie cookie = JWTCrypt.generateNewCookie(accessToken);
 	System.out.println(accessToken);
         return Response.ok(xsrfTokenJson).cookie(cookie).build();
 
