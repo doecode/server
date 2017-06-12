@@ -26,7 +26,6 @@ public class BearerTokenRealm extends AuthorizingRealm {
 
 		@Override
 		public Object getCredentials() {
-			// TODO Auto-generated method stub
 			return token.getCredentials();
 		}
 
@@ -34,7 +33,6 @@ public class BearerTokenRealm extends AuthorizingRealm {
 		public PrincipalCollection getPrincipals() {
 			SimplePrincipalCollection principals = new SimplePrincipalCollection();
 			principals.add(token.getPrincipal(), getName());
-			System.out.println("Called");
 			return principals;
 		}
 	}
@@ -45,7 +43,6 @@ public class BearerTokenRealm extends AuthorizingRealm {
 	@Override
 	protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
 		System.out.println("hello?");
-		// TODO Auto-generated method stub
 		HashSet<String> roles = new HashSet<>();
 		roles.add("Admin");
 		SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();

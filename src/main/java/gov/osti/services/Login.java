@@ -35,13 +35,15 @@ public Login() {
 @Consumes (MediaType.APPLICATION_JSON)
 @Path ("/login")
 public Response login(String object) {
-	String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT("123") + "\" }";
+	String xsrfToken = JWTCrypt.nextRandomString();
+	String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT("123", xsrfToken) + "\" }";
+	String xsrfTokenJson = "{\"xsrfToken\": \"" + xsrfToken + "\" }";
 	Calendar c = Calendar.getInstance();
 	c.add(Calendar.MINUTE, 30);
 
 	NewCookie cookie = new NewCookie(new Cookie("accessToken", accessToken), "", 60*30, c.getTime(),true,true);
 	System.out.println(accessToken);
-        return Response.ok(accessToken).cookie(cookie).build();
+        return Response.ok(xsrfTokenJson).cookie(cookie).build();
 
 }
 

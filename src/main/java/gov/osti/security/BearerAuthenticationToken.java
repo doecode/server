@@ -5,20 +5,29 @@ import org.apache.shiro.crypto.AesCipherService;
 
 public class BearerAuthenticationToken implements AuthenticationToken {
 
-	private String apiKey;
+	private String apiKey = null;
+	private String xsrfToken = null;
 	public BearerAuthenticationToken(String apiKey) {
 		this.apiKey = apiKey;
 	}
+	
+	public BearerAuthenticationToken(String apiKey, String xsrfToken) {
+		this.apiKey = apiKey;
+		this.xsrfToken = xsrfToken;
+	}
+	
 	@Override
 	public Object getCredentials() {
-		// TODO Auto-generated method stub
 		return apiKey;
 	}
 
 	@Override
 	public Object getPrincipal() {
-		// TODO Auto-generated method stub
 		return apiKey;
+	}
+	
+	public String getXsrfToken() {
+		return xsrfToken;
 	}
 
 }

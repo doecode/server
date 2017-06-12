@@ -1,6 +1,8 @@
 package gov.osti.security;
 
+import java.math.BigInteger;
 import java.security.Key;
+import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -12,13 +14,18 @@ import io.jsonwebtoken.impl.crypto.MacProvider;
 public class JWTCrypt {
 	private static final long minute = 60000;
 	private static final long timeout = 30;
+    private static final SecureRandom random = new SecureRandom();
+
+    public static String nextRandomString() {
+        return new BigInteger(130, random).toString(32);
+    }
 	
-	public static String generateJWT(String userID) {
+	public static String generateJWT(String userID, String xsrfToken) {
 		
 		   Calendar date = Calendar.getInstance();
 		   long time = date.getTimeInMillis();
 		   Date expiration = new Date(time + (timeout * minute));
-	       return Jwts.builder().setIssuer("doecode").setSubject(userID).setExpiration(expiration).signWith(SignatureAlgorithm.HS256,"Secret").compact();
+	       return Jwts.builder().setIssuer("doecode").claim("xsrfToken", xsrfToken).setSubject(userID).setExpiration(expiration).signWith(SignatureAlgorithm.HS256,"Secret").compact();
 	       
 		
 	}

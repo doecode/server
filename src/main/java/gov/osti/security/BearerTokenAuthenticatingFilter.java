@@ -8,6 +8,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authc.AuthenticatingFilter;
@@ -27,25 +29,38 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		System.out.println(cookieVal);
 		String authorizationHeader = req.getHeader("Authorization");
 		
-		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-			return null;
+		if (cookieVal == null &&  ( authorizationHeader == null || !authorizationHeader.startsWith("Basic "))) {
+			throw new AuthenticationException("Authentication method not provided");
 		}
 		
-		String jwt = authorizationHeader.substring("Bearer".length()).trim();
+
+		if (cookieVal != null) {
+			Claims claims = JWTCrypt.parseJWT(cookieVal);
+			String xsrfToken = (String) claims.get("xsrfToken");
+			String xsrfHeader = req.getHeader("X-XSRF-TOKEN");
+			System.out.println(xsrfToken);
+			
+			if (!StringUtils.equals(xsrfHeader,xsrfToken)) {
+				throw new AuthenticationException("XSRF Tokens did not match");			
+			}
+			
+			Date now = new Date();
+			if (now.after(claims.getExpiration()))
+				throw new AuthenticationException("Token is expired");
+			
+			return new BearerAuthenticationToken(claims.getSubject());
+			
+		} else {
+			return new BearerAuthenticationToken(authorizationHeader.substring("Basic".length()).trim());
+		}
 		
-		Claims claims = JWTCrypt.parseJWT(jwt);
-		Date now = new Date();
-		if (now.after(claims.getExpiration()))
-				return null;
-		System.out.println(claims.getSubject());
-		return new BearerAuthenticationToken(claims.getSubject());
+	
 	}
 	
 	//do we redirect them to login? that would be my guess, but maybe we do that from the front end and stash away the store there...l
 	@Override
 	protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
-		// TODO Auto-generated method stub
-		System.out.println("Denied access, likely because login is not yet correctly configured");
+		System.out.println("Denied access");
 		return false;
 	}
 	
@@ -68,11 +83,16 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	//add updated bearer token header, this time with updated expiration info
 	@Override
 	protected boolean onLoginSuccess(AuthenticationToken token, Subject subject, ServletRequest request, ServletResponse response) throws Exception {
-		HttpServletResponse h = (HttpServletResponse) response;
-		String userId = (String) subject.getPrincipal();
-		System.out.println("User ID after success is... " + userId);
-		Cookie cookie = new Cookie("accessToken", JWTCrypt.generateJWT(userId));
-		h.addCookie(cookie);
+		HttpServletResponse res = (HttpServletResponse) response;
+		BearerAuthenticationToken bat = (BearerAuthenticationToken) token;
+		//String userId = (String) subject.getPrincipal();
+		//System.out.println("User ID after success is... " + userId);
+		System.out.println(bat.getXsrfToken());
+		String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT("123", bat.getXsrfToken()) + "\" }";
+		Cookie cookie = new Cookie("accessToken", accessToken);
+		cookie.setSecure(true);
+		//cookie.
+		res.addCookie(cookie);
 		System.out.println("Bingo");
 		return true;
 	}
