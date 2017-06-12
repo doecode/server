@@ -41,7 +41,9 @@ public class JWTCrypt {
 	public static NewCookie generateNewCookie(String accessToken) {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.MINUTE, 30);
+		
+		Cookie cookie = new Cookie("accessToken", accessToken, "/", "localhost:8081");
 
-		return new NewCookie(new Cookie("accessToken", accessToken), "", 60*30, c.getTime(),true,true);
+		return new NewCookie(cookie, "", 60*30, c.getTime(),true,true);
 	}
 }

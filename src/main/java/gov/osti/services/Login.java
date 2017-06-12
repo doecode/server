@@ -36,11 +36,13 @@ public Login() {
 @Path ("/login")
 public Response login(String object) {
 	String xsrfToken = JWTCrypt.nextRandomString();
-	String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT("123", xsrfToken) + "\" }";
+	String accessToken = JWTCrypt.generateJWT("123", xsrfToken);
 	String xsrfTokenJson = "{\"xsrfToken\": \"" + xsrfToken + "\" }";
 	NewCookie cookie = JWTCrypt.generateNewCookie(accessToken);
 	System.out.println(accessToken);
-        return Response.ok(xsrfTokenJson).cookie(cookie).build();
+        return Response.ok(xsrfTokenJson).header("Access-Control-Allow-Origin","*").header("Access-Control-Allow-Credentials","true")
+        		.header("Access-Control-Allow-Headers","Content-Type, Accept, X-Requested-With").header("Access-Control-Allow-Methods","GET,POST,DELETE,PUT,OPTIONS,HEAD")
+        		.cookie(cookie).build();
 
 }
 

@@ -40,6 +40,21 @@
         <servlet-name>DOECode</servlet-name>
         <url-pattern>/services/*</url-pattern>
     </servlet-mapping>
+    
+    
+    <servlet>
+        <servlet-name>CORS Filter</servlet-name>
+        <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
+            <param-value>gov.osti.security.CORSFilter</param-value>
+        </init-param>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>CORS Filter</servlet-name>
+        <url-pattern>/*</url-pattern>
+    </servlet-mapping>
 
 	<listener>
 		<listener-class>org.apache.shiro.web.env.EnvironmentLoaderListener</listener-class>
