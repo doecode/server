@@ -1,7 +1,6 @@
 package gov.osti.security;
 
 import java.math.BigInteger;
-import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Date;
@@ -12,7 +11,6 @@ import javax.ws.rs.core.NewCookie;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.crypto.MacProvider;
 
 public class JWTCrypt {
 	private static final long minute = 60000;
@@ -42,8 +40,8 @@ public class JWTCrypt {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.MINUTE, 30);
 		
-		Cookie cookie = new Cookie("accessToken", accessToken, "/", "localhost:8081");
+		Cookie cookie = new Cookie("accessToken", accessToken, "/", "");
 
-		return new NewCookie(cookie, "", 60*30, c.getTime(),true,true);
+		return new NewCookie(cookie, "", 60*30, c.getTime(),false,true);
 	}
 }

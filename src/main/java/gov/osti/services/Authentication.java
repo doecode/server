@@ -43,7 +43,6 @@ public Response check() {
     	System.out.println(e);
     }
 
-    return Response.status(Response.Status.OK).header("Access-Control-Allow-Origin","*").header("Access-Control-Allow-Credentials","true")
-    		.header("Access-Control-Allow-Headers","Content-Type, Accept, X-Requested-With").header("Access-Control-Allow-Methods","GET,POST,DELETE,PUT,OPTIONS,HEAD").build();
+    return Response.status(Response.Status.OK).build();
 }
 }

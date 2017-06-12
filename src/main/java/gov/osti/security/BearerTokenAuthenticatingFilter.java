@@ -26,7 +26,8 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	protected AuthenticationToken createToken(ServletRequest request, ServletResponse response) throws Exception {
 		System.out.println("Creating token");
 		HttpServletRequest req = (HttpServletRequest) request;
-		String cookieVal = req.getHeader("Cookie");
+		Cookie[] cookies = req.getCookies();
+		String cookieVal = 	cookies[0].getValue();
 		System.out.println(cookieVal);
 		String authorizationHeader = req.getHeader("Authorization");
 		
@@ -76,7 +77,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			System.out.println("Hit exception");
-			System.out.println(e.getMessage());
+			System.out.println(e);
 			return false;
 		}
 	}

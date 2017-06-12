@@ -13,6 +13,8 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.subject.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +42,10 @@ public Response login(String object) {
 	String xsrfTokenJson = "{\"xsrfToken\": \"" + xsrfToken + "\" }";
 	NewCookie cookie = JWTCrypt.generateNewCookie(accessToken);
 	System.out.println(accessToken);
-        return Response.ok(xsrfTokenJson).header("Access-Control-Allow-Origin","*").header("Access-Control-Allow-Credentials","true")
-        		.header("Access-Control-Allow-Headers","Content-Type, Accept, X-Requested-With").header("Access-Control-Allow-Methods","GET,POST,DELETE,PUT,OPTIONS,HEAD")
-        		.cookie(cookie).build();
+        return Response.ok(xsrfTokenJson).cookie(cookie).build();
 
 }
+
+
 
 }
