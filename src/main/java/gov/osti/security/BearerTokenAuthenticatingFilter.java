@@ -22,13 +22,17 @@ import io.jsonwebtoken.Claims;
 
 public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	private static Logger log = LoggerFactory.getLogger(BearerTokenAuthenticatingFilter.class);
+	
 	@Override
 	protected AuthenticationToken createToken(ServletRequest request, ServletResponse response) throws Exception {
-		System.out.println("Creating token");
 		HttpServletRequest req = (HttpServletRequest) request;
+		//go through cookies and pull out accessToken
 		Cookie[] cookies = req.getCookies();
-		String cookieVal = 	cookies[0].getValue();
-		System.out.println(cookieVal);
+		String cookieVal = null;
+		for (Cookie c : cookies) {
+			if (StringUtils.equals(c.getName(),"accessToken"))
+				cookieVal = c.getValue();
+		}
 		String authorizationHeader = req.getHeader("Authorization");
 		
 		if (cookieVal == null &&  ( authorizationHeader == null || !authorizationHeader.startsWith("Basic "))) {
@@ -38,7 +42,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 
 		if (cookieVal != null) {
 			System.out.println("processing cookie");
-			Claims claims = JWTCrypt.parseJWT(cookieVal);
+			Claims claims = DOECodeCrypt.parseJWT(cookieVal);
 			String xsrfToken = (String) claims.get("xsrfToken");
 			String xsrfHeader = req.getHeader("X-XSRF-TOKEN");
 			System.out.println(xsrfToken);
@@ -51,7 +55,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 			if (now.after(claims.getExpiration()))
 				throw new AuthenticationException("Token is expired");
 			
-			return new BearerAuthenticationToken(claims.getSubject());
+			return new BearerAuthenticationToken(claims.getSubject(), xsrfToken);
 			
 		} else {
 			return new BearerAuthenticationToken(authorizationHeader.substring("Basic".length()).trim());
@@ -60,42 +64,37 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	
 	}
 	
-	//do we redirect them to login? that would be my guess, but maybe we do that from the front end and stash away the store there...l
+	//for now, throw a forbidden and let the front end handle it
 	@Override
 	protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
 		System.out.println("Denied access");
+		HttpServletResponse res = (HttpServletResponse) response;
+		res.setStatus(HttpServletResponse.SC_FORBIDDEN);
 		return false;
 	}
 	
-	@Override
-	
+	@Override	
 	protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
-		System.out.println("Say something");
-		log.info("hello");
 		try {
 			return executeLogin(request,response);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			System.out.println("Hit exception");
 			System.out.println(e);
 			return false;
 		}
 	}
 	
 	
-	//add updated bearer token header, this time with updated expiration info
+	//update cookie/jwt expiration and reissue if there is, this time with updated expiration info
 	@Override
 	protected boolean onLoginSuccess(AuthenticationToken token, Subject subject, ServletRequest request, ServletResponse response) throws Exception {
 		HttpServletResponse res = (HttpServletResponse) response;
 		BearerAuthenticationToken bat = (BearerAuthenticationToken) token;
-		//String userId = (String) subject.getPrincipal();
-		//System.out.println("User ID after success is... " + userId);
-		System.out.println(bat.getXsrfToken());
-		String accessToken = "{\"accessToken\": \"" + JWTCrypt.generateJWT((String) bat.getPrincipal(), bat.getXsrfToken()) + "\" }";
-		NewCookie cookie = JWTCrypt.generateNewCookie(accessToken);
-		//cookie.
-		res.setHeader("SET-COOKIE", cookie.toString());
-		System.out.println("Bingo");
+		if (StringUtils.isNotBlank(bat.getXsrfToken())) {
+			String accessToken = DOECodeCrypt.generateJWT((String) bat.getPrincipal(), bat.getXsrfToken());
+			NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
+			res.setHeader("SET-COOKIE", cookie.toString());
+		}
+		System.out.println("Success");
 		return true;
 	}
 

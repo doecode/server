@@ -12,7 +12,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
-public class JWTCrypt {
+public class DOECodeCrypt {
 	private static final long minute = 60000;
 	private static final long timeout = 30;
     private static final SecureRandom random = new SecureRandom();

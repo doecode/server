@@ -53,20 +53,8 @@ public class BearerTokenRealm extends AuthorizingRealm {
 
 	@Override
 	protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
-		System.out.println("Doing a thing with the token");
-		BearerAuthenticationToken bearerToken = (BearerAuthenticationToken) token;
+		return new BearerAuthenticationInfo((BearerAuthenticationToken) token);
 		
-		//use the ID and password
-		String check = (String) bearerToken.getPrincipal();
-		System.out.println("hmm");
-		//System.out.println(check + "x");
-		if ("123".equals(check)) {
-			System.out.println("Valid user");
-			return new BearerAuthenticationInfo(bearerToken);
-			
-		}
-		
-		return null;
 	}
 	
 	//let it pass for the moment
