@@ -2,6 +2,8 @@ package gov.osti.security;
 
 import java.util.Date;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
@@ -17,7 +19,8 @@ import org.apache.shiro.web.filter.authc.AuthenticatingFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gov.osti.services.Login;
+import gov.osti.entity.User;
+import gov.osti.listeners.DoeServletContextListener;
 import io.jsonwebtoken.Claims;
 
 public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
@@ -25,6 +28,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	
 	@Override
 	protected AuthenticationToken createToken(ServletRequest request, ServletResponse response) throws Exception {
+		System.out.println("Authenticating");
 		HttpServletRequest req = (HttpServletRequest) request;
 		//go through cookies and pull out accessToken
 		Cookie[] cookies = req.getCookies();
@@ -40,10 +44,12 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		}
 		
 
+		String apiKey = null;
+		String xsrfToken = null;
 		if (cookieVal != null) {
 			System.out.println("processing cookie");
 			Claims claims = DOECodeCrypt.parseJWT(cookieVal);
-			String xsrfToken = (String) claims.get("xsrfToken");
+			xsrfToken = (String) claims.get("xsrfToken");
 			String xsrfHeader = req.getHeader("X-XSRF-TOKEN");
 			System.out.println(xsrfToken);
 			
@@ -55,21 +61,41 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 			if (now.after(claims.getExpiration()))
 				throw new AuthenticationException("Token is expired");
 			
-			return new BearerAuthenticationToken(claims.getSubject(), xsrfToken);
+			apiKey = claims.getSubject();
 			
 		} else {
-			return new BearerAuthenticationToken(authorizationHeader.substring("Basic".length()).trim());
+			apiKey = authorizationHeader.substring("Basic".length()).trim();
 		}
+		
+	    EntityManager em = DoeServletContextListener.createEntityManager();
+	    User currentUser = null;
+	    try {        
+	        TypedQuery<User> getUserByApiKey = em.createQuery("SELECT u FROM User u WHERE u.apiKey = ?1", User.class);
+	        currentUser = getUserByApiKey.setParameter(1, apiKey).getSingleResult();
+	    } catch ( Exception e ) {
+	        System.out.println(e);
+	        throw new AuthenticationException("Could not find user");
+	    } finally {
+	        em.close();  
+	    }
+	    
+	    
+	    if (cookieVal != null) {
+			return new BearerAuthenticationToken(currentUser, apiKey, xsrfToken);
+	    } else {
+			return new BearerAuthenticationToken(currentUser, apiKey);
+	    }
+		
 		
 	
 	}
 	
-	//for now, throw a forbidden and let the front end handle it
+	//for now, throw an unauthorized and let the front end handle it
 	@Override
 	protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
 		System.out.println("Denied access");
 		HttpServletResponse res = (HttpServletResponse) response;
-		res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		return false;
 	}
 	
@@ -90,7 +116,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		HttpServletResponse res = (HttpServletResponse) response;
 		BearerAuthenticationToken bat = (BearerAuthenticationToken) token;
 		if (StringUtils.isNotBlank(bat.getXsrfToken())) {
-			String accessToken = DOECodeCrypt.generateJWT((String) bat.getPrincipal(), bat.getXsrfToken());
+			String accessToken = DOECodeCrypt.generateJWT((String) bat.getCredentials(), bat.getXsrfToken());
 			NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
 			res.setHeader("SET-COOKIE", cookie.toString());
 		}

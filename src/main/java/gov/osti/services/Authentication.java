@@ -11,11 +11,13 @@ import javax.ws.rs.core.Response;
 
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.subject.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.osti.entity.User;
 import gov.osti.security.DOECodeCrypt;
 
 @Path("authentication")
@@ -34,15 +36,10 @@ public Authentication() {
 public Response check() {
 
 	Subject subject = SecurityUtils.getSubject();
-    System.out.println(subject.getPrincipal() + " " + subject.isAuthenticated());
+	User currentUser = (User) subject.getPrincipal();
+    System.out.println(subject.isAuthenticated());
 
-    try {
-    	subject.checkRole("Admin");
-    	System.out.println("Easy Win");
-    } catch (AuthorizationException e) {
-    	System.out.println(e);
-    }
-
-    return Response.status(Response.Status.OK).build();
+	System.out.println("Checked");
+    return Response.ok().build();
 }
 }

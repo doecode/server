@@ -1,18 +1,15 @@
 package gov.osti.security;
 
-import java.util.HashSet;
-
-import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.SimpleAccount;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
-import org.apache.shiro.subject.Subject;
+
+import gov.osti.entity.User;
 
 public class BearerTokenRealm extends AuthorizingRealm {
 
@@ -37,30 +34,29 @@ public class BearerTokenRealm extends AuthorizingRealm {
 		}
 	}
 	public BearerTokenRealm() {
+		
 		setAuthenticationTokenClass(BearerAuthenticationToken.class);
 	}
 	
 	@Override
 	protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
-		System.out.println("hello?");
-		HashSet<String> roles = new HashSet<>();
-		roles.add("Admin");
-		SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
-		
-		info.setRoles(roles);
+		SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();		
+		User currentUser = (User) principals.asList().get(0);
+		info.setRoles(currentUser.getRoles());
 		return info;
 	}
 
 	@Override
-	protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
+	protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {		
 		return new BearerAuthenticationInfo((BearerAuthenticationToken) token);
-		
 	}
 	
-	//let it pass for the moment
+	//ensure that there was in fact a user
 	@Override
 	protected void assertCredentialsMatch(AuthenticationToken token, AuthenticationInfo info) throws AuthenticationException {
-		System.out.println("Hello there");
+	    User currentUser = (User) token.getPrincipal();
+	    if (currentUser == null)
+	        throw new AuthenticationException("Could not find user");
 	}
 
 	

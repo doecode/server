@@ -29,13 +29,13 @@ import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 
 @Path("user")
-public class Login {
+public class UserServices {
 
-private static Logger log = LoggerFactory.getLogger(Login.class);
+private static Logger log = LoggerFactory.getLogger(UserServices.class);
 private static final PasswordService PASSWORD_SERVICE = new DefaultPasswordService();
 
 	
-public Login() {
+public UserServices() {
 	
 }
 
@@ -45,9 +45,9 @@ public Login() {
 @Consumes (MediaType.APPLICATION_JSON)
 @Path ("/login")
 public Response login(String object) {
-	
+	System.out.println("Logging in");
 	ObjectMapper mapper = new ObjectMapper();
-	//ObjectNode returnNode = mapper.createObjectNode();
+	ObjectNode returnNode = mapper.createObjectNode();
 	JsonNode node = null;
 	try {
 		node = mapper.readTree(object);
@@ -62,28 +62,26 @@ public Response login(String object) {
     //String encryptedPassword = PASSWORD_SERVICE.encryptPassword(password);
     EntityManager em = DoeServletContextListener.createEntityManager();
     try {        
-        TypedQuery<User> getUserByUserName = em.createQuery("SELECT u FROM User u WHERE u.email = ?1", User.class);
-        currentUser = getUserByUserName.setParameter(1, email).getSingleResult();
+    	currentUser = em.find(User.class, email);
     } catch ( Exception e ) {
-        log.warn("Error Retrieving User: " + e.getMessage());
+        log.warn("Error Retrieving User",e);
         System.out.println(e);
-        throw new InternalServerErrorException("IO Error: " + e.getMessage());
+        throw new InternalServerErrorException(e.getMessage());
     } finally {
         em.close();  
     }
     
     if (currentUser == null || !PASSWORD_SERVICE.passwordsMatch(password, currentUser.getPassword())) {
     	//no user matched, return with error
-    	return Response.status(403).build();
+    	return Response.status(401).build();
     }
     
     
 	String xsrfToken = DOECodeCrypt.nextRandomString();
 	String accessToken = DOECodeCrypt.generateJWT(currentUser.getApiKey(), xsrfToken);
-	String xsrfTokenJson = "{\"xsrfToken\": \"" + xsrfToken + "\" }";
 	NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
-	System.out.println(accessToken);
-        return Response.ok(xsrfTokenJson).cookie(cookie).build();
+	
+    return Response.ok(returnNode.put("xsrfToken", xsrfToken).toString()).cookie(cookie).build();
 
 }
 
@@ -100,8 +98,7 @@ public Response register(String object) {
 		try {
 			node = mapper.readTree(object);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error in register: ",e);
 		}
 		
 		String email = node.get("email").asText();
@@ -111,16 +108,14 @@ public Response register(String object) {
 		
 		
 		if (!StringUtils.equals(password, confirmPassword)) {
-			
-			//returnNode.put
-			//return that they don't match...
+			return Response.status(400).entity(returnNode.put("errors", "Password Not Matching").toString()).build();
 		}
 		String encryptedPassword = PASSWORD_SERVICE.encryptPassword(password);
 		
-		//check if the email is related to a valid site and assign site ID
+		//check if the email is related to a valid site and assign site ID, for now just hardcoding as ORNL
 		String siteId = "ORNL";
 		
-		String apiKey = DOECodeCrypt.nextRandomString();
+		String apiKey = DOECodeCrypt.nextUniqueString();
 		
 		HashSet<String> roles = new HashSet<>();
 		roles.add("Admin");
@@ -134,21 +129,18 @@ public Response register(String object) {
             
             em.persist(newUser);
           
-            // commit it
             em.getTransaction().commit();
             
             System.out.println("Completed register");
-        	String apiKeyJson = "{\"apiKey\": \"" + newUser.getApiKey() + "\" }";
-            // we are done here
-            return Response.ok(apiKeyJson).build();
+            return Response.ok(returnNode.put("apiKey", newUser.getApiKey()).toString()).build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
             System.out.println(e);
             //we'll deal with duplicate user name here as well...
-            log.warn("Persistence Error Registering User: " + e.getMessage());
-            throw new InternalServerErrorException("IO Error: " + e.getMessage());
+            log.error("Persistence Error Registering User", e);
+            throw new InternalServerErrorException(e.getMessage());
         } finally {
             em.close();  
         }

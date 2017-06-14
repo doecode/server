@@ -13,20 +13,21 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
 public class DOECodeCrypt {
-	private static final long minute = 60000;
-	private static final long timeout = 30;
+
     private static final SecureRandom random = new SecureRandom();
 
     public static String nextRandomString() {
         return new BigInteger(130, random).toString(32);
     }
 	
+    public static String nextUniqueString() {
+    	return nextRandomString() + "x" +  System.currentTimeMillis(); 
+    }
 	public static String generateJWT(String userID, String xsrfToken) {
 		
-		   Calendar date = Calendar.getInstance();
-		   long time = date.getTimeInMillis();
-		   Date expiration = new Date(time + (timeout * minute));
-	       return Jwts.builder().setIssuer("doecode").claim("xsrfToken", xsrfToken).setSubject(userID).setExpiration(expiration).signWith(SignatureAlgorithm.HS256,"Secret").compact();
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.MINUTE, 30);
+	    return Jwts.builder().setIssuer("doecode").claim("xsrfToken", xsrfToken).setSubject(userID).setExpiration(c.getTime()).signWith(SignatureAlgorithm.HS256,"Secret").compact();
 	       
 		
 	}
