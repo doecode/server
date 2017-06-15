@@ -1,6 +1,5 @@
 package gov.osti.entity;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.ElementCollection;
@@ -16,11 +15,12 @@ public class User {
 		
 	}
 	
-	public User(String email, String password, String apiKey, String siteId) {
+	public User(String email, String password, String apiKey, String siteId, String confirmationCode) {
 		this.password = password;
 		this.apiKey = apiKey;
 		this.email = email;
 		this.siteId = siteId;
+		this.confirmationCode = confirmationCode;
 	}
 	
     @Id
@@ -30,12 +30,17 @@ public class User {
 	
 	private String apiKey = null;
 	
-
+	private String confirmationCode = null;
 	
 	private String siteId = null;
 	
+	private boolean verified = false;
+	
 	@ElementCollection
 	private Set<String> roles = null;
+	
+	@ElementCollection 
+	private Set<String> pendingRoles = null;
 
 	public String getPassword() {
 		return password;
@@ -51,6 +56,15 @@ public class User {
 
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
+	}
+	
+
+	public String getConfirmationCode() {
+		return confirmationCode;
+	}
+
+	public void setConfirmationCode(String confirmationCode) {
+		this.confirmationCode = confirmationCode;
 	}
 
 	public String getEmail() {
@@ -69,13 +83,31 @@ public class User {
 		this.siteId = siteId;
 	}
 
+	public boolean isVerified() {
+		return verified;
+	}
+
+	public void setVerified(boolean verified) {
+		this.verified = verified;
+	}
+
 	public Set<String> getRoles() {
 		return roles;
 	}
 
-	public void setRoles(HashSet<String> roles) {
+	public void setRoles(Set<String> roles) {
 		this.roles = roles;
 	}
+
+	public Set<String> getPendingRoles() {
+		return pendingRoles;
+	}
+
+	public void setPendingRoles(Set<String> pendingRoles) {
+		this.pendingRoles = pendingRoles;
+	}
+	
+	
 	
 	
 	

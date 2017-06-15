@@ -116,7 +116,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		HttpServletResponse res = (HttpServletResponse) response;
 		BearerAuthenticationToken bat = (BearerAuthenticationToken) token;
 		if (StringUtils.isNotBlank(bat.getXsrfToken())) {
-			String accessToken = DOECodeCrypt.generateJWT((String) bat.getCredentials(), bat.getXsrfToken());
+			String accessToken = DOECodeCrypt.generateLoginJWT((String) bat.getCredentials(), bat.getXsrfToken());
 			NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
 			res.setHeader("SET-COOKIE", cookie.toString());
 		}

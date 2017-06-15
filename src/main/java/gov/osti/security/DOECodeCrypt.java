@@ -23,7 +23,7 @@ public class DOECodeCrypt {
     public static String nextUniqueString() {
     	return nextRandomString() + "x" +  System.currentTimeMillis(); 
     }
-	public static String generateJWT(String userID, String xsrfToken) {
+	public static String generateLoginJWT(String userID, String xsrfToken) {
 		
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.MINUTE, 30);
@@ -32,10 +32,17 @@ public class DOECodeCrypt {
 		
 	}
 	
+	public static String generateConfirmationJwt(String confirmationCode, String email) {
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.MINUTE, 30);
+	    return Jwts.builder().setIssuer("doecode").setId(confirmationCode).setSubject(email).setExpiration(c.getTime()).signWith(SignatureAlgorithm.HS256,"Secret").compact();
+	}
+	
 	public static Claims parseJWT(String jwt) {
 		Claims claims = Jwts.parser().setSigningKey("Secret").parseClaimsJws(jwt).getBody();
 		return claims;
 	}
+	
 	
 	public static NewCookie generateNewCookie(String accessToken) {
 		Calendar c = Calendar.getInstance();
