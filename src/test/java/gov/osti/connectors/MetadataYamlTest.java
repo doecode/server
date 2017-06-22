@@ -154,7 +154,6 @@ public class MetadataYamlTest {
         assertEquals("recipient org wrong", "DOE OSTI", metadata.getRecipientOrg());
         assertEquals("Accession number wrong", "384983", metadata.getSiteAccessionNumber());
         assertEquals("other requirements wrong", "none", metadata.getOtherSpecialRequirements());
-        assertEquals("related software wrong", "linux, github, bitbucket", metadata.getRelatedSoftware());
         
         // check sponsoring orgs
         List<SponsoringOrganization> sponsors = metadata.getSponsoringOrganizations();
@@ -210,7 +209,7 @@ public class MetadataYamlTest {
         assertEquals("Org name is wrong", "ORNL", reorg.getOrganizationName());
         assertTrue  ("Should be DOE", reorg.isDOE());
         
-        Date issue_date = metadata.getDateOfIssuance();
+        Date issue_date = metadata.getReleaseDate();
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
         
         assertNotNull("Date is missing", issue_date);

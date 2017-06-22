@@ -114,7 +114,7 @@ public class OstiMetadata {
         }
         setDoeContractNumbers(doenumber.toString());
         setNondoeContractNumbers(nondoenumber.toString());
-        setIssuanceDate(md.getDateOfIssuance());
+        setIssuanceDate(md.getReleaseDate());
         
         setSponsoringOrganization(sponsororgs.toString());
         setDescription(md.getDescription());

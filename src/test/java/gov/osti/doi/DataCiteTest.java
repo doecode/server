@@ -202,7 +202,7 @@ public class DataCiteTest {
 "		\"identifier_value\": \"10.5072/OSTI/2017/1\",\n" +
 "		\"relation_type\": \"IsSourceOf\"\n" +
 "	}],\n" +
-"	\"date_of_issuance\": \"2016-02-03\",\n" +
+"	\"release_date\": \"2016-02-03\",\n" +
 "	\"software_title\": \"doecode/doecode\",\n" +
 "	\"acronym\": \"doecode\",\n" +
             "\"keywords\":\"linux;repository information;reporting requirements\"," +

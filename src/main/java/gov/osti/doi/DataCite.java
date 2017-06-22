@@ -256,8 +256,8 @@ public class DataCite {
         sw.writeEndElement();
         
         sw.writeStartElement("publicationYear");
-        sw.writeCharacters( (null==m.getDateOfIssuance()) ? LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyy")) :
-                date_only.format(m.getDateOfIssuance()));
+        sw.writeCharacters( (null==m.getReleaseDate()) ? LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyy")) :
+                date_only.format(m.getReleaseDate()));
         sw.writeEndElement();
         
         sw.writeStartElement("language");
