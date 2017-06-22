@@ -35,12 +35,17 @@ import org.slf4j.LoggerFactory;
 @Table(name="metadata")
 @JsonIgnoreProperties (ignoreUnknown = true)
 public class DOECodeMetadata implements Serializable {
-    private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -909574677603914304L;
+	private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
 
     // Status values
     public enum Status {
         Saved,
-        Published
+        Published,
+        Submitted
     }
     
     // Attributes
@@ -48,6 +53,10 @@ public class DOECodeMetadata implements Serializable {
     private String siteOwnershipCode = null;
     private Boolean openSource = null;
     private String  repositoryLink = null;
+    private String landingPage = null;
+    private String accessibility = null;
+    
+    private String doiStatus = null;
 
     // set of Access Limitations (Strings)
     private List<String> accessLimitations = new ArrayList<>();
@@ -64,7 +73,7 @@ public class DOECodeMetadata implements Serializable {
     // Child table -- identifiers
     private List<RelatedIdentifier> relatedIdentifiers = new ArrayList<>();
 
-    private Date dateOfIssuance = null;
+    private Date releaseDate = null;
     private String softwareTitle = null;
     private String acronym = null;
     private String doi = null;
@@ -79,7 +88,6 @@ public class DOECodeMetadata implements Serializable {
     private String recipientOrg = null;
     private String siteAccessionNumber = null;
     private String otherSpecialRequirements = null;
-    private String relatedSoftware = null;
     private Status workflowStatus = null;
 
     // Jackson object mapper
@@ -442,14 +450,7 @@ public class DOECodeMetadata implements Serializable {
     public void setOtherSpecialRequirements(String otherSpecialRequirements) {
             this.otherSpecialRequirements = otherSpecialRequirements;
     }
-    @Column (name="RELATED_SOFTWARE")
-    public String getRelatedSoftware() {
-            return relatedSoftware;
-    }
-    public void setRelatedSoftware(String relatedSoftware) {
-            this.relatedSoftware = relatedSoftware;
-    }
-    
+
     /**
      * Obtain the WORKFLOW STATUS on this record (initially New, then Saved; after
      * a record is Published or Submitted, it may no longer be Saved.)
@@ -470,15 +471,45 @@ public class DOECodeMetadata implements Serializable {
         workflowStatus = status;
     }
     
-    public void setDateOfIssuance(Date date) {
-        this.dateOfIssuance = date;
+    public void setReleaseDate(Date date) {
+        this.releaseDate = date;
     }
     
-    @Column (name="date_of_issuance")
+    @Column (name="release_date")
     @Temporal(javax.persistence.TemporalType.DATE)
     @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
-    public Date getDateOfIssuance() {
-        return this.dateOfIssuance;
+    public Date getReleaseDate() {
+        return this.releaseDate;
     }
+
+    @Column (name="LANDING_PAGE")
+	public String getLandingPage() {
+		return landingPage;
+	}
+
+	public void setLandingPage(String landingPage) {
+		this.landingPage = landingPage;
+	}
+
+    @Column (name="DOI_STATUS")
+	public String getDoiStatus() {
+		return doiStatus;
+	}
+
+	public void setDoiStatus(String doiStatus) {
+		this.doiStatus = doiStatus;
+	}
+
+	public String getAccessibility() {
+		return accessibility;
+	}
+
+	public void setAccessibility(String accessibility) {
+		this.accessibility = accessibility;
+	}
+	
+	
+    
+    
         
 }
