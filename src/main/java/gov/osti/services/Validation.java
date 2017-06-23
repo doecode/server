@@ -246,7 +246,8 @@ public class Validation {
                             return Response.status(Response.Status.NOT_FOUND).build();
                         }
                         // call the VALIDATION API to get a response
-                        HttpGet get = new HttpGet(apiHost + "/api/contract/validate/" + URLEncoder.encode(value.trim(), "UTF-8"));
+                        System.out.println(apiHost + "/contract/validate/" + URLEncoder.encode(value.trim(), "UTF-8"));
+                        HttpGet get = new HttpGet(apiHost + "/contract/validate/" + URLEncoder.encode(value.trim(), "UTF-8"));
                         HttpResponse response = hc.execute(get);
                         // get the RESPONSE
                         ApiResponse apiResponse = mapper.readValue(response.getEntity().getContent(), ApiResponse.class);

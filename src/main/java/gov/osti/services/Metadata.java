@@ -3,9 +3,12 @@
 package gov.osti.services;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
 import gov.osti.connectors.GitHub;
@@ -17,7 +20,11 @@ import gov.osti.entity.OstiMetadata;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
@@ -160,6 +167,58 @@ public class Metadata {
         }
     }
     
+    
+    private class RecordsList {
+    	private List<DOECodeMetadata> records;
+    	
+    	RecordsList(List<DOECodeMetadata> records) {
+    		this.records = records;
+    	}
+
+		public List<DOECodeMetadata> getRecords() {
+			return records;
+		}
+
+		public void setRecords(List<DOECodeMetadata> records) {
+			this.records = records;
+		}
+		
+	    public JsonNode toJson() {
+	        return mapper.valueToTree(this);
+	    }
+
+    	
+    	
+    }
+    
+    /**
+     * Look up the METADATA if possible by its codeID value, and return the 
+     * result in the desired format.
+     * 
+     * @param codeId the Metadata codeId to look for
+     * @return the Metadata information in the desired format
+     * @throws JsonProcessingException 
+     */
+    @GET
+    @Path ("/projects")
+    @Produces (MediaType.APPLICATION_JSON)
+    public Response load() throws JsonProcessingException {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+        	TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class);
+        	RecordsList records = new RecordsList(query.setParameter("owner", "example@email.com").getResultList());
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("records", records.toJson()).toString())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+    
+    
+    
     /**
      * Request the AUTOPOPULATE repository information back as a YAML attachment.
      * 
@@ -275,7 +334,7 @@ public class Metadata {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            
+            md.setOwner("example@email.com");
             // set the WORKFLOW STATUS
             md.setWorkflowStatus(Status.Published);
             
@@ -321,9 +380,9 @@ public class Metadata {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            
+            md.setOwner("example@email.com");
             // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Published);
+            md.setWorkflowStatus(Status.Submitted);
             
             // persist this to the database
             store(em, md);
@@ -409,19 +468,21 @@ public class Metadata {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+            md.setOwner("example@email.com");
+            
+            Status saveStatus = Status.Saved;
             
             // if this Entity is already Published, we cannot save
             if (null!=md.getCodeId()) {
                 DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
                 
-                if (null!=emd && Status.Published==emd.getWorkflowStatus())
-                    return Response
-                            .status(Response.Status.BAD_REQUEST)
-                            .entity("Unable to Save a Published Metadata Object.")
-                            .build();
+                if (emd != null && emd.getWorkflowStatus() != null)
+                    saveStatus = emd.getWorkflowStatus(); 
             }
+            
+            
             // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Saved);
+            md.setWorkflowStatus(saveStatus);
 
             // store it
             store(em, md);

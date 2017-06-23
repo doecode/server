@@ -88,6 +88,7 @@ public class DOECodeMetadata implements Serializable {
     private String recipientOrg = null;
     private String siteAccessionNumber = null;
     private String otherSpecialRequirements = null;
+    private String owner = null;
     private Status workflowStatus = null;
 
     // Jackson object mapper
@@ -507,6 +508,16 @@ public class DOECodeMetadata implements Serializable {
 	public void setAccessibility(String accessibility) {
 		this.accessibility = accessibility;
 	}
+
+	public String getOwner() {
+		return owner;
+	}
+
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
+	
+	
 	
 	
     
