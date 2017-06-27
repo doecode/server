@@ -60,6 +60,7 @@ A DOECode metadata Object is expressed as a JSON entity.  Each of the fields mak
 
 #### <a name="persons_fields"></a>Developers and Contributors Fields
 Developers and Contributors are one-to-many Objects within a software project's metadata information.  The fields for each are defined below.
+
 | Field Name | Description |
 | --- | --- |
 | first_name | Person's first, or given, name. |
@@ -71,6 +72,7 @@ Developers and Contributors are one-to-many Objects within a software project's 
 
 #### <a name="organization_fields"></a>Organization Fields
 The software project may specify many different types of organizations, such as Sponsoring, Research, and Contributing Organizations, but each contains similar field name information, as defined below.
+
 | Field Name | Description |
 | ---  | --- |
 | organization_name | The name of the organization. |
