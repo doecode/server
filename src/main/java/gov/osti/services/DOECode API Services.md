@@ -113,8 +113,8 @@ The software project may specify many different types of organizations, such as 
       "identifier_value":"NE-2017-2342"}]},
   {"organization_name":"ORNL",
    "funding_identifiers":[
-     "identifier_type":"AwardNumber",
-     "identifier_value":"ORNL-IDNO-001"}]}],
+     {"identifier_type":"AwardNumber",
+      "identifier_value":"ORNL-IDNO-001"}]}],
 "contributing_organizations":[
   {"organization_Name":"ORNL",
    "contributor_type":"DataManager"},
