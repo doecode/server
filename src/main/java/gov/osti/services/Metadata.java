@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
@@ -20,17 +19,18 @@ import gov.osti.entity.OstiMetadata;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
@@ -39,6 +39,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -102,40 +103,15 @@ public class Metadata {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     
     /**
-     * Look up the METADATA if possible by its codeId; return the result as
-     * a YAML file download.
-     * 
-     * @param codeId the CODE ID to look for
-     * @return YAML of that Metadata, if possible
+     * Transparent link to the API documentation.
+     * @param request the incoming HTTP request
+     * @param response the outgoing HTTP response
+     * @return a Response directing requests to the API documentation page.
      */
     @GET
-    @Path ("/yaml/{codeId}")
-    @Produces ("text/yaml")
-    public Response loadYaml(@PathParam ("codeId") Long codeId) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        
-        try {
-            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
-            
-            if ( null==md )
-                throw new NotFoundException ("ID not on file.");
-            
-            // return the YAML
-            return
-                    Response
-                    .status(Response.Status.OK)
-                    .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                    .entity(HttpUtil.writeMetadataYaml(md))
-                    .build();
-        } catch ( IOException e ) {
-            log.warn("Format conversion error: " + e.getMessage());
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Output conversion error")
-                    .build();
-        } finally {
-            em.close();
-        }
+    @Path ("/docs")
+    public Response getDocumentation(@Context HttpServletRequest request, @Context HttpServletResponse response) {
+        return Response.temporaryRedirect(UriBuilder.fromPath(context.getContextPath() + "/api.html").build()).build();
     }
     
     /**
@@ -147,8 +123,8 @@ public class Metadata {
      */
     @GET
     @Path ("{codeId}")
-    @Produces (MediaType.APPLICATION_JSON)
-    public Response load(@PathParam ("codeId") Long codeId) {
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
+    public Response load(@PathParam ("codeId") Long codeId, @QueryParam ("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
@@ -157,10 +133,27 @@ public class Metadata {
             if ( null==md )
                 throw new NotFoundException ("ID not on file.");
             
-            // send back the JSON
-            return Response
+            // if YAML is requested, return that; otherwise, default to JSON
+            if ("yaml".equals(format)) {
+                // return the YAML
+                return
+                    Response
+                    .status(Response.Status.OK)
+                    .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
+                    .entity(HttpUtil.writeMetadataYaml(md))
+                    .build();
+            } else {
+                // send back the JSON
+                return Response
                     .status(Response.Status.OK)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+            }
+        } catch ( IOException e ) {
+            log.warn("YAML exception: " + e.getMessage());
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Output conversion error")
                     .build();
         } finally {
             em.close();
@@ -217,54 +210,42 @@ public class Metadata {
         }
     }
     
-    
-    
     /**
-     * Request the AUTOPOPULATE repository information back as a YAML attachment.
+     * Call to auto-populate Metadata information via Connector, if possible.
      * 
-     * @param url the repository URL to attempt to read from
-     * @return YAML of the repository information or nothing if not readable
+     * @param url the REPOSITORY URL to look up information from
+     * @param format optionally, the output format ("yaml" supported) JSON is default
+     * @return a Metadata instance in the desired output format if information was found
      */
     @GET
-    @Path ("/autopopulate/yaml")
-    @Produces ("text/yaml")
-    public Response autopopulateYaml(@QueryParam("repo") String url) {
+    @Path ("/autopopulate")
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
+    public Response autopopulate(@QueryParam("repo") String url,
+                                 @QueryParam("format") String format) {
         JsonNode result = factory.read(url);
         
         if (null==result)
             return Response.status(Response.Status.NO_CONTENT).build();
         
-        // if asked for YAML, send it back.
-        // make sure nothing untoward happens converting values
-        try {
+        // if YAML is requested, return that; otherwise, default to JSON output
+        if ("yaml".equals(format)) {
+            try {
             return Response
                     .status(Response.Status.OK)
                     .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
                     .entity(HttpUtil.writeMetadataYaml(result))
                     .build();
-        } catch ( IOException e ) {
-            log.warn("YAML conversion error: " + e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+            } catch ( IOException e ) {
+                log.warn("YAML conversion error: " + e.getMessage());
+                return Response
+                        .status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity("YAML conversion error")
+                        .build();
+            }
+        } else {
+            // send back the default JSON response
+            return Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();
         }
-    }
-    
-    /**
-     * Call to auto-populate Metadata information via Connector, if possible.
-     * 
-     * @param url the REPOSITORY URL to look up information from
-     * @return a Metadata instance in the desired output format if information was found
-     */
-    @GET
-    @Path ("/autopopulate")
-    @Produces (MediaType.APPLICATION_JSON)
-    public Response autopopulate(@QueryParam("repo") String url) {
-        JsonNode result = factory.read(url);
-        
-        if (null==result)
-            return Response.status(Response.Status.NO_CONTENT).build();
-        
-        // send back the default JSON response
-        return Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();
     }
     
     /**

@@ -27,6 +27,7 @@ Metadata Service Endpoints
 `GET` /services/metadata/{codeId}
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
+Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.
 
 ```json 
 { "metadata" : 
@@ -34,17 +35,13 @@ Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON O
 }
 ```
 
-### Retrieve metadata in YAML format
-`GET` /services/metadata/yaml/{codeId}
-
-Retrieve the indicated metadata by its *{codeId}* value, in YAML format.
-
 ### Retrieve information from repository API
 `GET` /services/metadata/autopopulate?repo={url}
 
 Attempt to read information from the given *repository URL* value.  Supports github.com, bitbucket.org, and sourceforge.com. 
 Any relevant information from the repository API will be returned in JSON metadata format.
-Mapped repository information varies according to service API-supplied metadata.
+Mapped repository information varies according to service API-supplied metadata.  Optionally, you may specify
+a query parameter of "format=yaml" to receive YAML file suitable for download.
 
 ### Save metadata information
 `POST` /services/metadata
