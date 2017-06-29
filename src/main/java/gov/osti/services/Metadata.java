@@ -24,9 +24,6 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -39,7 +36,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -50,6 +46,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.glassfish.jersey.server.mvc.Viewable;
 
 /**
  * REST Web Service for Metadata.
@@ -101,17 +98,16 @@ public class Metadata {
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    
+
     /**
-     * Transparent link to the API documentation.
-     * @param request the incoming HTTP request
-     * @param response the outgoing HTTP response
-     * @return a Response directing requests to the API documentation page.
+     * Link to API Documentation template.
+     * 
+     * @return a Viewable API documentation template
      */
     @GET
-    @Path ("/docs")
-    public Response getDocumentation(@Context HttpServletRequest request, @Context HttpServletResponse response) {
-        return Response.temporaryRedirect(UriBuilder.fromPath(context.getContextPath() + "/api.html").build()).build();
+    @Produces (MediaType.TEXT_HTML)
+    public Viewable getDocumentation() {
+        return new Viewable("/docs");
     }
     
     /**

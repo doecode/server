@@ -1,4 +1,11 @@
-<!doctype html>
+<%-- 
+    Document   : DOECode web API documentation template
+    Created on : Jun 29, 2017, 1:02:39 PM
+    Author     : ensornl
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset='utf-8'>
@@ -9,12 +16,12 @@
 
   <!-- Flatdoc -->
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script src='/doecode/js/legacy.js'></script>
-  <script src='/doecode/js/flatdoc.js'></script>
+  <script src='${pageContext.request.contextPath}/js/legacy.js'></script>
+  <script src='${pageContext.request.contextPath}/js/flatdoc.js'></script>
 
   <!-- Flatdoc theme -->
-  <link href="/doecode/css/flatdoc-theme.css" rel="stylesheet">
-  <script src="/doecode/js/flatdoc-theme.js"></script>
+  <link href="${pageContext.request.contextPath}/css/flatdoc-theme.css" rel="stylesheet">
+  <script src="${pageContext.request.contextPath}/js/flatdoc-theme.js"></script>
 
   <!-- Meta -->
   <meta content="DOECode Services API" property="og:title">
