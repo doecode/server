@@ -164,9 +164,9 @@ wget ftp://mirror.reverse.net/pub/apache/maven/maven-3/3.5.0/binaries/apache-mav
 wget http://mirror.stjschools.org/public/apache//db/derby/db-derby-10.13.1.1/db-derby-10.13.1.1-bin.tar.gz
 tar -xzvf apache-maven-3.5.0-bin.tar.gz
 sudo mkdir /opt/Apache
-sudo cp db-derby-10.13.1.1-bin.zip /opt/Apache/
-cd /opt/Apache/
-sudo unzip db-derby-10.13.1.1-bin.zip
+sudo cp db-derby-10.13.1.1-bin.tar.gz /opt/Apache/
+cd /opt/Apache/ 
+sudo tar -xzvf db-derby-10.13.1.1-bin.tar.gz
 ```
 3) Checkout the server code
 ```bash
