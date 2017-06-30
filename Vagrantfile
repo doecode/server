@@ -26,8 +26,6 @@ Vagrant.configure("2") do |config|
     tar -xzvf apache-maven-3.5.0-bin.tar.gz
     tar -xzvf db-derby-10.13.1.1-bin.tar.gz
 
-    # git clone https://github.com/doecode/server  # Not needed due to rsyncing into /vagrant
-
     echo "export DERBY_INSTALL=/opt/apache/db-derby-10.13.1.1-bin" >> ~/.bashrc
 
     nohup /opt/apache/db-derby-10.13.1.1-bin/bin/startNetworkServer &
