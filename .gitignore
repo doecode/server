@@ -4,3 +4,4 @@ nb-configuration.xml
 nbproject/
 /target/
 /bin/
+.vagrant/

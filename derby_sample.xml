@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <profiles>
+        <profile>
+            <id>doecode</id>
+            <properties>
+                <github.apikey>your-key-goes-here</github.apikey>
+                <github.user>username</github.user>
+                <database.url>jdbc:derby://localhost:1527/DOECode;create=true</database.url>
+                <database.driver>org.apache.derby.jdbc.ClientDriver</database.driver>
+                <database.user>toby</database.user>
+                <database.password>keith</database.password>
+                <database.dialect>org.hibernate.dialect.DerbyDialect</database.dialect>
+                <database.schema>doecode</database.schema>
+            </properties>
+        </profile>
+    </profiles>
+</settings>
