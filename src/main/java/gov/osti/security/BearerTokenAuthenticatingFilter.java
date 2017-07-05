@@ -33,9 +33,11 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		//go through cookies and pull out accessToken
 		Cookie[] cookies = req.getCookies();
 		String cookieVal = null;
-		for (Cookie c : cookies) {
-			if (StringUtils.equals(c.getName(),"accessToken"))
-				cookieVal = c.getValue();
+		if (cookies != null) {
+			for (Cookie c : cookies) {
+				if (StringUtils.equals(c.getName(), "accessToken"))
+					cookieVal = c.getValue();
+			}
 		}
 		String authorizationHeader = req.getHeader("Authorization");
 		
@@ -47,11 +49,9 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		String apiKey = null;
 		String xsrfToken = null;
 		if (cookieVal != null) {
-			System.out.println("processing cookie");
 			Claims claims = DOECodeCrypt.parseJWT(cookieVal);
 			xsrfToken = (String) claims.get("xsrfToken");
 			String xsrfHeader = req.getHeader("X-XSRF-TOKEN");
-			System.out.println(xsrfToken);
 			
 			if (!StringUtils.equals(xsrfHeader,xsrfToken)) {
 				throw new AuthenticationException("XSRF Tokens did not match");			
@@ -90,13 +90,10 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	
 	}
 	
-	//for now, throw an unauthorized and let the front end handle it
+	//on failure, we let it through to the endpoints. We assume they are correctly checking for authentication.
 	@Override
 	protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
-		System.out.println("Denied access");
-		HttpServletResponse res = (HttpServletResponse) response;
-		res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-		return false;
+		return true;
 	}
 	
 	@Override	
@@ -115,6 +112,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	protected boolean onLoginSuccess(AuthenticationToken token, Subject subject, ServletRequest request, ServletResponse response) throws Exception {
 		HttpServletResponse res = (HttpServletResponse) response;
 		BearerAuthenticationToken bat = (BearerAuthenticationToken) token;
+		//only reissue cookie if it has an XSRF token e.g. means this was a cookie request
 		if (StringUtils.isNotBlank(bat.getXsrfToken())) {
 			String accessToken = DOECodeCrypt.generateLoginJWT((String) bat.getCredentials(), bat.getXsrfToken());
 			NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
