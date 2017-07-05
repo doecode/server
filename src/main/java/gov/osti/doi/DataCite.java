@@ -11,14 +11,27 @@ import gov.osti.entity.Developer;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.SponsoringOrganization;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Properties;
+import javax.ws.rs.core.HttpHeaders;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +43,42 @@ import org.slf4j.LoggerFactory;
 public class DataCite {
     // logger
     private static Logger log = LoggerFactory.getLogger(DataCite.class);
+    // DataCite API base request URL
+    private static final String DATACITE_URL = "https://mds.datacite.org/";
+    private static String DATACITE_LOGIN = "";
+    private static String DATACITE_PASSWORD = "";
+    private static String DATACITE_BASE_URL = "";
 
-    
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    
+    /**
+     * Initialize the DataCite API parameters.
+     * 
+     * @throws IOException on properties load errors
+     */
+    public static void init() throws IOException {
+        Properties config = new Properties();
+        InputStream in = null;
+        
+        try {
+            // read the properties file from the class path
+            in = DataCite.class.getResourceAsStream("datacite.properties");
+            config.load(in);
+            // if values are not set, default to blank
+            DATACITE_LOGIN = config.getProperty("datacite.user", "");
+            DATACITE_PASSWORD = config.getProperty("datacite.password", "");
+            DATACITE_BASE_URL = config.getProperty("datacite.baseurl", "");
+            // handle default substitutions
+            if (DATACITE_LOGIN.startsWith("$")) DATACITE_LOGIN = "";
+            if (DATACITE_PASSWORD.startsWith("$")) DATACITE_PASSWORD = "";
+            if (DATACITE_BASE_URL.startsWith("$")) DATACITE_BASE_URL = "";
+        } finally {
+            if (null!=in) in.close(); in = null;
+        }
+    }
     
     /**
      * Convert a List of Developers into something DataCite can understand.
@@ -212,7 +255,7 @@ public class DataCite {
      * @throws XMLStreamException on XML output errors
      * @return a String of DataCite formatted XML for this Metadata
      */
-    public static String writeMetadata(DOECodeMetadata m) throws IOException, XMLStreamException {
+    protected static String writeMetadata(DOECodeMetadata m) throws IOException, XMLStreamException {
         // if no DOI is supplied, we will create one
         if (null==m.getDoi()) {
             throw new IOException ("DOI not set properly.");
@@ -297,4 +340,115 @@ public class DataCite {
         return out.toString();
     }
     
+    /**
+     * Send a request to DataCite to register DOI metadata information.
+     * 
+     * @param m the DOECodeMetadata object to register with DataCite
+     * @return true if successful, false if not
+     * @throws IOException on HTTP transmissions errors
+     */
+    private static boolean registerMetadata(DOECodeMetadata m) throws IOException {
+        // set some reasonable default timeouts
+        RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
+        // create an HTTP client to request through
+        CloseableHttpClient hc = 
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(rc)
+                .build();
+        
+        try {
+            // create an API authenticated request to send METADATA
+            HttpPost request = new HttpPost(DATACITE_URL + "/metadata");
+            String authentication = DATACITE_LOGIN + ":" + DATACITE_PASSWORD;
+            byte[] encoded = Base64.encodeBase64(authentication.getBytes(Charset.forName("ISO-8859-1")));
+            request.addHeader(HttpHeaders.AUTHORIZATION, "Basic " + new String(encoded));
+            request.setHeader(HttpHeaders.ACCEPT, "application/xml");
+            request.setHeader(HttpHeaders.CONTENT_TYPE, "application/xml; charset=UTF-8");
+            
+            request.setEntity(new StringEntity(writeMetadata(m)));
+            
+            // 201 CREATED is the only successful API response
+            HttpResponse response = hc.execute(request);
+            int status_code = response.getStatusLine().getStatusCode();
+            if ( HttpStatus.SC_CREATED==status_code ) 
+                return true;
+            // otherwise, read the reason why
+            log.warn("DOI request failed, response code=" + status_code);
+            log.warn("Message: " + EntityUtils.toString(response.getEntity()));
+        } catch ( XMLStreamException e ) {
+            log.warn("XML metadata error: " + e.getMessage());
+        } finally {
+            hc.close();
+        }
+        // failed to post DOI information
+        return false;
+    }
+    
+    /**
+     * Send a request to DataCite to translate a DOI value to a URL to resolve.
+     * 
+     * @param m the DOECodeMetadata Object to register with DataCite
+     * @return true if successful, false if not
+     * @throws IOException on HTTP transmission errors
+     */
+    private static boolean registerDoi(DOECodeMetadata m) throws IOException {
+        // set some reasonable default timeouts
+        RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
+        // create an HTTP client to request through
+        CloseableHttpClient hc = 
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(rc)
+                .build();
+        
+        try {
+            // send a DOI registration request
+            HttpPost request = new HttpPost(DATACITE_URL + "/doi");
+            String authentication = DATACITE_LOGIN + ":" + DATACITE_PASSWORD;
+            byte[] encoded = Base64.encodeBase64(authentication.getBytes(Charset.forName("ISO-8859-1")));
+            request.addHeader(HttpHeaders.AUTHORIZATION, "Basic " + new String(encoded));
+            request.setHeader(HttpHeaders.ACCEPT, "text/plain");
+            request.setHeader(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8");
+            
+            request.setEntity(new StringEntity("doi=" + m.getDoi() + "\nurl=" + DATACITE_BASE_URL + m.getCodeId() + "\n"));
+            
+            HttpResponse response = hc.execute(request);
+            int status_code = response.getStatusLine().getStatusCode();
+            
+            if ( HttpStatus.SC_CREATED==status_code )
+                return true;
+            
+            // if we failed, explain why
+            log.warn("DOI URL request failed, response code=" + status_code);
+            log.warn("Message: " + EntityUtils.toString(response.getEntity()));
+        } finally {
+            hc.close();
+        }
+        
+        // failed to post DOI URL
+        return false;
+    }
+    
+    /**
+     * Register DOI information with DataCite.
+     * 
+     * If DataCite information is not configured, or the register contains no
+     * DOI value, this call is skipped.
+     * 
+     * @param m the DOECodeMetadata object to register
+     * @return true if successful, false if not
+     * @throws IOException on HTTP transmission errors
+     */
+    public static boolean register(DOECodeMetadata m) throws IOException {
+        // if not configured, ignore this call
+        if ("".equals(DATACITE_LOGIN))
+            return true;
+        // if no DOI is requested, skip this
+        if (null==m.getDoi())
+            return true;
+        
+        // try the registration, returning success or failure
+        return (registerMetadata(m) && registerDoi(m));
+    }
 }
