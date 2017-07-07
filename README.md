@@ -22,6 +22,10 @@ ${serviceapi.host} | base URL for validation services
 ${publishing.host} | base URL for submitting final metadata to OSTI (via /submit API)
 ${datacite.username} | (optional) DataCite user account name for registering DOIs
 ${datacite.password} | (optional) DataCite account password for DOI registration
+${datacite.baseurl} | (optional) DataCite base URL prefix to use for DOI registration
+
+If optional parameters, such as the DataCite settings, are left blank, those features
+will not apply.
 
 Execute the back-end via:
 
@@ -49,22 +53,16 @@ The value of ${database.driver} is org.apache.derby.jdbc.EmbeddedDriver for Derb
 
 `GET /services/metadata/{ID}`
 
-Retrieves a specified Metadata by its unique ID value, in JSON format.
-
-`GET /services/metadata/yaml/{ID}`
-
-Retrieve a specified Metadata by its unique ID value, in YAML format.
+Retrieves a specified Metadata by its unique ID value, in JSON format.  Optionally,
+you may supply a URL parameter "format=yaml" to obtain the output in YAML format.
 
 `GET /services/metadata/autopopulate?repo={URL}`
 
 Calls the Connector services to attempt to scrape/auto-populate metadata information
 if possible by deriving the appropriate repository from the URL.  Empty JSON is
 returned if the determination cannot be made or the project does not exist or
-is otherwise inaccessible.
-
-`GET /services/metadata/autopopulate/yaml?repo={URL}`
-
-As above, but returns YAML.
+is otherwise inaccessible.  You may specify an additional URL parameter of "format=yaml"
+to obtain the output in YAML format.
 
 `POST /services/metadata`
 

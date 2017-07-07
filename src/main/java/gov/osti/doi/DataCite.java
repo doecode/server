@@ -65,7 +65,7 @@ public class DataCite {
         
         try {
             // read the properties file from the class path
-            in = DataCite.class.getResourceAsStream("datacite.properties");
+            in = DataCite.class.getClassLoader().getResourceAsStream("datacite.properties");
             config.load(in);
             // if values are not set, default to blank
             DATACITE_LOGIN = config.getProperty("datacite.user", "");
@@ -299,7 +299,7 @@ public class DataCite {
         sw.writeEndElement();
         
         sw.writeStartElement("publicationYear");
-        sw.writeCharacters( (null==m.getReleaseDate()) ? LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyy")) :
+        sw.writeCharacters( (null==m.getReleaseDate()) ? LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy")) :
                 date_only.format(m.getReleaseDate()));
         sw.writeEndElement();
         
@@ -336,7 +336,7 @@ public class DataCite {
         sw.writeEndElement();
         
         sw.writeEndDocument();
-        
+        log.info(out.toString());
         return out.toString();
     }
     

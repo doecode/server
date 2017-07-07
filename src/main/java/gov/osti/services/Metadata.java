@@ -13,12 +13,15 @@ import gov.osti.connectors.ConnectorFactory;
 import gov.osti.connectors.GitHub;
 import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
+import gov.osti.doi.DataCite;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Status;
+import gov.osti.entity.Developer;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -36,6 +39,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -47,6 +51,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 /**
  * REST Web Service for Metadata.
@@ -84,6 +89,8 @@ public class Metadata {
                 .add(new SourceForge())
                 .add(new BitBucket())
                 .build();
+        // start up DataCite services
+        DataCite.init();
         } catch ( IOException e ) {
             log.warn("Unable to start ConnectorFactory: " + e.getMessage());
         }
@@ -115,6 +122,8 @@ public class Metadata {
      * result in the desired format.
      * 
      * @param codeId the Metadata codeId to look for
+     * @param format optionally specify the requested output format (JSON is the
+     * default, or "text/yaml" if YAML desired)
      * @return the Metadata information in the desired format
      */
     @GET
@@ -181,10 +190,8 @@ public class Metadata {
     }
     
     /**
-     * Look up the METADATA if possible by its codeID value, and return the 
-     * result in the desired format.
+     * Acquire a listing of all records by OWNER.
      * 
-     * @param codeId the Metadata codeId to look for
      * @return the Metadata information in the desired format
      * @throws JsonProcessingException 
      */
@@ -251,16 +258,40 @@ public class Metadata {
      * 
      * If the "code ID" is already present in the Object to store, it will 
      * attempt to merge changes; otherwise, a new Object will be instantiated
-     * in the database.
+     * in the database.  Note that any WORKFLOW STATUS present will be preserved,
+     * regardless of the incoming one.
      * 
      * @param em the EntityManager to interface with the persistence layer
      * @param md the Object to store
+     * @throws NotFoundException when record to update is not on file
+     * @throws IllegalAccessException on EntityManager errors
+     * @throws InvocationTargetException on reflection errors
      */
-    private void store(EntityManager em, DOECodeMetadata md) {
-        if ( null==md.getCodeId() || 0==md.getCodeId() )
+    private void store(EntityManager em, DOECodeMetadata md) throws NotFoundException, 
+            IllegalAccessException, InvocationTargetException {
+        // if there's a CODE ID, attempt to look up the record first and 
+        // copy attributes into it
+        if ( null!=md.getCodeId() ) {
+            DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
+            
+            if ( null!=emd ) {
+                // found the record, keep the Status
+                Status currentStatus = emd.getWorkflowStatus();
+                
+                // found it, "merge" Bean attributes
+                BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
+                noNulls.copyProperties(emd, md);
+                emd.setWorkflowStatus(currentStatus); // preserve the Status
+                
+                // EntityManager should handle this attached Object
+            } else {
+                // can't find record to update, that's an error
+                log.warn("Unable to locate record for " + md.getCodeId() + " to update.");
+                throw new NotFoundException("Record Code ID " + md.getCodeId() + " not on file.");
+            }
+        } else {
             em.persist(md);
-        else
-            em.merge(md);
+        }
     }
     
     /**
@@ -318,6 +349,11 @@ public class Metadata {
             // store it
             store(em, md);
             
+            // send to DataCite if needed
+            if ( null!=md.getDoi() ) {
+                if ( !DataCite.register(md) ) 
+                    log.warn("DataCite registration failed for " + md.getDoi());
+            }
             // commit it
             em.getTransaction().commit();
             
@@ -326,7 +362,9 @@ public class Metadata {
                     .status(200)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
-        } catch ( IOException e ) {
+        } catch ( NotFoundException e ) {
+            throw e;
+        } catch ( IOException | IllegalAccessException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
@@ -392,17 +430,10 @@ public class Metadata {
                         log.warn("OSTI Error: " + text);
                         throw new IOException ("OSTI software publication error");
                     }
-                    // the TEXT coming back should contain JSON
-                    JsonNode node = mapper.readTree(text);
-                    JsonNode metadata = node.get("metadata");
-                    if (null!=metadata) {
-                        OstiMetadata m = OstiMetadata.fromJson(new StringReader(metadata.asText()));
-                        // if we have no DOI, get one
-                        if (null==md.getDoi()) {
-                            md.setDoi(m.getDoi());
-                            // save that
-                            em.merge(md);
-                        }
+                    // if appropriate, register or update the DOI with DataCite
+                    if ( null!=md.getDoi() ) {
+                        if ( !DataCite.register(md) )
+                            log.warn("DataCite DOI registration failed.");
                     }
                 } finally {
                     hc.close();
@@ -416,7 +447,9 @@ public class Metadata {
                     .status(200)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
-        } catch ( IOException e ) {
+        } catch ( NotFoundException e ) {
+            throw e;
+        } catch ( IOException | IllegalAccessException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
@@ -445,32 +478,42 @@ public class Metadata {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            md.setOwner("example@email.com");
+            md.setWorkflowStatus(Status.Saved); // default to this
             
-            Status saveStatus = Status.Saved;
-            
-            // if this Entity is already Published, we cannot save
-            if (null!=md.getCodeId()) {
-                DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
-                
-                if (emd != null && emd.getWorkflowStatus() != null)
-                    saveStatus = emd.getWorkflowStatus(); 
-            }
-            
-            
-            // set the WORKFLOW STATUS
-            md.setWorkflowStatus(saveStatus);
-
-            // store it
             store(em, md);
             
+            // we're done here
             em.getTransaction().commit();
+            
+//            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+//            md.setOwner("example@email.com");
+//            
+//            Status saveStatus = Status.Saved;
+//            
+//            // if this Entity is already Published, we cannot save
+//            if (null!=md.getCodeId()) {
+//                DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
+//                
+//                if (emd != null && emd.getWorkflowStatus() != null)
+//                    saveStatus = emd.getWorkflowStatus(); 
+//            }
+//            
+//            
+//            // set the WORKFLOW STATUS
+//            md.setWorkflowStatus(saveStatus);
+//
+//            // store it
+//            store(em, md);
+//            
+//            em.getTransaction().commit();
             
             return Response
                     .status(200)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
-        } catch ( IOException e ) {
+        } catch ( NotFoundException e ) {
+            throw e;
+        } catch ( IOException | IllegalAccessException | InvocationTargetException e ) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
             

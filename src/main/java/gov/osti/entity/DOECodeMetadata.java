@@ -59,19 +59,19 @@ public class DOECodeMetadata implements Serializable {
     private String doiStatus = null;
 
     // set of Access Limitations (Strings)
-    private List<String> accessLimitations = new ArrayList<>();
+    private List<String> accessLimitations;
     
     // Child tables -- persons
-    private List<Developer> developers = new ArrayList<>();
-    private List<Contributor> contributors = new ArrayList<>();
+    private List<Developer> developers;
+    private List<Contributor> contributors;
 
     //  Child tables -- organizations
-    private List<SponsoringOrganization> sponsoringOrganizations = new ArrayList<>();
-    private List<ContributingOrganization> contributingOrganizations = new ArrayList<>();
-    private List<ResearchOrganization> researchOrganizations = new ArrayList<>();
+    private List<SponsoringOrganization> sponsoringOrganizations;
+    private List<ContributingOrganization> contributingOrganizations;
+    private List<ResearchOrganization> researchOrganizations;
 
     // Child table -- identifiers
-    private List<RelatedIdentifier> relatedIdentifiers = new ArrayList<>();
+    private List<RelatedIdentifier> relatedIdentifiers;
 
     private Date releaseDate = null;
     private String softwareTitle = null;
@@ -81,7 +81,7 @@ public class DOECodeMetadata implements Serializable {
     private String countryOfOrigin = null;
     private String keywords = null;
     private String disclaimers = null;
-    private List<String> licenses = new ArrayList<>();
+    private List<String> licenses;
     private String recipientName = null;
     private String recipientEmail = null;
     private String recipientPhone = null;
