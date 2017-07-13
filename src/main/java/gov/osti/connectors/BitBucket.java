@@ -12,6 +12,8 @@ import gov.osti.entity.Developer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +117,7 @@ public class BitBucket implements ConnectorInterface {
             
             // if the "owner" is type "user", that's the only developer we can get
             // if it's a "team", go fetch team information for developers
+            List<Developer> developers = new ArrayList<>();
             if ( "user".equals(response.getOwner().getType()) ) {
                 Developer developer = new Developer();
                 String[] nameParts = parseName(response.getOwner().getDisplayName());
@@ -122,7 +125,7 @@ public class BitBucket implements ConnectorInterface {
                 developer.setFirstName(nameParts[0]);
                 developer.setLastName(nameParts[1]);
                 
-                md.add(developer);
+                developers.add(developer);
             } else if ( "team".equals(response.getOwner().getType()) ) {
                 // skip a step, tack on "/members" to get at the member list
                 MemberList teamList = mapper.readValue(
@@ -136,9 +139,10 @@ public class BitBucket implements ConnectorInterface {
                     developer.setFirstName(nameParts[0]);
                     developer.setLastName(nameParts[1]);
                     
-                    md.add(developer);
+                    developers.add(developer);
                 }
             }
+            md.setDevelopers(developers);
             // send back the metadata we read
             return md.toJson();
         } catch ( IOException e ) {

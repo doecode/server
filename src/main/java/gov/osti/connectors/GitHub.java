@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
@@ -52,7 +54,7 @@ public class GitHub implements ConnectorInterface {
         InputStream stream = null;
         
         try { 
-            stream = GitHub.class.getClassLoader().getResourceAsStream("github-connector.properties");
+            stream = GitHub.class.getClassLoader().getResourceAsStream("doecode.properties");
             config.load(stream);
             
             // default values to empty String if not present
@@ -166,6 +168,7 @@ public class GitHub implements ConnectorInterface {
                 HttpGet contributor_request = gitHubAPIGet(response.getContributorsUrl());
                 Contributor[] contributors = mapper.readValue(HttpUtil.fetch(contributor_request), Contributor[].class);
 
+                List<Developer> developers = new ArrayList<>();
                 for ( Contributor contributor : contributors ) {
                     Developer developer = new Developer();
                     if (null!=contributor.getUrl()) {
@@ -191,9 +194,10 @@ public class GitHub implements ConnectorInterface {
                                 developer.setLastName(user.getName().substring(lastSpace+1));
                             }
                         }
-                        md.add(developer);
+                        developers.add(developer);
                     }
                 }
+                md.setDevelopers(developers);
             }
             return md.toJson();
         } catch ( IOException e ) {

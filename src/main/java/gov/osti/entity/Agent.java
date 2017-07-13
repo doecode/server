@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 public class Agent implements Serializable {
     private static Logger log = LoggerFactory.getLogger(Agent.class);
     private Long agentId = 0L;
-    private Integer place = 0;
     private String email = "";
     private String affiliations = "";
     private String orcid = "";
@@ -92,13 +91,5 @@ public class Agent implements Serializable {
     public void setOrcid(String orcid) {
             this.orcid = orcid;
     }
-
-    public Integer getPlace() {
-            return place;
-    }
-
-    public void setPlace(Integer place) {
-            this.place = place;
-    }
-	
+    	
 }

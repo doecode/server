@@ -109,6 +109,7 @@ public class SourceForge implements ConnectorInterface {
              md.setLicenses(license_values);
 
              Person[] developers = response.getDevelopers();
+             List<Developer> devs = new ArrayList<>();
 
              for ( Person developer : developers ) {
                  int space = developer.getName().indexOf(" ");
@@ -119,9 +120,9 @@ public class SourceForge implements ConnectorInterface {
                      dev.setFirstName(developer.getName().substring(0, space));
                      dev.setLastName(developer.getName().substring(space+1));
                  }
-                 md.add(dev);
+                 devs.add(dev);
              }
-             
+             md.setDevelopers(devs);
              return md.toJson();
          } catch ( IOException e ) {
              // here's where we warn log error messages

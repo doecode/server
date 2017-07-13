@@ -96,21 +96,17 @@ public class MetadataYamlTest {
             if ("Jay Jay".equals(d.getFirstName())) {
                 assertEquals("Last name wrong", "Billings", d.getLastName());
                 assertEquals("Affiliations wrong", "Oak Ridge National Laboratory", d.getAffiliations());
-                assertEquals("place is wrong", new Integer(1), d.getPlace());
             } else if ("Knight".equals(d.getLastName())) {
                 assertEquals("First name wrong", "Katie", d.getFirstName());
                 assertEquals("Email wrong", "knight.kathryn@gmail.com", d.getEmail());
                 assertEquals("Affiliations wrong", "Oak Ridge National Laboratory", d.getAffiliations());
-                assertEquals("Place is wrong", new Integer(2), d.getPlace());
             } else if ("Ensor".equals(d.getLastName())) {
                 assertEquals("First name wrong", "Neal", d.getFirstName());
                 assertEquals("email wrong", "ensorn@osti.gov", d.getEmail());
-                assertEquals("Place is wrong", new Integer(3), d.getPlace());
             } else if ("Welsch".equals(d.getLastName())) {
                 assertEquals("First name wrong", "Thomas", d.getFirstName());
                 assertEquals("Affiliation wrong", "Information International Associates (Contractor to DOE)", d.getAffiliations());
                 assertEquals("email wrong", "welscht@osti.gov", d.getEmail());
-                assertEquals("place is wrong", new Integer(4), d.getPlace());
             } else {
                 fail ("Unknown developer found: " + d.getLastName());
             }

@@ -65,7 +65,7 @@ public class DataCite {
         
         try {
             // read the properties file from the class path
-            in = DataCite.class.getClassLoader().getResourceAsStream("datacite.properties");
+            in = DataCite.class.getClassLoader().getResourceAsStream("doecode.properties");
             config.load(in);
             // if values are not set, default to blank
             DATACITE_LOGIN = config.getProperty("datacite.user", "");

@@ -305,90 +305,35 @@ public class DOECodeMetadata implements Serializable {
     }
 
     /**
-     * Add a single Developer to the in-memory items; if place is not set,
-     * set it to the end of the current list.
-     *
-     * @param d the Developer to add
-     * @return the Object we just added
+     * Set the ContributingOrganization List
+     * @param list the List to set
      */
-    public Developer add(Developer d) {
-        if (0==d.getPlace())
-            d.setPlace(developers.size()+1);
-
-        developers.add(d);
-
-        return d;
-    }
-
-    public ResearchOrganization add(ResearchOrganization o) {
-        if (0==o.getPlace())
-            o.setPlace(researchOrganizations.size()+1);
-
-        researchOrganizations.add(o);
-
-        return o;
-    }
-
-    public SponsoringOrganization add(SponsoringOrganization o) {
-        if (0==o.getPlace())
-            o.setPlace(sponsoringOrganizations.size()+1);
-
-        sponsoringOrganizations.add(o);
-
-        return o;
-    }
-
-    public ContributingOrganization add(ContributingOrganization o) {
-        if (0==o.getPlace())
-            o.setPlace(contributingOrganizations.size()+1);
-
-        contributingOrganizations.add(o);
-
-        return o;
-    }
-
-    public Contributor add(Contributor c) {
-        if (0==c.getPlace())
-            c.setPlace(contributors.size()+1);
-
-        contributors.add(c);
-
-        return c;
-    }
-
     public void setContributingOrganizations(List<ContributingOrganization> list) {
-        Integer place = 0;
-        for ( ContributingOrganization o : list ) {
-            if (0==o.getPlace())
-                o.setPlace(++place);
-        }
         this.contributingOrganizations = list;
     }
 
+    /**
+     * Set the ResearchOrganization List
+     * @param list the List to set
+     */
     public void setResearchOrganizations(List<ResearchOrganization> list) {
-        Integer place = 0;
-        for ( ResearchOrganization o : list ) {
-            if (0==o.getPlace())
-                o.setPlace(++place);
-        }
         this.researchOrganizations = list;
     }
 
+    /**
+     * Set the SponsoringOrganization List.
+     * @param list the List to set
+     */
     public void setSponsoringOrganizations(List<SponsoringOrganization> list) {
-        Integer place = 0;
-        for ( SponsoringOrganization o : list ) {
-            if (0==o.getPlace())
-                o.setPlace(++place);
-        }
         this.sponsoringOrganizations = list;
     }
 
+    /**
+     * Associate the List of Contributor Objects to this metadata.
+     * 
+     * @param list the List of Contributor items.
+     */
     public void setContributors(List<Contributor> list) {
-        Integer place = 0;
-        for ( Contributor c : list ) {
-            if (0==c.getPlace())
-                c.setPlace(++place);
-        }
         this.contributors = list;
     }
 
@@ -398,13 +343,7 @@ public class DOECodeMetadata implements Serializable {
      * @param devlist a List of Developers to set
      */
     public void setDevelopers(List<Developer> devlist) {
-        // ensure that place is tracked appropriately
-        Integer place = 0;
-        for ( Developer d : devlist ) {
-            if (0==d.getPlace())
-                d.setPlace(++place);
-        }
-            this.developers = devlist;
+        this.developers = devlist;
     }
 
     @Column (name = "RECIPIENT_NAME")

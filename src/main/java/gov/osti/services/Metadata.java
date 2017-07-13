@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
@@ -14,15 +15,18 @@ import gov.osti.connectors.GitHub;
 import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
 import gov.osti.doi.DataCite;
+import gov.osti.entity.Agent;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Status;
-import gov.osti.entity.Developer;
 import gov.osti.entity.OstiMetadata;
+import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Properties;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -51,7 +55,6 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
-import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 /**
  * REST Web Service for Metadata.
@@ -81,8 +84,14 @@ public class Metadata {
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
     
+    // URL to indexer services, if configured
+    private static String INDEX_URL = "";
+    
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
+        Properties config = new Properties();
+        InputStream stream = null;
+        
         try {
         factory = ConnectorFactory.getInstance()
                 .add(new GitHub())
@@ -91,8 +100,20 @@ public class Metadata {
                 .build();
         // start up DataCite services
         DataCite.init();
+        // read the index configuration if present
+        try {
+            stream = Metadata.class.getClassLoader().getResourceAsStream("doecode.properties");
+            config.load(stream);
+            
+            INDEX_URL = config.getProperty("index.url", "");
+            // if property is not set, disable indexing
+            if (INDEX_URL.startsWith("$")) INDEX_URL = "";
+        } finally {
+            if (null!=stream) stream.close(); stream = null;
+        }
+        
         } catch ( IOException e ) {
-            log.warn("Unable to start ConnectorFactory: " + e.getMessage());
+            log.warn("Configuration failure: " + e.getMessage());
         }
     }
     
@@ -102,9 +123,19 @@ public class Metadata {
     public Metadata() {
     }
     
+    // ObjectMapper instance for metadata interchange
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    // ObjectMapper specifically for indexing purposes
+    private static final ObjectMapper index_mapper = new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    static {
+        // customized serializer module for Agent names consolidation
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Agent.class, new AgentSerializer());
+        index_mapper.registerModule(module);
+    }
 
     /**
      * Link to API Documentation template.
@@ -165,7 +196,6 @@ public class Metadata {
         }
     }
     
-    
     private class RecordsList {
     	private List<DOECodeMetadata> records;
     	
@@ -204,10 +234,10 @@ public class Metadata {
         try {
         	TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class);
         	RecordsList records = new RecordsList(query.setParameter("owner", "example@email.com").getResultList());
-            return Response
-                    .status(Response.Status.OK)
-                    .entity(mapper.createObjectNode().putPOJO("records", records.toJson()).toString())
-                    .build();
+                    return Response
+                            .status(Response.Status.OK)
+                            .entity(mapper.createObjectNode().putPOJO("records", records.toJson()).toString())
+                            .build();
         } finally {
             em.close();
         }
@@ -322,6 +352,55 @@ public class Metadata {
     }
     
     /**
+     * Attempt to send this Metadata information to the indexing service configured.
+     * If no service is configured, do nothing.
+     * 
+     * @param md the Metadata to send
+     */
+    private static void sendToIndex(DOECodeMetadata md) {
+        // if indexing is not configured, skip this step
+        if ("".equals(INDEX_URL))
+            return;
+        
+        // set some reasonable default timeouts
+        RequestConfig rc = RequestConfig
+                .custom()
+                .setSocketTimeout(5000)
+                .setConnectTimeout(5000)
+                .build();
+        // create an HTTP client to request through
+        CloseableHttpClient hc = 
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(rc)
+                .build();
+        try {
+            // construct a POST submission to the indexer service
+            HttpPost post = new HttpPost(INDEX_URL);
+            post.setHeader("Content-Type", "application/json");
+            post.setHeader("Accept", "application/json");
+            post.setEntity(new StringEntity(index_mapper.writeValueAsString(md)));
+            
+            HttpResponse response = hc.execute(post);
+            
+            if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode() ) {
+                log.warn("Indexing Error occurred for ID=" + md.getCodeId());
+                log.warn("Message: " + EntityUtils.toString(response.getEntity()));
+            } else {
+                log.info("Response OK: " + EntityUtils.toString(response.getEntity()));
+            }
+        } catch ( IOException e ) {
+            log.warn("Indexing Error: " + e.getMessage() + " ID=" + md.getCodeId());
+        } finally {
+            try {
+                if (null!=hc) hc.close();
+            } catch ( IOException e ) {
+                log.warn("Index Close Error: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
      * PUBLISH a Metadata Object; this operation signifies the project is 
      * ready to be posted to DOECode's output search services.  This endpoint
      * DOES NOT transmit the project to OSTI's software services for publication 
@@ -356,6 +435,9 @@ public class Metadata {
             }
             // commit it
             em.getTransaction().commit();
+            
+            // send this information to SOLR as well, if configured
+            sendToIndex(md);
             
             // we are done here
             return Response
@@ -441,6 +523,9 @@ public class Metadata {
             }
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
+            
+            // send it to the indexer
+            sendToIndex(md);
             
             // and we're happy
             return Response

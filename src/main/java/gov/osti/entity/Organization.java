@@ -26,7 +26,6 @@ public class Organization implements Serializable {
     // primary Key
     private Long orgId = 0L;
     // attributes
-    private Integer place = 0;
     private String organizationName;
     @JsonProperty (value="DOE")
     private boolean doe = false;
@@ -74,21 +73,6 @@ public class Organization implements Serializable {
      */
     public void setIsDOE(boolean isDOE) {
         this.doe = isDOE;
-    }
-
-    /**
-     * @return the place
-     */
-    @Column (name = "PLACE")
-    public Integer getPlace() {
-        return place;
-    }
-
-    /**
-     * @param place the place to set
-     */
-    public void setPlace(Integer place) {
-        this.place = place;
     }
     
 }
