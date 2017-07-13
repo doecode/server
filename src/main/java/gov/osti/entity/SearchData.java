@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 public class SearchData implements Serializable {
 
@@ -43,9 +46,9 @@ public class SearchData implements Serializable {
         return mapper.readValue(reader, SearchData.class);
     }
 
-	public String getAllFields() {
-		return allFields;
-	}
+    public String getAllFields() {
+        return allFields;
+    }
 
 	public void setAllFields(String allFields) {
 		this.allFields = allFields;
@@ -124,15 +127,82 @@ public class SearchData implements Serializable {
 	}
 
 	public String getSort() {
-		return sort;
+            return (null==sort) ? "" : sort;
 	}
 
 	public void setSort(String sort) {
 		this.sort = sort;
 	}
-    
-    
-    
+        
+    /**
+     * Translate this Bean into a SOLR query parameter set.
+     * 
+     * @return a SOLR query parameter "q" for these attributes; default to "*:*"
+     * (everything) if nothing is set
+     */
+    public String toQ() {
+        StringBuilder q = new StringBuilder();
+        DateTimeFormatter SOLR_DATE_FORMAT = DateTimeFormatter.ISO_INSTANT;
+        
+        if (null!=getAllFields()) {
+            if (q.length()>0) q.append(" ");
+            q.append("_text_:(").append(getAllFields()).append(")");
+        }
+        if (null!=getAvailability()) {
+            if (q.length()>0) q.append(" ");
+            q.append("accessibility:").append(getAvailability());
+        }
+        if (null!=getBiblioData()) {
+            if (q.length()>0) q.append(" ");
+            q.append("_text_:(").append(getBiblioData()).append(")");
+        }
+        if (null!=getDevelopersContributors()) {
+            if (q.length()>0) q.append(" ");
+            q.append("_names:(").append(getDevelopersContributors()).append(")");
+        }
+        if (null!=getIdentifiers()) {
+            if (q.length()>0) q.append(" ");
+            q.append("_id_numbers:(").append(getIdentifiers()).append(")");
+        }
+        if (null!=getResearchOrganization()) {
+            if (q.length()>0) q.append(" ");
+            q.append("researchOrganization.name:(").append(getResearchOrganization()).append(")");
+        }
+        if (null!=getSponsoringOrganization()) {
+            if (q.length()>0) q.append(" ");
+            q.append("sponsoringOrganization.name:(").append(getSponsoringOrganization()).append(")");
+        }
+        if (null!=getSoftwareTitle()) {
+            if (q.length()>0) q.append(" ");
+            q.append("softwareTitle:(").append(getSoftwareTitle()).append(")");
+        }
+        if (null!=getDateEarliest()) {
+            if (q.length()>0) q.append(" ");
+            q.append("releaseDate:[")
+                    .append(SOLR_DATE_FORMAT.format(
+                            getDateEarliest()
+                                    .toInstant()
+                                    .atOffset(ZoneOffset.UTC)
+                                    .withHour(0)
+                                    .withMinute(0)
+                                    .withSecond(0)))
+                    .append(" TO *]");
+        }
+        if (null!=getDateLatest()) {
+            if (q.length()>0) q.append(" ");
+            q.append("releaseDate:[* TO ")
+                    .append(SOLR_DATE_FORMAT.format(
+                    getDateLatest()
+                        .toInstant()
+                        .atOffset(ZoneOffset.UTC)
+                        .withHour(23)
+                        .withMinute(59)
+                        .withSecond(59)))
+                    .append("]");
+        }
+        
+        return (0==q.length()) ? "*:*" : q.toString();
+    }
     
 		
     
