@@ -1,5 +1,6 @@
 package gov.osti.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Serializable;
@@ -11,10 +12,10 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
+@JsonIgnoreProperties ( ignoreUnknown = true )
 public class SearchData implements Serializable {
 
 	private static final long serialVersionUID = 978828434590378134L;
