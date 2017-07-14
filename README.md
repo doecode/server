@@ -23,6 +23,8 @@ ${publishing.host} | base URL for submitting final metadata to OSTI (via /submit
 ${datacite.username} | (optional) DataCite user account name for registering DOIs
 ${datacite.password} | (optional) DataCite account password for DOI registration
 ${datacite.baseurl} | (optional) DataCite base URL prefix to use for DOI registration
+${index.url} | (optional) URL to indexing service (e.g., SOLR)
+${search.url} | (optional) base URL to searching service (SOLR)
 
 If optional parameters, such as the DataCite settings, are left blank, those features
 will not apply.
@@ -203,3 +205,42 @@ sudo /opt/Apache/db-derby-10.13.1.1-bin/bin/startNetworkServer &
 cd ~/server
 ~/apache-maven-3.5.0/bin/mvn -P doecode jetty:run
 ```
+
+## SOLR for Searching and Indexing (Dissemination)
+
+If configured in the deployment profile, Apache SOLR may be used for an indexing and
+searching service for DOECode.  Setting up SOLR distribution package version 6.6.0 
+as a stand-alone service as follows:
+
+1) Download the [SOLR package from Apache](http://http://lucene.apache.org/solr/)
+2) Unpack to desired location on application server.  Change to unpacked folder (e.g., solr-6.6.0) under the distribution.
+3) Start the standalone SOLR service on the desired port:
+```bash
+$ bin/solr start -p *portnumber*
+```
+4) Create a new SOLR core, for example purposes named "doecode":
+```bash
+$ bin/solr create -c doecode -p *portnumber*
+```
+5) Install customized schema.xml and solrconfig.xml files provided in the repository to replace the default values.
+6) Reload the SOLR core to pick up these changes, via curl:
+```bash
+$ curl http://localhost:*portnumber*/solr/admin/cores?action=RELOAD\&core=doecode
+```
+
+SOLR should be ready to use with the back-end.  Configure the ${index.url} and ${search.url} appropriately and 
+redeploy/restart the back-end services.  Any records POSTed to the /publish and /submit endpoints should automatically
+be indexed by the SOLR server.
+
+${index.url} is usually of the form http://localhost:*portnumber*/solr/doecode/update/json/docs?softCommit=true in order
+to take advantage of SOLR's near-real-time index updates.
+
+${search.url} should be configured to http://localhost:*portnumber*/solr/doecode/query in order to get JSON results back in
+expected formats for the dissemination/searching service.
+
+These values assume that the DOECode back-end is deployed on the same server as the SOLR standalone service.  If not, alter the
+URL host names and ports appropriately.  In order to terminate the SOLR standalone server, issue the command:
+```bash
+$ bin/solr stop
+```
+In the SOLR distribution folder.
