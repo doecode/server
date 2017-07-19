@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonIgnoreProperties ( ignoreUnknown = true )
 public class SearchData implements Serializable {
@@ -36,6 +37,8 @@ public class SearchData implements Serializable {
     private String researchOrganization = null;
     private String sponsoringOrganization = null;
     private String sort = null;
+    private Integer rows;
+    private Integer start;
     
     /**
      * Parses JSON in the request body of the reader into a SearchDaa object.
@@ -145,35 +148,35 @@ public class SearchData implements Serializable {
         StringBuilder q = new StringBuilder();
         DateTimeFormatter SOLR_DATE_FORMAT = DateTimeFormatter.ISO_INSTANT;
         
-        if (null!=getAllFields()) {
+        if (!StringUtils.isEmpty(getAllFields())) {
             if (q.length()>0) q.append(" ");
             q.append("_text_:(").append(getAllFields()).append(")");
         }
-        if (null!=getAvailability()) {
+        if (!StringUtils.isEmpty(getAvailability())) {
             if (q.length()>0) q.append(" ");
             q.append("accessibility:").append(getAvailability());
         }
-        if (null!=getBiblioData()) {
+        if (!StringUtils.isEmpty(getBiblioData())) {
             if (q.length()>0) q.append(" ");
             q.append("_text_:(").append(getBiblioData()).append(")");
         }
-        if (null!=getDevelopersContributors()) {
+        if (!StringUtils.isEmpty(getDevelopersContributors())) {
             if (q.length()>0) q.append(" ");
             q.append("_names:(").append(getDevelopersContributors()).append(")");
         }
-        if (null!=getIdentifiers()) {
+        if (!StringUtils.isEmpty(getIdentifiers())) {
             if (q.length()>0) q.append(" ");
             q.append("_id_numbers:(").append(getIdentifiers()).append(")");
         }
-        if (null!=getResearchOrganization()) {
+        if (!StringUtils.isEmpty(getResearchOrganization())) {
             if (q.length()>0) q.append(" ");
             q.append("researchOrganization.name:(").append(getResearchOrganization()).append(")");
         }
-        if (null!=getSponsoringOrganization()) {
+        if (!StringUtils.isEmpty(getSponsoringOrganization())) {
             if (q.length()>0) q.append(" ");
             q.append("sponsoringOrganization.name:(").append(getSponsoringOrganization()).append(")");
         }
-        if (null!=getSoftwareTitle()) {
+        if (!StringUtils.isEmpty(getSoftwareTitle())) {
             if (q.length()>0) q.append(" ");
             q.append("softwareTitle:(").append(getSoftwareTitle()).append(")");
         }
@@ -204,7 +207,37 @@ public class SearchData implements Serializable {
         
         return (0==q.length()) ? "*:*" : q.toString();
     }
-    
-		
+
+    /**
+     * The number of rows to return in a single page.
+     * @return the rows
+     */
+    public Integer getRows() {
+        return rows;
+    }
+
+    /**
+     * Set the number of rows desired.
+     * @param rows the rows to set
+     */
+    public void setRows(Integer rows) {
+        this.rows = rows;
+    }
+
+    /**
+     * The starting row number (0-based).
+     * @return the start row number
+     */
+    public Integer getStart() {
+        return start;
+    }
+
+    /**
+     * Set the starting row number of results (0-based)
+     * @param start the start to set
+     */
+    public void setStart(Integer start) {
+        this.start = start;
+    }
     
 }

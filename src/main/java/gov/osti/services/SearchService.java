@@ -100,6 +100,11 @@ public class SearchService {
         URIBuilder builder = new URIBuilder(SEARCH_URL)
                 .addParameter("q", searchFor.toQ())
                 .addParameter("sort", searchFor.getSort());
+        // if values are specified for rows and start, supply those.
+        if (null!=searchFor.getRows())
+            builder.addParameter("rows", String.valueOf(searchFor.getRows()));
+        if (null!=searchFor.getStart())
+            builder.addParameter("start", String.valueOf(searchFor.getStart()));
         
         HttpGet get = new HttpGet(builder.build());
         
