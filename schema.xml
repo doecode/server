@@ -441,14 +441,14 @@
   <field name="_id_numbers" type="text_general" multiValued="true" 
    indexed="true" stored="false"/>
   <field name="_names" type="text_general" multiValued="true"
-   indexed="true" stored="false"/>
+   indexed="true" stored="true"/>
   <field name="_text_" type="text_general" multiValued="true" 
    indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
 
   <field name="accessLimitations" type="string" multiValued="true" indexed="false" stored="true"/>
   <field name="accessibility" type="string" indexed="true" stored="true"/>
-  <field name="acronym" type="strings"/>
+  <field name="acronym" type="string"/>
   <field name="codeId" type="tlong" 
    indexed="true" required="true" stored="true"/>
   <field name="contributingOrganizations.contributorType" type="strings"/>
@@ -459,16 +459,16 @@
   <field name="countryOfOrigin" type="text_en" indexed="true" stored="true"/>
   <field name="description" type="text_en" indexed="true" stored="true"/>
   <field name="developers.name" type="text_en" multiValued="true" indexed="true" stored="true"/>
-  <field name="doi" type="strings"/>
+  <field name="doi" type="string"/>
   <field name="doiStatus" type="string" indexed="true" stored="true"/>
-  <field name="keywords" type="strings"/>
+  <field name="keywords" type="string"/>
   <field name="licenses" type="string" multiValued="true" indexed="true" stored="true"/>
   <field name="openSource" type="boolean" default="false" indexed="true" stored="true"/>
   <field name="otherSpecialRequirements" type="strings"/>
   <field name="owner" type="string" indexed="true" stored="true"/>
-  <field name="recipientEmail" type="strings"/>
-  <field name="recipientName" type="strings"/>
-  <field name="recipientOrg" type="strings"/>
+  <field name="recipientEmail" type="string"/>
+  <field name="recipientName" type="string"/>
+  <field name="recipientOrg" type="string"/>
   <field name="recipientPhone" type="string" indexed="true" stored="true"/>
   <field name="relatedIdentifiers.description" type="strings"/>
   <field name="relatedIdentifiers.identifierType" type="strings"/>
@@ -476,9 +476,10 @@
   <field name="relatedIdentifiers.relationType" type="strings"/>
   <field name="releaseDate" type="tdate" multiValued="false"/>
   <field name="repositoryLink" type="text_en" indexed="true" stored="true"/>
+  <field name="landingPage" type="text_en" indexed="true" stored="true"/>
   <field name="researchOrganizations.organizationName" type="text_en" multiValued="true" indexed="true" stored="true"/>
-  <field name="siteAccessionNumber" type="strings"/>
-  <field name="siteOwnershipCode" type="strings"/>
+  <field name="siteAccessionNumber" type="string"/>
+  <field name="siteOwnershipCode" type="string"/>
   <field name="softwareTitle" type="text_en" indexed="true" stored="true"/>
   <field name="sponsoringOrganizations.organizationName" 
    type="text_en" multiValued="true" indexed="true" stored="true"/>
