@@ -92,4 +92,13 @@ public class Agent implements Serializable {
             this.orcid = orcid;
     }
     	
+    /**
+     * Generate a "full name" for indexing purposes
+     * 
+     * @return the Agent full name as a String
+     */
+    @Override
+    public String toString() {
+        return getLastName() + ", " + getFirstName() + " " + getMiddleName();
+    }
 }
