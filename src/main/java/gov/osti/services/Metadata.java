@@ -301,7 +301,9 @@ public class Metadata {
             IllegalAccessException, InvocationTargetException {
         // if there's a CODE ID, attempt to look up the record first and 
         // copy attributes into it
-        if ( null!=md.getCodeId() ) {
+        if ( null==md.getCodeId() || 0==md.getCodeId()) {
+            em.persist(md);
+        } else {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
             
             if ( null!=emd ) {
@@ -319,8 +321,6 @@ public class Metadata {
                 log.warn("Unable to locate record for " + md.getCodeId() + " to update.");
                 throw new NotFoundException("Record Code ID " + md.getCodeId() + " not on file.");
             }
-        } else {
-            em.persist(md);
         }
     }
     
