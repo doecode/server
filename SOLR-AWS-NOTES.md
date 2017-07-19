@@ -84,3 +84,31 @@ to allow inbound connections on the port to the desired group(s) or application
 server IPs for the "server" back-end process, which will allow it to index
 and search.
 
+On Schema Changes
+-----------------
+For most schema changes, such as adding new fields, or dropping existing ones,
+a simple SOLR core reload is sufficient.  Simply edit the schema.xml file
+as needed, then issue the reload command:
+```bash
+$ curl http://localhost:{port}/solr/admin/cores?action=RELOAD\&core=doecode
+```
+Then reindex the documents by feeding JSON directly to the index if needed,
+from the command-line, existing JSON documents may be loaded:
+```bash
+$ curl -X POST -H "Content-Type: application/json" --data-binary @file.json http://localhost:8888/solr/doecode/update/json/docs?softCommit=true
+```
+
+However, some changes, such as modification of fields from multivalued to non-,
+will require a complete index rebuild.  If this is the case, it's simplest to
+stop the SOLR service, delete the index folder entirely, then restart it. 
+Assuming you have edited the schema.xml file appropriately, the procedure
+to drop and recreate the SOLR index is:
+```bash
+$ sudo service solr stop
+$ sudo -u solr -i
+[solr] $ cd /var/solr/data/doecode
+[solr] $ rm -rf data
+[solr] $ exit
+$ sudo service solr start
+```
+This will create a new, empty SOLR instance with the new schema.
