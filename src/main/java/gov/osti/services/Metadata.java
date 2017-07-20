@@ -19,6 +19,7 @@ import gov.osti.entity.Agent;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.OstiMetadata;
+import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
@@ -52,6 +53,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authz.annotation.RequiresAuthentication;
+import org.apache.shiro.subject.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
@@ -163,11 +167,23 @@ public class Metadata {
     public Response load(@PathParam ("codeId") Long codeId, @QueryParam ("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
+        Subject subject = SecurityUtils.getSubject();
+        
         try {
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
             
             if ( null==md )
                 throw new NotFoundException ("ID not on file.");
+            
+            // non-Published workflow REQUIRES authentication
+            if (!Status.Published.equals(md.getWorkflowStatus())) {
+                // send back a FORBIDDEN response
+                if (!subject.isAuthenticated()) {
+                    return Response
+                            .status(Response.Status.FORBIDDEN)
+                            .build();
+                }
+            }
             
             // if YAML is requested, return that; otherwise, default to JSON
             if ("yaml".equals(format)) {
@@ -228,12 +244,17 @@ public class Metadata {
     @GET
     @Path ("/projects")
     @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
     public Response load() throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
+        // get the security user in context
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
         try {
         	TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class);
-        	RecordsList records = new RecordsList(query.setParameter("owner", "example@email.com").getResultList());
+        	RecordsList records = new RecordsList(query.setParameter("owner", user.getEmail()).getResultList());
                     return Response
                             .status(Response.Status.OK)
                             .entity(mapper.createObjectNode().putPOJO("records", records.toJson()).toString())
@@ -293,11 +314,14 @@ public class Metadata {
      * 
      * @param em the EntityManager to interface with the persistence layer
      * @param md the Object to store
+     * @param user the User performing this action (must be the OWNER of the
+     * record in order to UPDATE)
      * @throws NotFoundException when record to update is not on file
-     * @throws IllegalAccessException on EntityManager errors
+     * @throws IllegalAccessException when attempting to update record not
+     * owned by User
      * @throws InvocationTargetException on reflection errors
      */
-    private void store(EntityManager em, DOECodeMetadata md) throws NotFoundException, 
+    private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException, 
             IllegalAccessException, InvocationTargetException {
         // if there's a CODE ID, attempt to look up the record first and 
         // copy attributes into it
@@ -307,6 +331,10 @@ public class Metadata {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
             
             if ( null!=emd ) {
+                // must be the OWNER in order to UPDATE
+                if (!user.getEmail().equals(emd.getOwner()))
+                    throw new IllegalAccessException("Invalid access attempt.");
+                
                 // found the record, keep the Status
                 Status currentStatus = emd.getWorkflowStatus();
                 
@@ -406,6 +434,9 @@ public class Metadata {
      * DOES NOT transmit the project to OSTI's software services for publication 
      * there.
      * 
+     * Will return a FORBIDDEN attempt should a User attempt to modify someone
+     * else's record.
+     * 
      * @param object JSON of the DOECodeMetadata object to PUBLISH
      * @return a Response containing the persisted metadata entity in JSON
      * @throws InternalServerErrorException on JSON parsing or other IO errors
@@ -414,19 +445,24 @@ public class Metadata {
     @Consumes ( MediaType.APPLICATION_JSON )
     @Produces ( MediaType.APPLICATION_JSON )
     @Path ("/publish")
+    @RequiresAuthentication
     public Response publish(String object) {
         EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
         
         try {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            md.setOwner("example@email.com");
+            // set the OWNER
+            md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
             md.setWorkflowStatus(Status.Published);
             
             // store it
-            store(em, md);
+            store(em, md, user);
             
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
@@ -446,7 +482,14 @@ public class Metadata {
                     .build();
         } catch ( NotFoundException e ) {
             throw e;
-        } catch ( IOException | IllegalAccessException | InvocationTargetException e ) {
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return Response
+                    .status(Response.Status.FORBIDDEN)
+                    .entity("Invalid Access:  Logged in User not allowed to modify this record.")
+                    .build();
+        } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
@@ -461,6 +504,9 @@ public class Metadata {
      * SUBMIT endpoint; saves Software record to DOECode and sends results to
      * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
      * 
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * the record's OWNER.
+     * 
      * @param object the JSON of the record to PUBLISH/SUBMIT.
      * @return a Response containing the resulting JSON metadata sent to OSTI,
      * including any DOI registered.
@@ -470,19 +516,24 @@ public class Metadata {
     @Consumes ( MediaType.APPLICATION_JSON )
     @Produces ( MediaType.APPLICATION_JSON )
     @Path ("/submit")
+    @RequiresAuthentication
     public Response submit(String object) {
         EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
         
         try {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            md.setOwner("example@email.com");
+            // set the OWNER
+            md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
             md.setWorkflowStatus(Status.Submitted);
             
             // persist this to the database
-            store(em, md);
+            store(em, md, user);
             
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
@@ -534,7 +585,14 @@ public class Metadata {
                     .build();
         } catch ( NotFoundException e ) {
             throw e;
-        } catch ( IOException | IllegalAccessException | InvocationTargetException e ) {
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return Response
+                    .status(Response.Status.FORBIDDEN)
+                    .entity("Invalid Access:  Unable to edit indicated record.")
+                    .build();
+        } catch ( IOException |  InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
@@ -556,41 +614,24 @@ public class Metadata {
     @POST
     @Consumes ( MediaType.APPLICATION_JSON )
     @Produces ( MediaType.APPLICATION_JSON )
+    @RequiresAuthentication
     public Response save(String object) {
         EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
         
         try {
             em.getTransaction().begin();
             
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
             md.setWorkflowStatus(Status.Saved); // default to this
+            md.setOwner(user.getEmail()); // this User should OWN it
             
-            store(em, md);
+            store(em, md, user);
             
             // we're done here
             em.getTransaction().commit();
-            
-//            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-//            md.setOwner("example@email.com");
-//            
-//            Status saveStatus = Status.Saved;
-//            
-//            // if this Entity is already Published, we cannot save
-//            if (null!=md.getCodeId()) {
-//                DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
-//                
-//                if (emd != null && emd.getWorkflowStatus() != null)
-//                    saveStatus = emd.getWorkflowStatus(); 
-//            }
-//            
-//            
-//            // set the WORKFLOW STATUS
-//            md.setWorkflowStatus(saveStatus);
-//
-//            // store it
-//            store(em, md);
-//            
-//            em.getTransaction().commit();
             
             return Response
                     .status(200)
@@ -598,7 +639,14 @@ public class Metadata {
                     .build();
         } catch ( NotFoundException e ) {
             throw e;
-        } catch ( IOException | IllegalAccessException | InvocationTargetException e ) {
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error:  Invalid update attempt from " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return Response
+                    .status(Response.Status.FORBIDDEN)
+                    .entity("Unable to persist update to indicated record.")
+                    .build();
+        } catch ( IOException | InvocationTargetException e ) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
