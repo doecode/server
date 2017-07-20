@@ -81,10 +81,12 @@ public class OstiMetadata {
         setAcronym(md.getAcronym());
         
         StringBuilder corgs = new StringBuilder();
-        for ( ContributingOrganization o : md.getContributingOrganizations() ) {
-            if (corgs.length()>0)
-                corgs.append("; ");
-            corgs.append(o.getOrganizationName());
+        if (null!=md.getContributingOrganizations()) {
+            for ( ContributingOrganization o : md.getContributingOrganizations() ) {
+                if (corgs.length()>0)
+                    corgs.append("; ");
+                corgs.append(o.getOrganizationName());
+            }
         }
         setContributingOrganizations(corgs.toString());
         

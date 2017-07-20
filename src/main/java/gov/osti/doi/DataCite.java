@@ -132,7 +132,7 @@ public class DataCite {
      * @throws XMLStreamException on XML output errors
      */
     private static void writeContributors(XMLStreamWriter sw, List<Contributor> contributors) throws XMLStreamException {
-        if (contributors.isEmpty())
+        if (null==contributors || contributors.isEmpty())
             return;
         
         sw.writeStartElement("contributors");
