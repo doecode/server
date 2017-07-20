@@ -195,7 +195,7 @@ public class DataCite {
      * @throws XMLStreamException on XML output errors
      */
     private static void writeFundingIdentifiers(XMLStreamWriter sw, List<SponsoringOrganization> sponsors) throws XMLStreamException {
-        if (sponsors.isEmpty())
+        if (null==sponsors || sponsors.isEmpty())
             return;
         
         sw.writeStartElement("fundingReferences");
@@ -227,7 +227,7 @@ public class DataCite {
      */
     private static void writeRelatedIdentifiers(XMLStreamWriter sw, List<RelatedIdentifier> identifiers) throws XMLStreamException {
         
-        if (identifiers.isEmpty())
+        if (null==identifiers || identifiers.isEmpty())
             return;
         
         sw.writeStartElement("relatedIdentifiers");
