@@ -8,14 +8,13 @@ import gov.osti.connectors.github.Contributor;
 import gov.osti.connectors.github.User;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
+import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.HttpGet;
@@ -50,22 +49,8 @@ public class GitHub implements ConnectorInterface {
      */
     @Override
     public void init() throws IOException {
-        Properties config = new Properties();
-        InputStream stream = null;
-        
-        try { 
-            stream = GitHub.class.getClassLoader().getResourceAsStream("doecode.properties");
-            config.load(stream);
-            
-            // default values to empty String if not present
-            API_KEY=config.getProperty("github.apikey", "");
-            API_USER=config.getProperty("github.user", "");
-            // if properties are not configured, disable this feature
-            if (API_KEY.startsWith("$")) API_KEY = "";
-            if (API_USER.startsWith("$")) API_USER = "";
-        } finally {
-            if (null!=stream) stream.close(); stream = null;
-        }
+        API_KEY = DoeServletContextListener.getConfigurationProperty("github.apikey");
+        API_USER = DoeServletContextListener.getConfigurationProperty("github.user");
     }
     
     /**
@@ -153,7 +138,6 @@ public class GitHub implements ConnectorInterface {
 
             // acquire the SourceForge API response as JSON
             HttpGet get = gitHubAPIGet(GITHUB_BASE_URL + name);
-            log.info("GET " + get.toString());
 
             // Convert the JSON into an Object we can handle
             Repository response = 

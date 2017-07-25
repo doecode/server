@@ -10,6 +10,7 @@ import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.SponsoringOrganization;
+import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -45,40 +46,14 @@ public class DataCite {
     private static Logger log = LoggerFactory.getLogger(DataCite.class);
     // DataCite API base request URL
     private static final String DATACITE_URL = "https://mds.datacite.org/";
-    private static String DATACITE_LOGIN = "";
-    private static String DATACITE_PASSWORD = "";
-    private static String DATACITE_BASE_URL = "";
+    private static String DATACITE_LOGIN = DoeServletContextListener.getConfigurationProperty("datacite.user");
+    private static String DATACITE_PASSWORD = DoeServletContextListener.getConfigurationProperty("datacite.password");
+    private static String DATACITE_BASE_URL = DoeServletContextListener.getConfigurationProperty("datacite.baseurl");
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    
-    /**
-     * Initialize the DataCite API parameters.
-     * 
-     * @throws IOException on properties load errors
-     */
-    public static void init() throws IOException {
-        Properties config = new Properties();
-        InputStream in = null;
-        
-        try {
-            // read the properties file from the class path
-            in = DataCite.class.getClassLoader().getResourceAsStream("doecode.properties");
-            config.load(in);
-            // if values are not set, default to blank
-            DATACITE_LOGIN = config.getProperty("datacite.user", "");
-            DATACITE_PASSWORD = config.getProperty("datacite.password", "");
-            DATACITE_BASE_URL = config.getProperty("datacite.baseurl", "");
-            // handle default substitutions
-            if (DATACITE_LOGIN.startsWith("$")) DATACITE_LOGIN = "";
-            if (DATACITE_PASSWORD.startsWith("$")) DATACITE_PASSWORD = "";
-            if (DATACITE_BASE_URL.startsWith("$")) DATACITE_BASE_URL = "";
-        } finally {
-            if (null!=in) in.close(); in = null;
-        }
-    }
     
     /**
      * Convert a List of Developers into something DataCite can understand.

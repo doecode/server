@@ -2,6 +2,9 @@
  */
 package gov.osti.listeners;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -21,6 +24,38 @@ public class DoeServletContextListener implements ServletContextListener {
     
     // get an instance of EntityManagerFactory for persistence
     private static EntityManagerFactory emf = null;
+    
+    // Map of configured service parameters
+    private static Properties configuration;
+    
+    /**
+     * Obtain the named configuration property from the "doecode.properties"
+     * configuration file, if possible.
+     * 
+     * @param key the KEY name requested
+     * @return the VALUE if found in the configuration properties, or blank
+     * if not found or not set
+     */
+    public static String getConfigurationProperty(String key) {
+        // lazy-load first time
+        if (null==configuration) {
+            configuration = new Properties(); // create a new instance
+            InputStream in; // read from the ClassLoader
+            
+            try {
+                in = DoeServletContextListener.class.getClassLoader().getResourceAsStream("doecode.properties");
+                if (null!=in) configuration.load(in);
+            } catch ( IOException e ) {
+                log.warn("Context Initialization Failure: " + e.getMessage());
+            }
+        }
+        // if the KEY is present, and DOES NOT start with "$", return it
+        // otherwise, get an empty String
+        return  configuration.containsKey(key) ?
+                configuration.getProperty(key).startsWith("$") ?
+                "" : configuration.getProperty(key) :
+                "";
+    }
     
     /**
      * Start up the services on deployment.

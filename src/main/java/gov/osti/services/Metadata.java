@@ -23,11 +23,9 @@ import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Properties;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -89,33 +87,16 @@ public class Metadata {
     private static ConnectorFactory factory;
     
     // URL to indexer services, if configured
-    private static String INDEX_URL = "";
+    private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
-        Properties config = new Properties();
-        InputStream stream = null;
-        
         try {
         factory = ConnectorFactory.getInstance()
                 .add(new GitHub())
                 .add(new SourceForge())
                 .add(new BitBucket())
                 .build();
-        // start up DataCite services
-        DataCite.init();
-        // read the index configuration if present
-        try {
-            stream = Metadata.class.getClassLoader().getResourceAsStream("doecode.properties");
-            config.load(stream);
-            
-            INDEX_URL = config.getProperty("index.url", "");
-            // if property is not set, disable indexing
-            if (INDEX_URL.startsWith("$")) INDEX_URL = "";
-        } finally {
-            if (null!=stream) stream.close(); stream = null;
-        }
-        
         } catch ( IOException e ) {
             log.warn("Configuration failure: " + e.getMessage());
         }
