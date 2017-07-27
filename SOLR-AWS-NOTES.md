@@ -17,6 +17,10 @@ needed.  In this case, the Amazon Linux instance comes with Java 1.7.0
 pre-installed, but SOLR will required 1.8.  In order to get that updated,
 perform the following from the EC2 command-line.  Install "git" command-line
 for convenience for later as well.
+
+Note that for Ubuntu linux, users should use the "apt-get" command instead of
+"yum" as appropriate.  Package names may vary for java installs across 
+different AMI instances, so choose the one for java 1.8 or later as needed.
 ```bash
 $ sudo yum install java-1.8.0
 $ sudo yum remove java-1.7.0-openjdk
@@ -48,7 +52,7 @@ a port on which SOLR will run, and note this for later configuration and
 security settings.
 ```bash
 $ cd solr-6.6.0
-$ sudo bin/install_solr_service.sh -p {port}
+$ sudo bin/install_solr_service.sh ../solr-6.6.0.tgz -p {port}
 ```
 Once this script runs, SOLR should be up and running on the {port} you specify.
 
