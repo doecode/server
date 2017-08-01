@@ -135,6 +135,10 @@ public class GitHub implements ConnectorInterface {
             // if it's not empty, use that
             if (null!=yaml)
                 return yaml;
+            // try alternate names
+            yaml = HttpUtil.readMetadataYaml(GITHUB_RAW_BASE_URL + name + "/master/doecode.yml");
+            if (null!=yaml)
+                return yaml;
 
             // acquire the SourceForge API response as JSON
             HttpGet get = gitHubAPIGet(GITHUB_BASE_URL + name);

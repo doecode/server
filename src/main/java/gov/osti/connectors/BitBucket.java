@@ -103,6 +103,10 @@ public class BitBucket implements ConnectorInterface {
 
             if (null!=results)
                 return results;
+            // try alternate names
+            results = HttpUtil.readMetadataYaml(BITBUCKET_RAW_URL + name + "/raw/master/doecode.yml");
+            if (null!=results)
+                return results;
             
             Response response = mapper.readValue(HttpUtil.fetch(get), Response.class);
             
