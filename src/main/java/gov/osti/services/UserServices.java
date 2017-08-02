@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.HashSet;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
@@ -18,11 +17,8 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
-import org.apache.commons.mail.SimpleEmail;
-import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.credential.DefaultPasswordService;
 import org.apache.shiro.authc.credential.PasswordService;
 import org.slf4j.Logger;
@@ -36,6 +32,7 @@ import gov.osti.entity.User;
 import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
+import org.apache.shiro.authz.annotation.RequiresAuthentication;
 
 @Path("user")
 public class UserServices {
@@ -43,12 +40,42 @@ public class UserServices {
 private static Logger log = LoggerFactory.getLogger(UserServices.class);
 private static final PasswordService PASSWORD_SERVICE = new DefaultPasswordService();
 
-	
+// SMTP email host name
+private static final String EMAIL_HOST = DoeServletContextListener.getConfigurationProperty("email.host");
+// base SITE URL for the front-end
+private static final String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
+// EMAIL send-from account name
+private static final String EMAIL_FROM = DoeServletContextListener.getConfigurationProperty("email.from");
+
 public UserServices() {
 	
 }
 
 
+/**
+ * Endpoint to determine whether or not a Session/user exists and is logged in.
+ * 
+ * @return an OK Response if session is logged in, otherwise a FORBIDDEN or
+ * UNAUTHENTICATED response as appropriate
+ */
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes({MediaType.APPLICATION_JSON, MediaType.TEXT_HTML})
+@Path ("/authenticated")
+@RequiresAuthentication
+public Response isAuthenticated() {
+    // return an OK if authenticated, otherwise authentication services will handle status
+    return Response
+            .status(Response.Status.OK)
+            .build();
+}
+
+/**
+ * Process login requests.
+ * 
+ * @param object JSON containing "email" and "password" to authenticate.
+ * @return an appropriate Response based on whether or not authentication succeeded
+ */
 @POST
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes (MediaType.APPLICATION_JSON)
@@ -96,6 +123,12 @@ public Response login(String object) {
 
 }
 
+/**
+ * Process a registration request.
+ * 
+ * @param object the JSON containing the registration request information
+ * @return an OK Response if everything fine, or exception otherwise
+ */
 @POST
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes (MediaType.APPLICATION_JSON)
@@ -126,12 +159,18 @@ public Response register(String object) {
 	    	merge = false;
 	    }
 	    else if(previousUser.isVerified()) {
-			return Response.status(400).entity(returnNode.put("errors", "An account with this email address already exists.").toString()).build();
+			return Response
+                                .status(Response.Status.BAD_REQUEST)
+                                .entity(returnNode.put("errors", "An account with this email address already exists.").toString())
+                                .build();
 	    }
 	    	
 		
 		if (!StringUtils.equals(password, confirmPassword)) {
-			return Response.status(400).entity(returnNode.put("errors", "Password Not Matching").toString()).build();
+			return Response
+                                .status(Response.Status.BAD_REQUEST)
+                                .entity(returnNode.put("errors", "Password Not Matching").toString())
+                                .build();
 		}
 		
 		String encryptedPassword = PASSWORD_SERVICE.encryptPassword(password);
@@ -176,7 +215,19 @@ public Response register(String object) {
         }
 }
 
-
+/**
+ * Perform confirmation from previously-sent email.
+ * 
+ * Responses:
+ * 200 - confirmation successful
+ * 400 - user account already verified
+ * 401 - confirmation code invalid or expired
+ * 404 - user account not found by confirmation code
+ * 500 - internal error in database or token updates
+ * 
+ * @param jwt the JWT token to access the confirmation account
+ * @return Responses according to above information
+ */
 @GET
 @Produces(MediaType.APPLICATION_JSON)
 @Path ("/confirm")
@@ -202,23 +253,23 @@ public Response confirmUser(@QueryParam("confirmation") String jwt) {
     
     if (currentUser == null) {
     	//no user matched, return with error
-    	return Response.status(400).build();
+    	return Response.status(Response.Status.NOT_FOUND).build();
     }
     
     if (currentUser.isVerified()) {
     	//return and note that user is already verified
-    	return Response.status(400).build();
+    	return Response.status(Response.Status.BAD_REQUEST).build();
     }
     
     
     if (!StringUtils.equals(confirmationCode, currentUser.getConfirmationCode())) {
-    	return Response.status(401).build();
+    	return Response.status(Response.Status.UNAUTHORIZED).build();
     }
     
 	Date now = new Date();
 	if (now.after(claims.getExpiration())) {
 		//note that claim has expired, maybe give them the option to get another token?
-    	return Response.status(401).build();
+    	return Response.status(Response.Status.UNAUTHORIZED).build();
 	}
 	
 	
@@ -242,21 +293,24 @@ public Response confirmUser(@QueryParam("confirmation") String jwt) {
     } finally {
         em.close();  
     }
-	
-	
-	
 
-    return Response.status(200).entity(returnNode.put("apiKey", currentUser.getApiKey()).toString()).build();
+    return Response.status(Response.Status.OK).entity(returnNode.put("apiKey", currentUser.getApiKey()).toString()).build();
 
 }
 
+/**
+ * Send a confirmation request for new user registrations.
+ * 
+ * @param confirmationCode the confirmation code associated with the user account
+ * @param userEmail the user email address to send to
+ */
 private void sendRegistrationConfirmation(String confirmationCode, String userEmail) {
 	HtmlEmail email = new HtmlEmail();
-	email.setHostName("mx1.osti.gov");
+	email.setHostName(EMAIL_HOST);
 	
 	try {
-		email.setFrom("welscht@osti.gov");
-		String confirmation_url = "http://localhost:8081/confirmuser?confirmation=" + DOECodeCrypt.generateConfirmationJwt(confirmationCode, userEmail);
+		email.setFrom(EMAIL_FROM);
+		String confirmation_url = SITE_URL + "/confirmuser?confirmation=" + DOECodeCrypt.generateConfirmationJwt(confirmationCode, userEmail);
 		email.setSubject("Confirm DOE Code Registration");
 		email.addTo(userEmail);
 		

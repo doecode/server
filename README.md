@@ -25,6 +25,9 @@ ${datacite.password} | (optional) DataCite account password for DOI registration
 ${datacite.baseurl} | (optional) DataCite base URL prefix to use for DOI registration
 ${index.url} | (optional) URL to indexing service (e.g., SOLR, see below)
 ${search.url} | (optional) base URL to searching service (SOLR, see below)
+${site.url} | base URL of the client front-end services
+${email.host} | SMTP host name for sending confirmation emails
+${email.from} | The user name to use for sending above emails
 
 If optional parameters, such as the DataCite settings, are left blank, those features
 will not apply.

@@ -70,8 +70,11 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	    EntityManager em = DoeServletContextListener.createEntityManager();
 	    User currentUser = null;
 	    try {        
-	        TypedQuery<User> getUserByApiKey = em.createQuery("SELECT u FROM User u WHERE u.apiKey = ?1", User.class);
-	        currentUser = getUserByApiKey.setParameter(1, apiKey).getSingleResult();
+                // only allow VERIFIED users
+	        TypedQuery<User> getUserByApiKey = em.createQuery("SELECT u FROM User u WHERE u.apiKey = :apiKey AND u.verified = TRUE", User.class);
+	        currentUser = getUserByApiKey
+                        .setParameter("apiKey", apiKey)
+                        .getSingleResult();
 	    } catch ( Exception e ) {
 	        System.out.println(e);
 	        throw new AuthenticationException("Could not find user");
