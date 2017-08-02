@@ -11,6 +11,7 @@
 	<properties>
 		<jdk.version>1.8</jdk.version>
                 <jersey.version>2.22.2</jersey.version>
+                <projectName>doecodeapi</projectName>
 	</properties>
 
 	<dependencies>
@@ -177,6 +178,7 @@
 
 
 	<build>
+            <finalName>${projectName}</finalName>
             <resources>
                 <resource>
                     <directory>src/main/resources</directory>
@@ -212,7 +214,7 @@
                             <configuration>
                               <scanIntervalSeconds>10</scanIntervalSeconds>
                               <webApp>
-                                <contextPath>/doecode</contextPath>
+                                <contextPath>/${projectName}</contextPath>
                                 <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
                                   <resourcesAsCSV>target/filtered-resources</resourcesAsCSV>
                                 </baseResource>
@@ -228,7 +230,9 @@
 				<configuration>
 					<url>http://${host}:${port}/manager/text</url>
 					<server>${server}</server>
-					<path>/doecode</path>
+					<path>/${projectName}</path>
+                                        <warFile>${project.build.directory}/${projectName}.war</warFile>
+                                        <path>/${projectName}</path>
 				</configuration>
 			</plugin>
 
@@ -262,6 +266,5 @@
                             </configuration>
                         </plugin>
 		</plugins>
-		<finalName>doecode</finalName>
 	</build>
 </project>
