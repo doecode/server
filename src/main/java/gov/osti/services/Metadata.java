@@ -64,11 +64,10 @@ import org.glassfish.jersey.server.mvc.Viewable;
  * endpoints:
  * 
  * GET
- * metadata/{codeId} - retrieve instance of JSON for codeId
+ * metadata/edit/{codeId} - retrieve JSON of metadata if permitted (requires authentication)
+ * metadata/{codeId} - retrieve instance of JSON for codeId (PUBLISHED only), optionally in YAML format
  * metadata/autopopulate?repo={url} - attempt an auto-populate Connector call for
- * indicated URL
- * metadata/yaml/{codeId} - get the YAML for a given codeId
- * metadata/autopopulate/yaml?repo={url} - get auto-populate information in YAML
+ * indicated URL, optionally in YAML format
  * 
  * POST
  * metadata - send JSON for persisting to the storage layer
@@ -134,8 +133,64 @@ public class Metadata {
     }
     
     /**
+     * Look up a record for EDITING, checks authentication and ownership prior
+     * to succeeding.
+     * 
+     * Result Codes:
+     * 200 - OK, with JSON containing the metadata information
+     * 400 - you didn't specify a CODE ID
+     * 401 - authentication required
+     * 403 - forbidden, logged in user does not have permission to this metadata
+     * 404 - requested metadata is not on file
+     * 
+     * @param codeId the CODE ID to look up
+     * @return a Response containing JSON if successful
+     */
+    @GET
+    @Path ("/edit/{codeId}")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    public Response edit(@PathParam("codeId") Long codeId) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
+        // no CODE ID?  Bad request.
+        if (null==codeId)
+            return Response
+                    .status(Response.Status.BAD_REQUEST)
+                    .build();
+        
+        DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+
+        // no metadata?  404
+        if ( null==md ) 
+            return Response
+                    .status(Response.Status.NOT_FOUND)
+                    .build();
+
+        // do you have permissions to get this?
+        if ( !user.getEmail().equals(md.getOwner()) )
+            return Response
+                    .status(Response.Status.FORBIDDEN)
+                    .entity("Permission denied.")
+                    .build();
+
+        // return the metadata
+        return Response
+                .status(Response.Status.OK)
+                .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                .build();
+    }
+    
+    /**
      * Look up the METADATA if possible by its codeID value, and return the 
-     * result in the desired format.
+     * result in the desired format.  Only retrieves PUBLISHED records.
+     * 
+     * Response Codes:
+     * 200 - OK, with the JSON of the metadata
+     * 403 - access to this record is forbidden (not PUBLISHED)
+     * 404 - record is not on file
      * 
      * @param codeId the Metadata codeId to look for
      * @param format optionally specify the requested output format (JSON is the
@@ -148,22 +203,19 @@ public class Metadata {
     public Response load(@PathParam ("codeId") Long codeId, @QueryParam ("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
-        Subject subject = SecurityUtils.getSubject();
-        
         try {
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
             
-            if ( null==md )
-                throw new NotFoundException ("ID not on file.");
+            if ( null==md ) 
+                return Response
+                        .status(Response.Status.NOT_FOUND)
+                        .build();
             
-            // non-Published workflow REQUIRES authentication
+            // non-Published workflow REQUIRES authentication, not for here; use /edit
             if (!Status.Published.equals(md.getWorkflowStatus())) {
-                // send back a FORBIDDEN response
-                if (!subject.isAuthenticated()) {
-                    return Response
-                            .status(Response.Status.FORBIDDEN)
-                            .build();
-                }
+                return Response
+                        .status(Response.Status.FORBIDDEN)
+                        .build();
             }
             
             // if YAML is requested, return that; otherwise, default to JSON
@@ -458,7 +510,7 @@ public class Metadata {
             
             // we are done here
             return Response
-                    .status(200)
+                    .status(Response.Status.OK)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
@@ -561,7 +613,7 @@ public class Metadata {
             
             // and we're happy
             return Response
-                    .status(200)
+                    .status(Response.Status.OK)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {

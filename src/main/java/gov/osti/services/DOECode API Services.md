@@ -27,13 +27,32 @@ Metadata Service Endpoints
 `GET` /services/metadata/{codeId}
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
-Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.
+Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Only retrieves
+PUBLISHED records.
 
 ```json 
 { "metadata" : 
   { "software_title" : "Sample Data", "code_id": 234 ... } 
 }
 ```
+
+| Response Code | Information |
+| --- | --- |
+| 200 | OK, response includes JSON |
+| 403 | Access to unpublished metadata is not permitted |
+
+### Retrieve any metadata, authenticated
+`GET` /services/metadata/edit/{codeId}
+
+Retrieve JSON for a given metadata.  User must be authenticated and be the owner of the given metadata.
+
+| Response Code | Information |
+| --- | --- |
+| 200 | OK, JSON returned |
+| 400 | Bad request, no code ID specified |
+| 401 | Authentication is required for this service endpoint |
+| 403 | Logged-in user is not permitted to access this metadata |
+| 404 | Metadata CODE ID is not on file |
 
 ### Retrieve information from repository API
 `GET` /services/metadata/autopopulate?repo={url}
@@ -59,12 +78,14 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 ```
 > Error Response:
 ```json
-{ "status" : 500, "message" : "Error saving record for \"Sample Data\": database failure." }
+{ "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
 ```
 
-| HTTP Response Code | Information |
+| Response Code | Information |
 | --- | --- |
 | 200 | Metadata saved, JSON metadata information returned including code_id reference. |
+| 401 | Authentication is required to POST |
+| 403 | User is not permitted to alter this metadata |
 | 500 | Persistence error or unable to parse JSON information. |
 
 ### Publish metadata information
@@ -72,10 +93,21 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 
 Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing this operation will be returned.  
 
+> Successful Response:
+```json
+{ "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
+```
+> Error Response:
+```json
+{ "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid", ... ] }
+```
+
 | HTTP Response Code | Information |
 | --- | --- |
 | 200 | Metadata published successfully to DOECode.  JSON metadata information returned with code_id reference. |
 | 400 | One or more validation errors occurred during publication, error information in the response. |
+| 401 | Authentication is required to POST |
+| 403 | User is not permitted to alter this record |
 | 500 | Persistence layer error or unable to process JSON submission information. |
 
 DOECode Metadata
