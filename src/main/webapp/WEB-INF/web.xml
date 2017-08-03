@@ -32,7 +32,7 @@
             <param-value>org.secnod.shiro.jersey.AuthorizationFilterFeature, org.secnod.shiro.jersey.SubjectFactory, org.secnod.shiro.jersey.AuthInjectionBinder,
             org.secnod.shiro.jaxrs.ShiroExceptionMapper,
             gov.osti.services.Metadata,gov.osti.services.Types,gov.osti.services.Validation, 
-                gov.osti.services.SearchService,
+                gov.osti.services.SearchService,org.glassfish.jersey.media.multipart.MultiPartFeature,
             gov.osti.services.Authentication, gov.osti.services.UserServices,org.glassfish.jersey.server.mvc.jsp.JspMvcFeature</param-value>
         </init-param>
         <init-param>

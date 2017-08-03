@@ -1,13 +1,13 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.Entity;
@@ -44,8 +44,14 @@ public class DOECodeMetadata implements Serializable {
     // Status values
     public enum Status {
         Saved,
-        Published,
-        Submitted
+        Published
+    }
+    
+    // Accessibility values
+    public enum Accessibility {
+        OS,
+        ON,
+        CS
     }
     
     // Attributes
@@ -54,7 +60,7 @@ public class DOECodeMetadata implements Serializable {
     private Boolean openSource = null;
     private String  repositoryLink = null;
     private String landingPage = null;
-    private String accessibility = null;
+    private Accessibility accessibility = null;
     
     private String doiStatus = null;
 
@@ -90,6 +96,8 @@ public class DOECodeMetadata implements Serializable {
     private String otherSpecialRequirements = null;
     private String owner = null;
     private Status workflowStatus = null;
+    
+    private String fileName = null;
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -440,11 +448,13 @@ public class DOECodeMetadata implements Serializable {
 		this.doiStatus = doiStatus;
 	}
 
-	public String getAccessibility() {
+        @Enumerated (EnumType.STRING)
+        @Column (name = "ACCESSIBLIITY")
+	public Accessibility getAccessibility() {
 		return accessibility;
 	}
 
-	public void setAccessibility(String accessibility) {
+	public void setAccessibility(Accessibility accessibility) {
 		this.accessibility = accessibility;
 	}
 
@@ -456,10 +466,14 @@ public class DOECodeMetadata implements Serializable {
 		this.owner = owner;
 	}
 	
-	
-	
-	
-    
-    
         
+        public void setFileName(String name) {
+            this.fileName = name;
+        }
+        
+        @JsonIgnore
+        @Column (length = 500, name = "FILE_NAME")
+        public String getFileName() {
+            return this.fileName;
+        }
 }

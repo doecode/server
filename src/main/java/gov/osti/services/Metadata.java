@@ -17,15 +17,23 @@ import gov.osti.connectors.SourceForge;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
 import gov.osti.entity.DOECodeMetadata;
+import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.Status;
+import gov.osti.entity.Developer;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -54,6 +62,8 @@ import org.apache.http.util.EntityUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.subject.Subject;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
@@ -87,6 +97,12 @@ public class Metadata {
     
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
+    // absolute filesystem location to store uploaded files, if any
+    private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
+    
+    // regular expressions for validating phone numbers (US) and email addresses
+    private static final Pattern phoneNumberPattern = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
+    private static final Pattern emailPattern = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
@@ -356,6 +372,9 @@ public class Metadata {
      */
     private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException, 
             IllegalAccessException, InvocationTargetException {
+        // fix the open source value before storing
+        md.setOpenSource( !Accessibility.CS.equals(md.getAccessibility()) );
+        
         // if there's a CODE ID, attempt to look up the record first and 
         // copy attributes into it
         if ( null==md.getCodeId() || 0==md.getCodeId()) {
@@ -368,13 +387,13 @@ public class Metadata {
                 if (!user.getEmail().equals(emd.getOwner()))
                     throw new IllegalAccessException("Invalid access attempt.");
                 
-                // found the record, keep the Status
-                Status currentStatus = emd.getWorkflowStatus();
+                // if already Published, keep it that way (can't go back to Saved)
+                if (Status.Published.equals(emd.getWorkflowStatus()))
+                    md.setWorkflowStatus(Status.Published);
                 
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
-                emd.setWorkflowStatus(currentStatus); // preserve the Status
                 
                 // EntityManager should handle this attached Object
             } else {
@@ -460,6 +479,78 @@ public class Metadata {
             }
         }
     }
+    
+    @POST
+    @Consumes (MediaType.MULTIPART_FORM_DATA)
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/publish")
+    @RequiresAuthentication
+    public Response publishFile(@FormDataParam("metadata") String metadata,
+            @FormDataParam("file") InputStream file,
+            @FormDataParam("file") FormDataContentDisposition fileInfo) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
+        try {
+            em.getTransaction().begin();
+            
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(metadata));
+            md.setOwner(user.getEmail());
+            md.setWorkflowStatus(Status.Published);
+            
+            // if there's a FILE associated here, store it
+            if ( null!=file && null!=fileInfo ) {
+                try {
+                    String fileName = writeFile(file, fileInfo.getFileName());
+                    md.setFileName(fileName);
+                } catch ( IOException e ) {
+                    log.error ("File Upload Failed: " + e.getMessage());
+                    return Response
+                            .status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity(mapper.createArrayNode().add("File upload failed.").toString())
+                            .build();
+                }
+            }
+            // store it
+            store(em, md, user);
+            
+            // send to DataCite if needed
+            if ( null!=md.getDoi() ) {
+                if ( !DataCite.register(md) ) 
+                    log.warn("DataCite registration failed for " + md.getDoi());
+            }
+            // commit it
+            em.getTransaction().commit();
+            
+            // send this information to SOLR as well, if configured
+            sendToIndex(md);
+            
+            // we are done here
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( NotFoundException e ) {
+            throw e;
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return Response
+                    .status(Response.Status.FORBIDDEN)
+                    .entity("Invalid Access:  Logged in User not allowed to modify this record.")
+                    .build();
+        } catch ( IOException | InvocationTargetException e ) {
+            if ( em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Persistence Error Publishing: " + e.getMessage());
+            throw new InternalServerErrorException("IO Error: " + e.getMessage());
+        } finally {
+            em.close();  
+        }
+    }
+            
     
     /**
      * PUBLISH a Metadata Object; this operation signifies the project is 
@@ -563,7 +654,7 @@ public class Metadata {
             // set the OWNER
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Submitted);
+            md.setWorkflowStatus(Status.Published);
             
             // persist this to the database
             store(em, md, user);
@@ -688,5 +779,70 @@ public class Metadata {
         } finally {
             em.close();
         }
+    }
+    
+    /**
+     * Store a File to a specific directory location.
+     * 
+     * @param in the InputStream containing the file content
+     * @param fileName the base file name of the file
+     * @return the absolute filesystem path to the file
+     * @throws IOException on IO errors
+     */
+    private static String writeFile(InputStream in, String fileName) throws IOException {
+        // store this file in a designated base path
+        java.nio.file.Path destination = 
+                Paths.get(FILE_UPLOADS, fileName);
+        // save it
+        Files.copy(in, destination);
+        
+        return destination.toString();
+    }
+    
+    private static List<String> validatePublished(DOECodeMetadata m) {
+        List<String> reasons = new ArrayList<>();
+        Matcher matcher;
+        
+        if (null==m.getAccessibility())
+            reasons.add("Missing Source Accessibility.");
+        if (null==m.getRepositoryLink() && null==m.getLandingPage())
+            reasons.add("Either a repository link or landing page is required.");
+        if (null==m.getSoftwareTitle())
+            reasons.add("Software title is required.");
+        if (null==m.getDescription())
+            reasons.add("Description is required.");
+        if (null==m.getLicenses())
+            reasons.add("A License is required.");
+        if (null==m.getDevelopers())
+            reasons.add("At least one developer is required.");
+        else {
+            for ( Developer developer : m.getDevelopers() ) {
+                if ( null==developer.getFirstName() )
+                    reasons.add("Developer missing first name.");
+                if ( null==developer.getLastName() )
+                    reasons.add("Developer missing last name.");
+                if ( null!=developer.getEmail() ) {
+                    matcher = emailPattern.matcher(developer.getEmail());
+
+                    if (!matcher.matches())
+                        reasons.add("Developer email \"" + developer.getEmail() +"\" is not valid.");
+                }
+            }
+        }
+        if (null!=m.getDoi() && null==m.getReleaseDate())
+            reasons.add("Release Date is required for DOI registration.");
+        return reasons;
+    }
+    
+    private static List<String> validateSubmit(DOECodeMetadata m) {
+        List<String> reasons = new ArrayList<>();
+        
+        // get all the PUBLISHED reasons, if any
+        reasons.addAll(validatePublished(m));
+        // add SUBMIT-specific validations
+        if (null==m.getReleaseDate())
+            reasons.add("Release date is required.");
+        
+        return reasons;
     }
 }
