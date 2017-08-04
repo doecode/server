@@ -1000,7 +1000,7 @@ public class Metadata {
             reasons.add("Description is required.");
         if (null==m.getLicenses())
             reasons.add("A License is required.");
-        if (null==m.getDevelopers())
+        if (null==m.getDevelopers() || m.getDevelopers().isEmpty())
             reasons.add("At least one developer is required.");
         else {
             for ( Developer developer : m.getDevelopers() ) {
@@ -1036,16 +1036,19 @@ public class Metadata {
         // add SUBMIT-specific validations
         if (null==m.getReleaseDate())
             reasons.add("Release date is required.");
-        if (null==m.getSponsoringOrganizations())
+        if (null==m.getSponsoringOrganizations() || m.getSponsoringOrganizations().isEmpty())
             reasons.add("At least one sponsoring organization is required.");
         else {
             for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
                 if (StringUtils.isBlank(o.getOrganizationName()))
                     reasons.add("Sponsoring organization name is required.");
-                // TODO: add contract number validation on PRIMARY AWARD
+                if (StringUtils.isBlank(o.getPrimaryAward()))
+                    reasons.add("Primary award number is required.");
+                else if (!Validation.isAwardNumberValid(o.getPrimaryAward()))
+                    reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
             }
         }
-        if (null==m.getResearchOrganizations())
+        if (null==m.getResearchOrganizations() || m.getResearchOrganizations().isEmpty())
             reasons.add("At least one research organization is required.");
         else {
             for ( ResearchOrganization o : m.getResearchOrganizations() ) {

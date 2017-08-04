@@ -5,10 +5,9 @@ package gov.osti.services;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringReader;
-import java.math.BigDecimal;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,11 +20,11 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
@@ -169,6 +168,8 @@ public class Validation {
 
     // the Logger
     private static final Logger log = LoggerFactory.getLogger(Validation.class);
+    // API host for servicing external validation calls
+    private static final String API_HOST = DoeServletContextListener.getConfigurationProperty("api.host");
     // a JSON mapper
     private static final ObjectMapper mapper = new ObjectMapper();
     // static DOI resolution prefix
@@ -178,6 +179,49 @@ public class Validation {
      * Creates a new instance of ValidationResource
      */
     public Validation() {
+    }
+    
+    /**
+     * Make an external validation call for a CONTRACT NUMBER for validity.
+     * If unable to check, not configured properly, or an error occurs, assume
+     * FALSE.
+     * 
+     * @param value the CONTRACT/AWARD NUMBER to check
+     * @return true if valid, false if not
+     */
+    public static boolean isAwardNumberValid(String value) {
+        RequestConfig rc = RequestConfig
+                .custom()
+                .setSocketTimeout(5000)
+                .setConnectTimeout(5000)
+                .build();
+        CloseableHttpClient hc = HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(rc)
+                .build();
+        
+        try {
+            // if not configured, abort
+            if (StringUtils.isBlank(API_HOST))
+                return false;
+            
+            // call the VALIDATION API to get a response
+            HttpGet get = new HttpGet(API_HOST + "/contract/validate/" + URLEncoder.encode(value.trim(), "UTF-8"));
+            HttpResponse response = hc.execute(get);
+            // get the RESPONSE
+            ApiResponse apiResponse = mapper.readValue(response.getEntity().getContent(), ApiResponse.class);
+            
+            return apiResponse.isValid();
+        } catch ( IOException e ) { 
+            log.warn("Error checking " + value + ": " + e.getMessage());
+        } finally {
+            try {
+                hc.close();
+            } catch ( IOException e ) {
+                log.warn("IOException Checking contract number " + value + ": " + e.getMessage());
+            }
+        }
+        return false;
     }
 
     /**
@@ -206,7 +250,6 @@ public class Validation {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response request(String object) throws IOException {
-        String apiHost = context.getInitParameter("api.host");
         ValidationResponse validationResponse = new ValidationResponse();
         
         // set some reasonable default timeouts
@@ -242,17 +285,11 @@ public class Validation {
                                 value + " is not a valid DOI.");
                     } else if ("Award".equals(validation)) {
                         // ensure we're configured for that
-                        if (null==apiHost) {
+                        if (StringUtils.isBlank(API_HOST)) {
                             return Response.status(Response.Status.NOT_FOUND).build();
                         }
                         // call the VALIDATION API to get a response
-                        HttpGet get = new HttpGet(apiHost + "/contract/validate/" + URLEncoder.encode(value.trim(), "UTF-8"));
-                        HttpResponse response = hc.execute(get);
-                        // get the RESPONSE
-                        ApiResponse apiResponse = mapper.readValue(response.getEntity().getContent(), ApiResponse.class);
-
-                        // add either empty String (no error) or error message as appropriate
-                        validationResponse.add( (apiResponse.isValid()) ? "" : value + " is not a valid Award Number.");
+                        validationResponse.add((isAwardNumberValid(value)) ? "" : value + " is not a valid Award Number.");
                     } else {
                         log.warn("Invalid validation request type: " + validation);
                         return Response
