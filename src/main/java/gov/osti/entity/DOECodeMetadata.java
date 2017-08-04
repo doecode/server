@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Reader;
 import java.util.List;
 
@@ -466,13 +467,25 @@ public class DOECodeMetadata implements Serializable {
 		this.owner = owner;
 	}
 	
-        
+        /**
+         * Set the FILE NAME if any for archive.
+         * 
+         * @param name the ABSOLUTE PATH name to the archive file, if any
+         */
         public void setFileName(String name) {
             this.fileName = name;
         }
         
-        @JsonIgnore
+        /**
+         * Get the FILE NAME for this project, if any.
+         * 
+         * For serialization purposes, DO NOT show the full path name, only the
+         * base file name.
+         * 
+         * @return the FILE NAME
+         */
         @Column (length = 500, name = "FILE_NAME")
+        @JsonSerialize (using = FileNameSerializer.class)
         public String getFileName() {
             return this.fileName;
         }
