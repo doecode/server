@@ -2,6 +2,7 @@
  */
 package gov.osti.services;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +22,8 @@ import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.Developer;
 import gov.osti.entity.OstiMetadata;
+import gov.osti.entity.ResearchOrganization;
+import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
@@ -101,8 +104,8 @@ public class Metadata {
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     
     // regular expressions for validating phone numbers (US) and email addresses
-    private static final Pattern phoneNumberPattern = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
-    private static final Pattern emailPattern = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
+    private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
@@ -115,6 +118,60 @@ public class Metadata {
         } catch ( IOException e ) {
             log.warn("Configuration failure: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Simple class for validation responses in JSON.
+     */
+    private class ValidationResponse {
+        // HTTP status code
+        private int status;
+        // list of errors, if applicable
+        private List<String> errors = new ArrayList<>();
+        
+        /**
+         * Set the HTTP status code
+         * @param s the status code to set
+         */
+        public void setStatus(int s) { this.status = s; }
+        /**
+         * Get the HTTP status code
+         * @return the HTTP status code
+         */
+        public int getStatus() { return this.status; }
+        
+        /**
+         * Determine whether or not there are errors.  Does not serialize
+         * to JSON.
+         * @return true if errors are present, false otherwise
+         */
+        @JsonIgnore
+        public boolean isEmpty() { return errors.isEmpty(); }
+        
+        /**
+         * Add all messages at once.
+         * 
+         * @param messages messages to add to the errors
+         * @return true if list was modified
+         */
+        public boolean addAll(List<String> messages) { return errors.addAll(messages); }
+        
+        /**
+         * Add a single error message.
+         * 
+         * @param message a message to add to error messages
+         */
+        public void addError(String message) { errors.add(message); }
+        /**
+         * Set all the error messages at once.
+         * @param e a List of all error messages
+         */
+        public void setErrors(List<String> e) { errors = e; }
+        /**
+         * Get the error messages, if any
+         * @return the List of errors, possibly empty
+         */
+        public List<String> getErrors() { return this.errors; }
     }
     
     /**
@@ -395,7 +452,11 @@ public class Metadata {
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
                 
+                // what comes back needs to be complete:
+                noNulls.copyProperties(md, emd);
+                
                 // EntityManager should handle this attached Object
+                // NOTE: the returned Object is NOT ATTACHED to the EntityManager
             } else {
                 // can't find record to update, that's an error
                 log.warn("Unable to locate record for " + md.getCodeId() + " to update.");
@@ -480,6 +541,21 @@ public class Metadata {
         }
     }
     
+    /**
+     * Support multipart-file upload POSTs to PUBLISH.
+     * 
+     * Response Codes:
+     * 200 - OK, JSON returned of the metadata information published
+     * 400 - validation error, errors returned in JSON
+     * 401 - authentication is required to POST
+     * 403 - access is forbidden to this record
+     * 500 - file upload or database operation failed
+     * 
+     * @param metadata contains the JSON of the record metadata information
+     * @param file the uploaded file to attach
+     * @param fileInfo disposition information for the file name
+     * @return a Response appropriate to the request status
+     */
     @POST
     @Consumes (MediaType.MULTIPART_FORM_DATA)
     @Produces (MediaType.APPLICATION_JSON)
@@ -499,10 +575,27 @@ public class Metadata {
             md.setOwner(user.getEmail());
             md.setWorkflowStatus(Status.Published);
             
+            // store it
+            store(em, md, user);
+            
+            // check validations for Published workflow
+            ValidationResponse errors = new ValidationResponse();
+            errors.addAll(validatePublished(md));
+            // any validation errors should discard the database transaction
+            if (!errors.isEmpty()) {
+                errors.setStatus(Response.Status.BAD_REQUEST.getStatusCode());
+                return Response
+                        .status(Response.Status.BAD_REQUEST)
+                        .entity(mapper.writeValueAsString(errors))
+                        .build();
+            }
+            // re-attach metadata to transaction
+            md = em.find(DOECodeMetadata.class, md.getCodeId());
+            
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 try {
-                    String fileName = writeFile(file, fileInfo.getFileName());
+                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
@@ -512,8 +605,6 @@ public class Metadata {
                             .build();
                 }
             }
-            // store it
-            store(em, md, user);
             
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
@@ -587,6 +678,16 @@ public class Metadata {
             
             // store it
             store(em, md, user);
+            // check validations
+            ValidationResponse errors = new ValidationResponse();
+            errors.addAll(validatePublished(md));
+            if (!errors.isEmpty()) {
+                errors.setStatus(Response.Status.BAD_REQUEST.getStatusCode());
+                return Response
+                        .status(Response.Status.BAD_REQUEST)
+                        .entity(mapper.writeValueAsString(errors))
+                        .build();
+            }
             
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
@@ -658,6 +759,16 @@ public class Metadata {
             
             // persist this to the database
             store(em, md, user);
+            // check validations
+            ValidationResponse errors = new ValidationResponse();
+            errors.addAll(validateSubmit(md));
+            if (!errors.isEmpty()) {
+                errors.setStatus(Response.Status.BAD_REQUEST.getStatusCode());
+                return Response
+                        .status(Response.Status.BAD_REQUEST)
+                        .entity(mapper.writeValueAsString(errors))
+                        .build();
+            }
             
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
@@ -782,23 +893,33 @@ public class Metadata {
     }
     
     /**
-     * Store a File to a specific directory location.
+     * Store a File to a specific directory location. All files associated with
+     * a CODEID are stored in the same folder.
      * 
      * @param in the InputStream containing the file content
+     * @param codeId the CODE ID associated with this file content
      * @param fileName the base file name of the file
      * @return the absolute filesystem path to the file
      * @throws IOException on IO errors
      */
-    private static String writeFile(InputStream in, String fileName) throws IOException {
+    private static String writeFile(InputStream in, Long codeId, String fileName) throws IOException {
         // store this file in a designated base path
         java.nio.file.Path destination = 
-                Paths.get(FILE_UPLOADS, fileName);
+                Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
+        // make intervening folders if needed
+        Files.createDirectories(destination.getParent());
         // save it
         Files.copy(in, destination);
         
         return destination.toString();
     }
     
+    /**
+     * Perform validations for PUBLISHED records.
+     * 
+     * @param m the Metadata information to validate
+     * @return a List of error messages if any validation errors, empty if none
+     */
     private static List<String> validatePublished(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
         Matcher matcher;
@@ -822,7 +943,7 @@ public class Metadata {
                 if ( null==developer.getLastName() )
                     reasons.add("Developer missing last name.");
                 if ( null!=developer.getEmail() ) {
-                    matcher = emailPattern.matcher(developer.getEmail());
+                    matcher = EMAIL_PATTERN.matcher(developer.getEmail());
 
                     if (!matcher.matches())
                         reasons.add("Developer email \"" + developer.getEmail() +"\" is not valid.");
@@ -834,14 +955,56 @@ public class Metadata {
         return reasons;
     }
     
+    /**
+     * Perform SUBMIT validations on metadata.
+     * 
+     * @param m the Metadata to check
+     * @return a List of submission validation errors, empty if none
+     */
     private static List<String> validateSubmit(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
+        Matcher matcher;
         
         // get all the PUBLISHED reasons, if any
         reasons.addAll(validatePublished(m));
         // add SUBMIT-specific validations
         if (null==m.getReleaseDate())
             reasons.add("Release date is required.");
+        if (null==m.getSponsoringOrganizations())
+            reasons.add("At least one sponsoring organization is required.");
+        else {
+            for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
+                if (null==o.getOrganizationName())
+                    reasons.add("Sponsoring organization name is required.");
+                // TODO: add contract number validation on PRIMARY AWARD
+            }
+        }
+        if (null==m.getResearchOrganizations())
+            reasons.add("At least one research organization is required.");
+        else {
+            for ( ResearchOrganization o : m.getResearchOrganizations() ) {
+                if (null==o.getOrganizationName())
+                    reasons.add("Research organization name is required.");
+            }
+        }
+        if (null==m.getRecipientName())
+            reasons.add("Contact name is required.");
+        if (null==m.getRecipientEmail())
+            reasons.add("Contact email is required.");
+        else {
+            matcher = EMAIL_PATTERN.matcher(m.getRecipientEmail());
+            if (!matcher.matches())
+                reasons.add("Contact email is not valid.");
+        }
+        if (null==m.getRecipientPhone())
+            reasons.add("Contact phone number is required.");
+        else {
+            matcher = PHONE_NUMBER_PATTERN.matcher(m.getRecipientPhone());
+            if (!matcher.matches())
+                reasons.add("Contact phone number is not valid.");
+        }
+        if (null==m.getRecipientOrg())
+            reasons.add("Contact organization is required.");
         
         return reasons;
     }

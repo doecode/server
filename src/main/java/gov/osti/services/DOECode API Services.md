@@ -93,6 +93,9 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 
 Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing this operation will be returned.  
 
+Required fields are: source accessibility, software title, repository link OR landing page URL, description, at least one license, at least one developer, any
+developers must have first and last name, and if email is provided, it must be valid.  If a DOI is specified to post, release date is also required.
+
 > Successful Response:
 ```json
 { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
