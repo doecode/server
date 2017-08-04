@@ -33,6 +33,7 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -974,8 +975,8 @@ public class Metadata {
                 Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
         // make intervening folders if needed
         Files.createDirectories(destination.getParent());
-        // save it
-        Files.copy(in, destination);
+        // save it (CLOBBER existing, if one there)
+        Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
         
         return destination.toString();
     }
