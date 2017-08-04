@@ -81,7 +81,6 @@ public Response isAuthenticated() {
 @Consumes (MediaType.APPLICATION_JSON)
 @Path ("/login")
 public Response login(String object) {
-	System.out.println("Logging in");
 	ObjectMapper mapper = new ObjectMapper();
 	ObjectNode returnNode = mapper.createObjectNode();
 	JsonNode node = null;
@@ -89,7 +88,7 @@ public Response login(String object) {
 		node = mapper.readTree(object);
 	} catch (IOException e) {
 		// TODO Auto-generated catch block
-		e.printStackTrace();
+                log.warn("JSON Mapper error: " + e.getMessage());
 	}
 	String email= node.get("email").asText();
 	String password = node.get("password").asText();
@@ -101,7 +100,6 @@ public Response login(String object) {
     	currentUser = em.find(User.class, email);
     } catch ( Exception e ) {
         log.warn("Error Retrieving User",e);
-        System.out.println(e);
         throw new InternalServerErrorException(e.getMessage());
     } finally {
         em.close();  
@@ -135,7 +133,6 @@ public Response login(String object) {
 @Path ("/register")
 public Response register(String object) {
 	
-	System.out.println("Kick off register");
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode returnNode = mapper.createObjectNode();
 		boolean merge = true;
@@ -199,14 +196,13 @@ public Response register(String object) {
           
             em.getTransaction().commit();
             
-            System.out.println("Completed register");
             sendRegistrationConfirmation(newUser.getConfirmationCode(), newUser.getEmail());
             return Response.ok(returnNode.put("apiKey", newUser.getApiKey()).toString()).build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
-            System.out.println(e);
+            
             //we'll deal with duplicate user name here as well...
             log.error("Persistence Error Registering User", e);
             throw new InternalServerErrorException(e.getMessage());
@@ -232,7 +228,6 @@ public Response register(String object) {
 @Produces(MediaType.APPLICATION_JSON)
 @Path ("/confirm")
 public Response confirmUser(@QueryParam("confirmation") String jwt) {
-	System.out.println("Confirming user");
 	ObjectMapper mapper = new ObjectMapper();
 	ObjectNode returnNode = mapper.createObjectNode();
 
@@ -242,8 +237,6 @@ public Response confirmUser(@QueryParam("confirmation") String jwt) {
     Claims claims = DOECodeCrypt.parseJWT(jwt);
     String confirmationCode = claims.getId();
     String email = claims.getSubject();
-    System.out.println(confirmationCode);
-    System.out.println(email);
     
     EntityManager em = DoeServletContextListener.createEntityManager();
     try {        
@@ -286,7 +279,6 @@ public Response confirmUser(@QueryParam("confirmation") String jwt) {
         if ( em.getTransaction().isActive())
             em.getTransaction().rollback();
         
-        System.out.println(e);
         //we'll deal with duplicate user name here as well...
         log.error("Error on confirmation", e);
         throw new InternalServerErrorException(e.getMessage());
@@ -322,7 +314,6 @@ private void sendRegistrationConfirmation(String confirmationCode, String userEm
 
 	} catch (EmailException e) {
 		log.error("Email error: " + e.getMessage());
-		System.out.println(e);
 	}
 }
 

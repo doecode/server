@@ -54,6 +54,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -123,7 +124,7 @@ public class Metadata {
     /**
      * Simple class for validation responses in JSON.
      */
-    private class ValidationResponse {
+    private class ErrorResponse {
         // HTTP status code
         private int status;
         // list of errors, if applicable
@@ -195,6 +196,62 @@ public class Metadata {
     }
 
     /**
+     * Create a JSON error response in JSONAPI format if possible.
+     * 
+     * @param status the Response.Status HTTP status code of this error
+     * @param message an error message
+     * @return a Response in JSONAPI format
+     */
+    protected Response errorResponse(Response.Status status, String message) {
+        ErrorResponse errors = new ErrorResponse();
+        errors.setStatus(status.getStatusCode());
+        errors.addError(message);
+        
+        try {
+            // send back JSON error response
+            return Response
+                    .status(status)
+                    .entity(mapper.writeValueAsString(errors))
+                    .build();
+        } catch ( JsonProcessingException e ) {
+            log.warn("JSON Error: " + e.getMessage());
+            // fall back to plain text
+            return Response
+                    .status(status)
+                    .entity("Error: " + message)
+                    .build();
+        }
+    }
+    
+    /**
+     * Generate a JSON error response in JSONAPI given a set of error messages.
+     * 
+     * @param status the Response.Status HTTP status code for the error
+     * @param messages a List of messages to return
+     * @return a Response in JSONAPI format
+     */
+    protected Response errorResponse(Response.Status status, List<String> messages) {
+        ErrorResponse errors = new ErrorResponse();
+        errors.setStatus(status.getStatusCode());
+        errors.addAll(messages);
+        
+        try {
+            // send back JSON error response
+            return Response
+                    .status(status)
+                    .entity(mapper.writeValueAsString(errors))
+                    .build();
+        } catch ( JsonProcessingException e ) {
+            log.warn("JSON Error: " + e.getMessage());
+            // fall back to plain text
+            return Response
+                    .status(status)
+                    .entity("Error: " + StringUtils.join(messages, ", "))
+                    .build();
+        }
+    }
+    
+    /**
      * Link to API Documentation template.
      * 
      * @return a Viewable API documentation template
@@ -230,24 +287,17 @@ public class Metadata {
         
         // no CODE ID?  Bad request.
         if (null==codeId)
-            return Response
-                    .status(Response.Status.BAD_REQUEST)
-                    .build();
+            return errorResponse(Response.Status.BAD_REQUEST, "Missing code id.");
         
         DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
 
         // no metadata?  404
         if ( null==md ) 
-            return Response
-                    .status(Response.Status.NOT_FOUND)
-                    .build();
+            return errorResponse(Response.Status.NOT_FOUND, "Code ID not on file.");
 
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) )
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity("Permission denied.")
-                    .build();
+            return errorResponse(Response.Status.FORBIDDEN, "Permission denied.");
 
         // return the metadata
         return Response
@@ -280,15 +330,11 @@ public class Metadata {
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
             
             if ( null==md ) 
-                return Response
-                        .status(Response.Status.NOT_FOUND)
-                        .build();
+                return errorResponse(Response.Status.NOT_FOUND, "Code ID not on file.");
             
             // non-Published workflow REQUIRES authentication, not for here; use /edit
             if (!Status.Published.equals(md.getWorkflowStatus())) {
-                return Response
-                        .status(Response.Status.FORBIDDEN)
-                        .build();
+                return errorResponse(Response.Status.FORBIDDEN, "Access to record denied.");
             }
             
             // if YAML is requested, return that; otherwise, default to JSON
@@ -309,10 +355,7 @@ public class Metadata {
             }
         } catch ( IOException e ) {
             log.warn("YAML exception: " + e.getMessage());
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Output conversion error")
-                    .build();
+            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Output conversion error.");
         } finally {
             em.close();
         }
@@ -397,10 +440,7 @@ public class Metadata {
                     .build();
             } catch ( IOException e ) {
                 log.warn("YAML conversion error: " + e.getMessage());
-                return Response
-                        .status(Response.Status.INTERNAL_SERVER_ERROR)
-                        .entity("YAML conversion error")
-                        .build();
+                return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.");
             }
         } else {
             // send back the default JSON response
@@ -485,10 +525,7 @@ public class Metadata {
                     .build();
         } catch ( IOException e ) {
             log.warn("YAML conversion error: " + e.getMessage());
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("YAML conversion error")
-                    .build();
+            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.");
         }
     }
     
@@ -542,28 +579,15 @@ public class Metadata {
     }
     
     /**
-     * Support multipart-file upload POSTs to PUBLISH.
+     * Perform SAVE workflow on indicated METADATA.
      * 
-     * Response Codes:
-     * 200 - OK, JSON returned of the metadata information published
-     * 400 - validation error, errors returned in JSON
-     * 401 - authentication is required to POST
-     * 403 - access is forbidden to this record
-     * 500 - file upload or database operation failed
-     * 
-     * @param metadata contains the JSON of the record metadata information
-     * @param file the uploaded file to attach
-     * @param fileInfo disposition information for the file name
-     * @return a Response appropriate to the request status
+     * @param json the JSON String containing the metadata to SAVE
+     * @param file a FILE associated with this record if any
+     * @param fileInfo file disposition of information if any
+     * @return a Response containing the JSON of the saved record if successful,
+     * or error information if not
      */
-    @POST
-    @Consumes (MediaType.MULTIPART_FORM_DATA)
-    @Produces (MediaType.APPLICATION_JSON)
-    @Path ("/publish")
-    @RequiresAuthentication
-    public Response publishFile(@FormDataParam("metadata") String metadata,
-            @FormDataParam("file") InputStream file,
-            @FormDataParam("file") FormDataContentDisposition fileInfo) {
+    private Response doSave(String json, InputStream file, FormDataContentDisposition fileInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -571,38 +595,92 @@ public class Metadata {
         try {
             em.getTransaction().begin();
             
-            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(metadata));
-            md.setOwner(user.getEmail());
-            md.setWorkflowStatus(Status.Published);
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+            md.setWorkflowStatus(Status.Saved); // default to this
+            md.setOwner(user.getEmail()); // this User should OWN it
             
-            // store it
             store(em, md, user);
-            
-            // check validations for Published workflow
-            ValidationResponse errors = new ValidationResponse();
-            errors.addAll(validatePublished(md));
-            // any validation errors should discard the database transaction
-            if (!errors.isEmpty()) {
-                errors.setStatus(Response.Status.BAD_REQUEST.getStatusCode());
-                return Response
-                        .status(Response.Status.BAD_REQUEST)
-                        .entity(mapper.writeValueAsString(errors))
-                        .build();
-            }
-            // re-attach metadata to transaction
-            md = em.find(DOECodeMetadata.class, md.getCodeId());
             
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
+                // re-attach metadata to transaction in order to store the filename
+                md = em.find(DOECodeMetadata.class, md.getCodeId());
+                
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
-                    return Response
-                            .status(Response.Status.INTERNAL_SERVER_ERROR)
-                            .entity(mapper.createArrayNode().add("File upload failed.").toString())
-                            .build();
+                    return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
+                }
+            }
+            
+            // we're done here
+            em.getTransaction().commit();
+            
+            return Response
+                    .status(200)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( NotFoundException e ) {
+            return errorResponse(Response.Status.NOT_FOUND, e.getMessage());
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error:  Invalid update attempt from " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return errorResponse(Response.Status.FORBIDDEN, "Unable to persist update for indicated record.");
+        } catch ( IOException | InvocationTargetException e ) {
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Persistence Error: " + e.getMessage());
+            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Save IO Error: " + e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Handle PUBLISH workflow logic.
+     * 
+     * @param json JSON String containing the METADATA object to PUBLISH
+     * @param file (optional) a FILE associated with this METADATA
+     * @param fileInfo (optional) the FILE disposition information, if any
+     * @return an appropriate Response object to the caller
+     */
+    private Response doPublish(String json, InputStream file, FormDataContentDisposition fileInfo) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
+        try {
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+            
+            em.getTransaction().begin();
+            
+            // set the ownership and workflow status
+            md.setOwner(user.getEmail());
+            md.setWorkflowStatus(Status.Published);
+            
+            // store it
+            store(em, md, user);
+            // check validations for Published workflow
+            List<String> errors = validatePublished(md);
+            if ( !errors.isEmpty() ) {
+                // generate a JSONAPI errors object
+                return errorResponse(Response.Status.BAD_REQUEST, errors);
+            }
+            
+            // if there's a FILE associated here, store it
+            if ( null!=file && null!=fileInfo ) {
+                // re-attach metadata to transaction in order to store the filename
+                md = em.find(DOECodeMetadata.class, md.getCodeId());
+                
+                try {
+                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    md.setFileName(fileName);
+                } catch ( IOException e ) {
+                    log.error ("File Upload Failed: " + e.getMessage());
+                    return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
                 }
             }
             
@@ -623,135 +701,40 @@ public class Metadata {
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
-            throw e;
+            return errorResponse(Response.Status.NOT_FOUND, e.getMessage());
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity("Invalid Access:  Logged in User not allowed to modify this record.")
-                    .build();
+            return errorResponse(Response.Status.FORBIDDEN, "Logged in User is not allowed to modify this record.");
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
             log.warn("Persistence Error Publishing: " + e.getMessage());
-            throw new InternalServerErrorException("IO Error: " + e.getMessage());
+            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.");
         } finally {
-            em.close();  
-        }
-    }
-            
-    
-    /**
-     * PUBLISH a Metadata Object; this operation signifies the project is 
-     * ready to be posted to DOECode's output search services.  This endpoint
-     * DOES NOT transmit the project to OSTI's software services for publication 
-     * there.
-     * 
-     * Will return a FORBIDDEN attempt should a User attempt to modify someone
-     * else's record.
-     * 
-     * @param object JSON of the DOECodeMetadata object to PUBLISH
-     * @return a Response containing the persisted metadata entity in JSON
-     * @throws InternalServerErrorException on JSON parsing or other IO errors
-     */
-    @POST
-    @Consumes ( MediaType.APPLICATION_JSON )
-    @Produces ( MediaType.APPLICATION_JSON )
-    @Path ("/publish")
-    @RequiresAuthentication
-    public Response publish(String object) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        
-        Subject subject = SecurityUtils.getSubject();
-        User user = (User) subject.getPrincipal();
-        
-        try {
-            em.getTransaction().begin();
-            
-            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            // set the OWNER
-            md.setOwner(user.getEmail());
-            // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Published);
-            
-            // store it
-            store(em, md, user);
-            // check validations
-            ValidationResponse errors = new ValidationResponse();
-            errors.addAll(validatePublished(md));
-            if (!errors.isEmpty()) {
-                errors.setStatus(Response.Status.BAD_REQUEST.getStatusCode());
-                return Response
-                        .status(Response.Status.BAD_REQUEST)
-                        .entity(mapper.writeValueAsString(errors))
-                        .build();
-            }
-            
-            // send to DataCite if needed
-            if ( null!=md.getDoi() ) {
-                if ( !DataCite.register(md) ) 
-                    log.warn("DataCite registration failed for " + md.getDoi());
-            }
-            // commit it
-            em.getTransaction().commit();
-            
-            // send this information to SOLR as well, if configured
-            sendToIndex(md);
-            
-            // we are done here
-            return Response
-                    .status(Response.Status.OK)
-                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
-                    .build();
-        } catch ( NotFoundException e ) {
-            throw e;
-        } catch ( IllegalAccessException e ) {
-            log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
-            log.warn("Message: " + e.getMessage());
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity("Invalid Access:  Logged in User not allowed to modify this record.")
-                    .build();
-        } catch ( IOException | InvocationTargetException e ) {
-            if ( em.getTransaction().isActive())
-                em.getTransaction().rollback();
-            
-            log.warn("Persistence Error Publishing: " + e.getMessage());
-            throw new InternalServerErrorException("IO Error: " + e.getMessage());
-        } finally {
-            em.close();  
+            em.close();
         }
     }
     
     /**
-     * SUBMIT endpoint; saves Software record to DOECode and sends results to
-     * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
+     * Perform SUBMIT workflow operation, optionally with associated file uploads.
      * 
-     * Will return a FORBIDDEN response if the OWNER logged in does not match
-     * the record's OWNER.
-     * 
-     * @param object the JSON of the record to PUBLISH/SUBMIT.
-     * @return a Response containing the resulting JSON metadata sent to OSTI,
-     * including any DOI registered.
-     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     * @param json String containing JSON of the Metadata to SUBMIT
+     * @param file the FILE (if any) to attach to this metadata
+     * @param fileInfo file disposition information if FILE present
+     * @return a Response containing the JSON of the submitted record if successful, or
+     * error information if not
      */
-    @POST
-    @Consumes ( MediaType.APPLICATION_JSON )
-    @Produces ( MediaType.APPLICATION_JSON )
-    @Path ("/submit")
-    @RequiresAuthentication
-    public Response submit(String object) {
+    private Response doSubmit(String json, InputStream file, FormDataContentDisposition fileInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
         
         try {
-            em.getTransaction().begin();
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
             
-            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
+            em.getTransaction().begin();
             // set the OWNER
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
@@ -760,14 +743,23 @@ public class Metadata {
             // persist this to the database
             store(em, md, user);
             // check validations
-            ValidationResponse errors = new ValidationResponse();
-            errors.addAll(validateSubmit(md));
-            if (!errors.isEmpty()) {
-                errors.setStatus(Response.Status.BAD_REQUEST.getStatusCode());
-                return Response
-                        .status(Response.Status.BAD_REQUEST)
-                        .entity(mapper.writeValueAsString(errors))
-                        .build();
+            List<String> errors = validateSubmit(md);
+            if ( !errors.isEmpty() ) {
+                return errorResponse(Response.Status.BAD_REQUEST, errors);
+            }
+            
+            // if there's a FILE associated here, store it
+            if ( null!=file && null!=fileInfo ) {
+                // re-attach metadata to transaction in order to store the filename
+                md = em.find(DOECodeMetadata.class, md.getCodeId());
+                
+                try {
+                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    md.setFileName(fileName);
+                } catch ( IOException e ) {
+                    log.error ("File Upload Failed: " + e.getMessage());
+                    return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
+                }
             }
             
             // send this to OSTI
@@ -819,23 +811,116 @@ public class Metadata {
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
-            throw e;
+            return errorResponse(Response.Status.NOT_FOUND, e.getMessage());
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity("Invalid Access:  Unable to edit indicated record.")
-                    .build();
+            return errorResponse(Response.Status.FORBIDDEN, "Invalid Access: Unable to edit indicated record.");
         } catch ( IOException |  InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
             log.warn("Persistence Error Publishing: " + e.getMessage());
-            throw new InternalServerErrorException("IO Error: " + e.getMessage());
+            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.");
         } finally {
             em.close();
         }
+    }
+    
+    /**
+     * Support multipart-file upload POSTs to PUBLISH.
+     * 
+     * Response Codes:
+     * 200 - OK, JSON returned of the metadata information published
+     * 400 - validation error, errors returned in JSON
+     * 401 - authentication is required to POST
+     * 403 - access is forbidden to this record
+     * 500 - file upload or database operation failed
+     * 
+     * @param metadata contains the JSON of the record metadata information
+     * @param file the uploaded file to attach
+     * @param fileInfo disposition information for the file name
+     * @return a Response appropriate to the request status
+     */
+    @POST
+    @Consumes (MediaType.MULTIPART_FORM_DATA)
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/publish")
+    @RequiresAuthentication
+    public Response publishFile(@FormDataParam("metadata") String metadata,
+            @FormDataParam("file") InputStream file,
+            @FormDataParam("file") FormDataContentDisposition fileInfo) {
+        return doPublish(metadata, file, fileInfo);
+    }
+            
+    
+    /**
+     * PUBLISH a Metadata Object; this operation signifies the project is 
+     * ready to be posted to DOECode's output search services.  This endpoint
+     * DOES NOT transmit the project to OSTI's software services for publication 
+     * there.
+     * 
+     * Will return a FORBIDDEN attempt should a User attempt to modify someone
+     * else's record.
+     * 
+     * @param object JSON of the DOECodeMetadata object to PUBLISH
+     * @return a Response containing the persisted metadata entity in JSON
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @POST
+    @Consumes ( MediaType.APPLICATION_JSON )
+    @Produces ( MediaType.APPLICATION_JSON )
+    @Path ("/publish")
+    @RequiresAuthentication
+    public Response publish(String object) {
+        return doPublish(object, null, null);
+    }
+    
+    /**
+     * SUBMIT endpoint; saves Software record to DOECode and sends results to
+     * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
+     * 
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * the record's OWNER.
+     * 
+     * @param object the JSON of the record to PUBLISH/SUBMIT.
+     * @return a Response containing the resulting JSON metadata sent to OSTI,
+     * including any DOI registered.
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @POST
+    @Consumes ( MediaType.APPLICATION_JSON )
+    @Produces ( MediaType.APPLICATION_JSON )
+    @Path ("/submit")
+    @RequiresAuthentication
+    public Response submit(String object) {
+        return doSubmit(object, null, null);
+    }
+    
+    /**
+     * Perform SUBMIT workflow with associated file upload.
+     * 
+     * Response Codes:
+     * 200 - OK, response includes metadata JSON
+     * 400 - record validation failed, errors in JSON
+     * 401 - Authentication is required to POST
+     * 403 - Access is forbidden to this record
+     * 500 - JSON parsing error or other unhandled exception
+     * 
+     * @param metadata the METADATA to SUBMIT
+     * @param file a FILE to associate with this METADATA
+     * @param fileInfo file disposition information for the FILE
+     * @return a Response containing the metadata, or error information
+     */
+    @POST
+    @Consumes (MediaType.MULTIPART_FORM_DATA)
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/submit")
+    @RequiresAuthentication
+    public Response submitFile(@FormDataParam("metadata") String metadata,
+            @FormDataParam("file") InputStream file,
+            @FormDataParam("file") FormDataContentDisposition fileInfo) {
+        return doSubmit(metadata, file, fileInfo);
     }
     
     /**
@@ -851,45 +936,26 @@ public class Metadata {
     @Produces ( MediaType.APPLICATION_JSON )
     @RequiresAuthentication
     public Response save(String object) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        
-        Subject subject = SecurityUtils.getSubject();
-        User user = (User) subject.getPrincipal();
-        
-        try {
-            em.getTransaction().begin();
-            
-            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            md.setWorkflowStatus(Status.Saved); // default to this
-            md.setOwner(user.getEmail()); // this User should OWN it
-            
-            store(em, md, user);
-            
-            // we're done here
-            em.getTransaction().commit();
-            
-            return Response
-                    .status(200)
-                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
-                    .build();
-        } catch ( NotFoundException e ) {
-            throw e;
-        } catch ( IllegalAccessException e ) {
-            log.warn("Persistence Error:  Invalid update attempt from " + user.getEmail());
-            log.warn("Message: " + e.getMessage());
-            return Response
-                    .status(Response.Status.FORBIDDEN)
-                    .entity("Unable to persist update to indicated record.")
-                    .build();
-        } catch ( IOException | InvocationTargetException e ) {
-            if (em.getTransaction().isActive())
-                em.getTransaction().rollback();
-            
-            log.warn("Persistence Error: " + e.getMessage());
-            throw new InternalServerErrorException("IO Error: " + e.getMessage());
-        } finally {
-            em.close();
-        }
+        return doSave(object, null, null);
+    }
+    
+    /**
+     * POST a Metadata to be SAVED with a file upload.
+     * 
+     * @param metadata the JSON containing the Metadata information
+     * @param file a FILE associated with this record
+     * @param fileInfo file disposition information for the FILE
+     * @return a Response containing the JSON of the metadata if successful, or
+     * error information if not
+     */
+    @POST
+    @Consumes (MediaType.MULTIPART_FORM_DATA)
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    public Response save(@FormDataParam("metadata") String metadata,
+            @FormDataParam("file") InputStream file,
+            @FormDataParam("file") FormDataContentDisposition fileInfo) {
+        return doSave(metadata, file, fileInfo);
     }
     
     /**
@@ -926,11 +992,11 @@ public class Metadata {
         
         if (null==m.getAccessibility())
             reasons.add("Missing Source Accessibility.");
-        if (null==m.getRepositoryLink() && null==m.getLandingPage())
+        if (StringUtils.isBlank(m.getRepositoryLink()) && StringUtils.isBlank(m.getLandingPage()))
             reasons.add("Either a repository link or landing page is required.");
-        if (null==m.getSoftwareTitle())
+        if (StringUtils.isBlank(m.getSoftwareTitle()))
             reasons.add("Software title is required.");
-        if (null==m.getDescription())
+        if (StringUtils.isBlank(m.getDescription()))
             reasons.add("Description is required.");
         if (null==m.getLicenses())
             reasons.add("A License is required.");
@@ -938,11 +1004,11 @@ public class Metadata {
             reasons.add("At least one developer is required.");
         else {
             for ( Developer developer : m.getDevelopers() ) {
-                if ( null==developer.getFirstName() )
+                if ( StringUtils.isBlank(developer.getFirstName()) )
                     reasons.add("Developer missing first name.");
-                if ( null==developer.getLastName() )
+                if ( StringUtils.isBlank(developer.getLastName()) )
                     reasons.add("Developer missing last name.");
-                if ( null!=developer.getEmail() ) {
+                if ( StringUtils.isNotBlank(developer.getEmail()) ) {
                     matcher = EMAIL_PATTERN.matcher(developer.getEmail());
 
                     if (!matcher.matches())
@@ -950,7 +1016,7 @@ public class Metadata {
                 }
             }
         }
-        if (null!=m.getDoi() && null==m.getReleaseDate())
+        if (StringUtils.isNotBlank(m.getDoi()) && null==m.getReleaseDate())
             reasons.add("Release Date is required for DOI registration.");
         return reasons;
     }
@@ -974,7 +1040,7 @@ public class Metadata {
             reasons.add("At least one sponsoring organization is required.");
         else {
             for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
-                if (null==o.getOrganizationName())
+                if (StringUtils.isBlank(o.getOrganizationName()))
                     reasons.add("Sponsoring organization name is required.");
                 // TODO: add contract number validation on PRIMARY AWARD
             }
@@ -983,27 +1049,27 @@ public class Metadata {
             reasons.add("At least one research organization is required.");
         else {
             for ( ResearchOrganization o : m.getResearchOrganizations() ) {
-                if (null==o.getOrganizationName())
+                if (StringUtils.isBlank(o.getOrganizationName()))
                     reasons.add("Research organization name is required.");
             }
         }
-        if (null==m.getRecipientName())
+        if (StringUtils.isBlank(m.getRecipientName()))
             reasons.add("Contact name is required.");
-        if (null==m.getRecipientEmail())
+        if (StringUtils.isBlank(m.getRecipientEmail()))
             reasons.add("Contact email is required.");
         else {
             matcher = EMAIL_PATTERN.matcher(m.getRecipientEmail());
             if (!matcher.matches())
                 reasons.add("Contact email is not valid.");
         }
-        if (null==m.getRecipientPhone())
+        if (StringUtils.isBlank(m.getRecipientPhone()))
             reasons.add("Contact phone number is required.");
         else {
             matcher = PHONE_NUMBER_PATTERN.matcher(m.getRecipientPhone());
             if (!matcher.matches())
                 reasons.add("Contact phone number is not valid.");
         }
-        if (null==m.getRecipientOrg())
+        if (StringUtils.isBlank(m.getRecipientOrg()))
             reasons.add("Contact organization is required.");
         
         return reasons;

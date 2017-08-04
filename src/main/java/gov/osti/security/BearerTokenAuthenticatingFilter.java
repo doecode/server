@@ -28,7 +28,6 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	
 	@Override
 	protected AuthenticationToken createToken(ServletRequest request, ServletResponse response) throws Exception {
-		System.out.println("Authenticating");
 		HttpServletRequest req = (HttpServletRequest) request;
 		//go through cookies and pull out accessToken
 		Cookie[] cookies = req.getCookies();
@@ -76,7 +75,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
                         .setParameter("apiKey", apiKey)
                         .getSingleResult();
 	    } catch ( Exception e ) {
-	        System.out.println(e);
+                log.warn("Authentication Error: " + e.getMessage());
 	        throw new AuthenticationException("Could not find user");
 	    } finally {
 	        em.close();  
@@ -104,7 +103,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 		try {
 			return executeLogin(request,response);
 		} catch (Exception e) {
-			System.out.println(e);
+                    log.error("Access allowed error: " + e.getMessage());
 			return false;
 		}
 	}
@@ -121,7 +120,6 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 			NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
 			res.setHeader("SET-COOKIE", cookie.toString());
 		}
-		System.out.println("Success");
 		return true;
 	}
 

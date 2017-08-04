@@ -32,8 +32,6 @@ public Response check() {
 	Subject subject = SecurityUtils.getSubject();
 	User currentUser = (User) subject.getPrincipal();
 
-	System.out.println(subject.isAuthenticated());
-	System.out.println("Checked");
     return Response.ok().build();
 }
 }
