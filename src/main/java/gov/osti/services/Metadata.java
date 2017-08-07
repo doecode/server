@@ -599,6 +599,7 @@ public class Metadata {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
             md.setWorkflowStatus(Status.Saved); // default to this
             md.setOwner(user.getEmail()); // this User should OWN it
+            md.setSiteOwnershipCode(user.getSiteId());
             
             store(em, md, user);
             
@@ -661,6 +662,7 @@ public class Metadata {
             // set the ownership and workflow status
             md.setOwner(user.getEmail());
             md.setWorkflowStatus(Status.Published);
+            md.setSiteOwnershipCode(user.getSiteId());
             
             // store it
             store(em, md, user);
@@ -740,6 +742,8 @@ public class Metadata {
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
             md.setWorkflowStatus(Status.Published);
+            // set the SITE
+            md.setSiteOwnershipCode(user.getSiteId());
             
             // persist this to the database
             store(em, md, user);
