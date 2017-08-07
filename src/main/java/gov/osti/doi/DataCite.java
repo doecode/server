@@ -87,10 +87,13 @@ public class DataCite {
                 sw.writeCharacters(developer.getOrcid());
                 sw.writeEndElement();
             }
-            if (!"".equals(developer.getAffiliations())) {
-                sw.writeStartElement("affiliation");
-                sw.writeCharacters(developer.getAffiliations());
-                sw.writeEndElement();
+            List<String> affiliations = developer.getAffiliations();
+            if ( null!=affiliations && !affiliations.isEmpty() ) {
+                for ( String affiliation : affiliations ) {
+                    sw.writeStartElement("affiliation");
+                    sw.writeCharacters(affiliation);
+                    sw.writeEndElement();
+                }
             }
             
             sw.writeEndElement();
@@ -127,10 +130,13 @@ public class DataCite {
                 sw.writeCharacters(contributor.getOrcid());
                 sw.writeEndElement();
             }
-            if (!"".equals(contributor.getAffiliations())) {
-                sw.writeStartElement("affiliation");
-                sw.writeCharacters(contributor.getAffiliations());
-                sw.writeEndElement();
+            List<String> affiliations = contributor.getAffiliations();
+            if ( null!=affiliations && !affiliations.isEmpty() ) {
+                for ( String affiliation : affiliations ) {
+                    sw.writeStartElement("affiliation");
+                    sw.writeCharacters(affiliation);
+                    sw.writeEndElement();
+                }
             }
             
             sw.writeEndElement();

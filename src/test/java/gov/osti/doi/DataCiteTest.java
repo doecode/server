@@ -28,7 +28,7 @@ public class DataCiteTest {
 "	\"developers\": [{\n" +
 "		\"place\": 1,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"IIa\",\n" +
+"		\"affiliations\": [\"IIa\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Shelby\",\n" +
 "		\"last_name\": \"Stooksbury\",\n" +
@@ -36,7 +36,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 2,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"Oak Ridge National Laboratory\",\n" +
+"		\"affiliations\": [\"Oak Ridge National Laboratory\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Jay Jay\",\n" +
 "		\"last_name\": \"Billings\",\n" +
@@ -44,7 +44,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 3,\n" +
 "		\"email\": \"knight.kathryn@gmail.com\",\n" +
-"		\"affiliations\": \"Oak Ridge National Laboratory\",\n" +
+"		\"affiliations\": [\"Oak Ridge National Laboratory\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Katie\",\n" +
 "		\"last_name\": \"Knight\",\n" +
@@ -52,7 +52,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 4,\n" +
 "		\"email\": \"IanLee1521@gmail.com\",\n" +
-"		\"affiliations\": \"Lawrence Livermore National Laboratory, @LLNL\",\n" +
+"		\"affiliations\": [\"Lawrence Livermore National Laboratory, @LLNL\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Ian\",\n" +
 "		\"last_name\": \"Lee\",\n" +
@@ -60,7 +60,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 5,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"IIA\",\n" +
+"		\"affiliations\": [\"IIA\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Andrew\",\n" +
 "		\"last_name\": \"Smith\",\n" +
@@ -68,7 +68,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 6,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"\",\n" +
+"		\"affiliations\": [\"\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"vowelllDOE\",\n" +
 "		\"last_name\": \"(undefined)\",\n" +
@@ -76,7 +76,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 7,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"\",\n" +
+"		\"affiliations\": [\"\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Neal\",\n" +
 "		\"last_name\": \"Ensor\",\n" +
@@ -84,7 +84,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 8,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"\",\n" +
+"		\"affiliations\": [\"\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"nelsonjc-osti\",\n" +
 "		\"last_name\": \"(undefined)\",\n" +
@@ -92,7 +92,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 9,\n" +
 "		\"email\": \"sherlinec@osti.gov\",\n" +
-"		\"affiliations\": \"https://www.osti.gov/\",\n" +
+"		\"affiliations\": [\"https://www.osti.gov/\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Crystal\",\n" +
 "		\"last_name\": \"Sherline\",\n" +
@@ -100,7 +100,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 10,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"\",\n" +
+"		\"affiliations\": [\"\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Darel\",\n" +
 "		\"last_name\": \"Finkbeiner\",\n" +
@@ -108,7 +108,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 11,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"U.S. Department of Energy Office of Scientific and Technical Information\",\n" +
+"		\"affiliations\": [\"U.S. Department of Energy Office of Scientific and Technical Information\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Lorrie Apple\",\n" +
 "		\"last_name\": \"Johnson\",\n" +
@@ -116,7 +116,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 12,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"\",\n" +
+"		\"affiliations\": [\"\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Lynn\",\n" +
 "		\"last_name\": \"Davis\",\n" +
@@ -124,7 +124,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 13,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"\",\n" +
+"		\"affiliations\": [\"\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Mike\",\n" +
 "		\"last_name\": \"Hensley\",\n" +
@@ -132,7 +132,7 @@ public class DataCiteTest {
 "	}, {\n" +
 "		\"place\": 14,\n" +
 "		\"email\": \"\",\n" +
-"		\"affiliations\": \"Information International Associates (Contractor to DOE)\",\n" +
+"		\"affiliations\": [\"Information International Associates (Contractor to DOE)\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Thomas\",\n" +
 "		\"last_name\": \"Welsch\",\n" +
@@ -141,7 +141,7 @@ public class DataCiteTest {
 "	\"contributors\": [{\n" +
 "		\"place\": 1,\n" +
 "		\"email\": \"testguy@testing.com\",\n" +
-"		\"affiliations\": \"Testing Services, Inc.\",\n" +
+"		\"affiliations\": [\"Testing Services, Inc.\"],\n" +
 "		\"orcid\": \"\",\n" +
 "		\"first_name\": \"Tester\",\n" +
 "		\"last_name\": \"McTestyface\",\n" +

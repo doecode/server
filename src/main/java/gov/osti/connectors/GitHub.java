@@ -164,7 +164,9 @@ public class GitHub implements ConnectorInterface {
                         User user = mapper.readValue(HttpUtil.fetch(user_request), User.class);
 
                         developer.setEmail(user.getEmail());
-                        developer.setAffiliations(user.getCompany());
+                        List<String> affiliations = new ArrayList<>();
+                        affiliations.add(user.getCompany());
+                        developer.setAffiliations(affiliations);
 
                         /** if no User name is present, default to the login name;
                          * otherwise attempt to break into first/last name.

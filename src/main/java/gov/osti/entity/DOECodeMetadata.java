@@ -305,13 +305,14 @@ public class DOECodeMetadata implements Serializable {
     }
      
 
+    @Column (name="PROPRIETARY_URL")
     public String getProprietaryUrl() {
-		return proprietaryUrl;
-	}
+            return proprietaryUrl;
+    }
 
-	public void setProprietaryUrl(String proprietaryUrl) {
-		this.proprietaryUrl = proprietaryUrl;
-	}
+    public void setProprietaryUrl(String proprietaryUrl) {
+            this.proprietaryUrl = proprietaryUrl;
+    }
 
 	/**
      * Get all the Developers for this Metadata

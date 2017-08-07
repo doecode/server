@@ -95,17 +95,24 @@ public class MetadataYamlTest {
         for ( Developer d : developers ) {
             if ("Jay Jay".equals(d.getFirstName())) {
                 assertEquals("Last name wrong", "Billings", d.getLastName());
-                assertEquals("Affiliations wrong", "Oak Ridge National Laboratory", d.getAffiliations());
+                assertNotNull("Affiliations null", d.getAffiliations());
+                assertEquals("Count is wrong", 1, d.getAffiliations().size());
+                assertFalse ("Missing affiliations", d.getAffiliations().isEmpty());
+                assertTrue  ("Affiliations wrong", d.getAffiliations().contains("Oak Ridge National Laboratory"));
             } else if ("Knight".equals(d.getLastName())) {
                 assertEquals("First name wrong", "Katie", d.getFirstName());
                 assertEquals("Email wrong", "knight.kathryn@gmail.com", d.getEmail());
-                assertEquals("Affiliations wrong", "Oak Ridge National Laboratory", d.getAffiliations());
+                assertNotNull("Missing affiliations", d.getAffiliations());
+                assertEquals("Count wrong", 1, d.getAffiliations().size());
+                assertTrue  ("Affiliations wrong", d.getAffiliations().contains("Oak Ridge National Laboratory"));
             } else if ("Ensor".equals(d.getLastName())) {
                 assertEquals("First name wrong", "Neal", d.getFirstName());
                 assertEquals("email wrong", "ensorn@osti.gov", d.getEmail());
             } else if ("Welsch".equals(d.getLastName())) {
                 assertEquals("First name wrong", "Thomas", d.getFirstName());
-                assertEquals("Affiliation wrong", "Information International Associates (Contractor to DOE)", d.getAffiliations());
+                assertNotNull("Affiliations missing", d.getAffiliations());
+                assertEquals("Count wrong", 1, d.getAffiliations().size());
+                assertTrue  ("Affiliation wrong", d.getAffiliations().contains("Information International Associates (Contractor to DOE)"));
                 assertEquals("email wrong", "welscht@osti.gov", d.getEmail());
             } else {
                 fail ("Unknown developer found: " + d.getLastName());
@@ -186,7 +193,9 @@ public class MetadataYamlTest {
         Contributor contributor = contributors.get(0);
         assertEquals("Contributor name wrong", "Bob", contributor.getFirstName());
         assertEquals("Contributor name wrong", "McTester", contributor.getLastName());
-        assertEquals("Affiliation wrong", "Java Testing Services, Inc.", contributor.getAffiliations());
+        assertNotNull("Missing affiliation", contributor.getAffiliations());
+        assertEquals("affiliation count wrong", 1, contributor.getAffiliations().size());
+        assertTrue  ("Affiliation wrong", contributor.getAffiliations().contains("Java Testing Services, Inc."));
         assertEquals("Contributor type wrong", Contributor.Type.DataCurator, contributor.getContributorType());
         assertEquals("Email wrong", "mctester@testingservices.com", contributor.getEmail());
         
