@@ -13,6 +13,7 @@
     <class>gov.osti.entity.ResearchOrganization</class>
     <class>gov.osti.entity.SponsoringOrganization</class>
     <class>gov.osti.entity.User</class>
+    <class>gov.osti.entity.Site</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="${database.url}"/>
       <property name="javax.persistence.jdbc.user" value="${database.user}"/>
