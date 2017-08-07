@@ -78,7 +78,7 @@ public class Agent implements Serializable {
     @ElementCollection
     @CollectionTable(
             name = "AFFILIATIONS",
-            joinColumns=@JoinColumn(name="CODE_ID")
+            joinColumns=@JoinColumn(name="AGENT_ID")
     )
     @Column (name = "AFFILIATION")
     public List<String> getAffiliations() {
