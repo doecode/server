@@ -1,10 +1,14 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import javax.persistence.CollectionTable;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.JoinColumn;
 
 /**
  * The Contributor Embeddable entity class.
@@ -44,6 +48,7 @@ public class Contributor extends Agent {
         Other 
     }
     private Type contributorType;
+    private List<String> affiliations;
 
     @Enumerated (EnumType.STRING)
     @Column (name = "CONTRIBUTOR_TYPE")
@@ -53,5 +58,24 @@ public class Contributor extends Agent {
 
     public void setContributorType(Type contributorType) {
             this.contributorType = contributorType;
+    }
+    
+    /**
+     * Get CONTRIBUTOR AFFILIATIONS.  (Evidently JPA does NOT like to do this
+     * at the mapped superclass level?)
+     * 
+     * @return a List of affiliation names, if any
+     */
+    @ElementCollection
+    @CollectionTable(
+            name = "CONTRIBUTOR_AFFILIATIONS",
+            joinColumns=@JoinColumn(name="AGENT_ID")
+    )
+    @Column (name = "AFFILIATION")
+    public List<String> getAffiliations() {
+            return affiliations;
+    }
+    public void setAffiliations(List<String> affiliations) {
+            this.affiliations = affiliations;
     }
 }

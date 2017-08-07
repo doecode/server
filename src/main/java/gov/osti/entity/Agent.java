@@ -3,14 +3,10 @@ package gov.osti.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
-import java.util.List;
-import javax.persistence.CollectionTable;
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.MappedSuperclass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +23,6 @@ public class Agent implements Serializable {
     private static Logger log = LoggerFactory.getLogger(Agent.class);
     private Long agentId = 0L;
     private String email = "";
-    private List<String> affiliations;
     private String orcid = "";
     private String firstName = "";
     private String lastName = "";
@@ -79,18 +74,7 @@ public class Agent implements Serializable {
             this.email = email;
     }
 
-    @ElementCollection
-    @CollectionTable(
-            name = "AFFILIATIONS",
-            joinColumns=@JoinColumn(name="AGENT_ID")
-    )
-    @Column (name = "AFFILIATION")
-    public List<String> getAffiliations() {
-            return affiliations;
-    }
-    public void setAffiliations(List<String> affiliations) {
-            this.affiliations = affiliations;
-    }
+    
 
     public String getOrcid() {
             return orcid;
