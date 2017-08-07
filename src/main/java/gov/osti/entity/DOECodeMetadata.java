@@ -403,7 +403,7 @@ public class DOECodeMetadata implements Serializable {
             this.siteAccessionNumber = siteAccessionNumber;
     }
 
-    @Column (name="OTHER_SPECIAL_REQUIREMENTS")
+    @Column (name="OTHER_SPECIAL_REQUIREMENTS", length = 1500)
     public String getOtherSpecialRequirements() {
             return otherSpecialRequirements;
     }
