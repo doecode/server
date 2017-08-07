@@ -89,6 +89,7 @@ public class DOECodeMetadata implements Serializable {
     private String keywords = null;
     private String disclaimers = null;
     private List<String> licenses;
+    private String proprietaryUrl = null;
     private String recipientName = null;
     private String recipientEmail = null;
     private String recipientPhone = null;
@@ -302,8 +303,17 @@ public class DOECodeMetadata implements Serializable {
     public void setLicenses(List<String> licenses) {
             this.licenses = licenses;
     }
+     
 
-    /**
+    public String getProprietaryUrl() {
+		return proprietaryUrl;
+	}
+
+	public void setProprietaryUrl(String proprietaryUrl) {
+		this.proprietaryUrl = proprietaryUrl;
+	}
+
+	/**
      * Get all the Developers for this Metadata
      * @return the List of Developers
      */

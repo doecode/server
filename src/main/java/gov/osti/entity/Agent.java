@@ -23,7 +23,7 @@ public class Agent implements Serializable {
     private static Logger log = LoggerFactory.getLogger(Agent.class);
     private Long agentId = 0L;
     private String email = "";
-    private String affiliations = "";
+    private List<String> affiliations;
     private String orcid = "";
     private String firstName = "";
     private String lastName = "";
@@ -75,12 +75,16 @@ public class Agent implements Serializable {
             this.email = email;
     }
 
-    @Column (length = 1000)
-    public String getAffiliations() {
+    @ElementCollection
+    @CollectionTable(
+            name = "AFFILIATIONS",
+            joinColumns=@JoinColumn(name="CODE_ID")
+    )
+    @Column (name = "AFFILIATION")
+    public List<String> getAffiliations() {
             return affiliations;
     }
-
-    public void setAffiliations(String affiliations) {
+    public void setAffiliations(List<String> affiliations) {
             this.affiliations = affiliations;
     }
 
