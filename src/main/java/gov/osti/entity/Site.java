@@ -34,7 +34,7 @@ public class Site implements Serializable {
     @ElementCollection
     @CollectionTable(
             name = "EMAIL_DOMAINS",
-            joinColumns=@JoinColumn(name="CODE_ID")
+            joinColumns=@JoinColumn(name="lab")
     )
     @Column (name="EMAIL_DOMAIN")
 	public List<String> getEmailDomains() {

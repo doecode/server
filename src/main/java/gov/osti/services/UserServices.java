@@ -33,6 +33,8 @@ import gov.osti.entity.User;
 import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
+import java.util.List;
+import javax.persistence.NoResultException;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
@@ -272,8 +274,8 @@ public Response confirmUser(@QueryParam("confirmation") String jwt) {
         query.setParameter("domain", domain);
         
         // look up the Site and set CODE, or CONTR if not found
-        Site site = query.getSingleResult();
-        currentUser.setSiteId((null==site) ? "CONTR" : site.getSiteCode());
+        List<Site> sites = query.getResultList();
+        currentUser.setSiteId((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
         
 	//if we got here, we're good. Verify and then set the confirmation code
 	currentUser.setVerified(true);
