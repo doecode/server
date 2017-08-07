@@ -27,11 +27,14 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.osti.entity.Site;
 
 import gov.osti.entity.User;
 import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 
 @Path("user")
@@ -264,8 +267,14 @@ public Response confirmUser(@QueryParam("confirmation") String jwt) {
 		//note that claim has expired, maybe give them the option to get another token?
     	return Response.status(Response.Status.UNAUTHORIZED).build();
 	}
-	
-	
+        String domain = email.substring(email.indexOf("@"));
+        TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
+        query.setParameter("domain", domain);
+        
+        // look up the Site and set CODE, or CONTR if not found
+        Site site = query.getSingleResult();
+        currentUser.setSiteId((null==site) ? "CONTR" : site.getSiteCode());
+        
 	//if we got here, we're good. Verify and then set the confirmation code
 	currentUser.setVerified(true);
 	currentUser.setConfirmationCode("");
