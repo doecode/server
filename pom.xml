@@ -61,6 +61,13 @@
 			<version>9.4.1212</version>
 		</dependency>
                 
+                <!-- for COUNTRY CODE and name conversions based on ISO-3166-1 standard -->
+                <dependency>
+                    <groupId>com.neovisionaries</groupId>
+                    <artifactId>nv-i18n</artifactId>
+                    <version>1.22</version>
+                </dependency>
+                
                 <!-- Apache HTTP components for connector communication -->
                 <dependency>
                   <groupId>org.apache.httpcomponents</groupId>

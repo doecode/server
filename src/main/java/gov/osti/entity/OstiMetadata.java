@@ -8,10 +8,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.neovisionaries.i18n.CountryCode;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Implement an Entity class for exchanging information with OSTI's ELINK service.
@@ -66,6 +68,18 @@ public class OstiMetadata {
     public static OstiMetadata fromJson(Reader reader) throws IOException {
         return mapper.readValue(reader, OstiMetadata.class);
     }
+    
+    /**
+     * Attempt to locate a CountryCode based on the passed-in name (in case-insensitive
+     * search).
+     * 
+     * @param name the COUNTRY NAME
+     * @return a List (possibly empty) of CountryCode values if any matched
+     */
+    public static List<CountryCode> findCountryByName(String name) {
+        return CountryCode.findByName(Pattern.compile(name, Pattern.CASE_INSENSITIVE));
+    }
+    
     /**
      * Copy the relevant attributes from DOECodeMetadata into a submission object
      * for OSTI's ELINK service.
@@ -76,7 +90,10 @@ public class OstiMetadata {
         setCodeId(md.getCodeId());
         setSiteOwnershipCode(md.getSiteOwnershipCode());
         setKeywords(md.getKeywords());
-        setCountryPublicationCode(md.getCountryOfOrigin());
+        // DOECODE stores COUNTRY NAME; convert to two-character standard COUNTRY CODE
+        List<CountryCode> countries = findCountryByName(md.getCountryOfOrigin());
+        // "ZZ" is the default unknown value for ELINK
+        setCountryPublicationCode ((countries.isEmpty()) ? "ZZ" : countries.get(0).getAlpha2());
         setSoftwareTitle(md.getSoftwareTitle());
         setAcronym(md.getAcronym());
         
