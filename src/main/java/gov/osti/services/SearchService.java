@@ -6,11 +6,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import gov.osti.entity.SearchData;
+import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URISyntaxException;
-import java.util.Properties;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -47,30 +46,7 @@ public class SearchService {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     
     // configured location of the search service endpoint
-    private static String SEARCH_URL = "";
-    
-    // create and start a ConnectorFactory for use by "autopopulate" service
-    static {
-        Properties config = new Properties();
-        InputStream stream = null;
-        
-        try {
-        // read the index configuration if present
-        try {
-            stream = SearchService.class.getClassLoader().getResourceAsStream("doecode.properties");
-            config.load(stream);
-            
-            SEARCH_URL = config.getProperty("search.url", "");
-            // if property is not set, disable indexing
-            if (SEARCH_URL.startsWith("$")) SEARCH_URL = "";
-        } finally {
-            if (null!=stream) stream.close(); stream = null;
-        }
-        
-        } catch ( IOException e ) {
-            log.warn("Configuration failure: " + e.getMessage());
-        }
-    }
+    private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
     
     /**
      * Translate a SearchData parameter request to SOLR output search results.

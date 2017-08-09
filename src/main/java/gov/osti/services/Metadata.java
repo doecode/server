@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
@@ -27,6 +28,7 @@ import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -60,7 +62,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -104,6 +111,8 @@ public class Metadata {
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
+    // API path to archiver services if available
+    private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     
     // regular expressions for validating phone numbers (US) and email addresses
     private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
@@ -530,6 +539,65 @@ public class Metadata {
         }
     }
     
+    private static void sendToArchiver(DOECodeMetadata md) throws IOException {
+        if ( "".equals(ARCHIVER_URL) ) 
+            return;
+        
+        // set up a connection
+        CloseableHttpClient hc =
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(RequestConfig
+                        .custom()
+                        .setSocketTimeout(5000)
+                        .setConnectTimeout(5000)
+                        .build())
+                .build();
+        
+        try {
+            HttpPost post = new HttpPost(ARCHIVER_URL);
+            // attributes to send
+            ObjectNode request = mapper.createObjectNode();
+            request.put("code_id", md.getCodeId());
+            request.put("project_name", (null==md.getAcronym()) ? md.getSoftwareTitle() : md.getAcronym());
+            request.put("project_description", (null==md.getDescription()) ? "" : md.getDescription());
+            request.put("repository_link", md.getRepositoryLink());
+            
+            // determine if there's a file to send or not
+            if (null==md.getFileName()) {
+                post.setHeader("Content-Type", "application/json");
+                post.setHeader("Accept", "application/json");
+
+                post.setEntity(new StringEntity(request.toString()));
+            } else {
+                post.setHeader("Content-Type", "multipart/form-data");
+                post.setHeader("Accept", "application/json");
+                post.setEntity(MultipartEntityBuilder
+                        .create()
+                        .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
+                        .addPart("file", new FileBody(new File(md.getFileName()), ContentType.DEFAULT_BINARY))
+                        .addPart("project", new StringBody(request.toString(), ContentType.APPLICATION_JSON))
+                        .build());
+            }
+            HttpResponse response = hc.execute(post);
+            
+            int statusCode = response.getStatusLine().getStatusCode();
+            
+            if (HttpStatus.SC_OK!=statusCode && HttpStatus.SC_CREATED!=statusCode) {
+                throw new IOException ("Archiver Error: " + EntityUtils.toString(response.getEntity()));
+            }
+        } catch ( IOException e ) {
+            log.warn("Archiver request error: " + e.getMessage());
+            throw e;
+        } finally {
+            try {
+                if (null!=hc) hc.close();
+            } catch ( IOException e ) {
+                log.warn("Close Error: " + e.getMessage());
+            }
+        }
+    }
+    
     /**
      * Attempt to send this Metadata information to the indexing service configured.
      * If no service is configured, do nothing.
@@ -685,6 +753,13 @@ public class Metadata {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
                 }
+            }
+            // send this file upload along to archiver if configured
+            try {
+                sendToArchiver(md);
+            } catch ( IOException e ) {
+                log.error("Archiver call failure: " + e.getMessage());
+                return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.");
             }
             
             // send to DataCite if needed

@@ -33,7 +33,8 @@ public class SearchData implements Serializable {
     private String identifiers = null;
     private Date dateEarliest = null;
     private Date dateLatest = null;
-    private String availability = null;
+    private String[] accessibility = null;
+    private String[] licenses;
     private String researchOrganization = null;
     private String sponsoringOrganization = null;
     private String sort = null;
@@ -106,12 +107,12 @@ public class SearchData implements Serializable {
 		this.dateLatest = dateLatest;
 	}
 
-	public String getAvailability() {
-		return availability;
+	public String[] getAccessibility() {
+		return accessibility;
 	}
 
-	public void setAvailability(String availability) {
-		this.availability = availability;
+	public void setAccessibility(String[] accessibility) {
+		this.accessibility = accessibility;
 	}
 
 	public String getResearchOrganization() {
@@ -152,9 +153,27 @@ public class SearchData implements Serializable {
             if (q.length()>0) q.append(" ");
             q.append("_text_:(").append(getAllFields()).append(")");
         }
-        if (!StringUtils.isEmpty(getAvailability())) {
-            if (q.length()>0) q.append(" ");
-            q.append("accessibility:").append(getAvailability());
+        if (null!=getAccessibility()) {
+            StringBuilder codes = new StringBuilder();
+            for ( String code : getAccessibility()) {
+                if (codes.length()>0) codes.append(" OR ");
+                codes.append(code);
+            }
+            if ( codes.length()>0 ) {
+                if (q.length()>0) q.append(" ");
+                q.append("accessibility:(").append(codes.toString()).append(")");
+            }
+        }
+        if (null!=getLicenses()) {
+            StringBuilder values = new StringBuilder();
+            for ( String license : getLicenses() ) {
+                if (values.length()>0) values.append(" OR ");
+                values.append("\"").append(license).append("\"");
+            }
+            if (values.length()>0) {
+                if (q.length()>0) q.append(" ");
+                q.append("licenses:(").append(values.toString()).append(")");
+            }
         }
         if (!StringUtils.isEmpty(getBiblioData())) {
             if (q.length()>0) q.append(" ");
@@ -238,6 +257,20 @@ public class SearchData implements Serializable {
      */
     public void setStart(Integer start) {
         this.start = start;
+    }
+
+    /**
+     * @return the licenses
+     */
+    public String[] getLicenses() {
+        return licenses;
+    }
+
+    /**
+     * @param licenses the licenses to set
+     */
+    public void setLicenses(String[] licenses) {
+        this.licenses = licenses;
     }
     
 }

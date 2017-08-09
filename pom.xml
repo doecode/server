@@ -11,6 +11,7 @@
 	<properties>
 		<jdk.version>1.8</jdk.version>
                 <jersey.version>2.22.2</jersey.version>
+                <httpclient.version>4.5.2</httpclient.version>
                 <projectName>doecodeapi</projectName>
 	</properties>
 
@@ -72,8 +73,16 @@
                 <dependency>
                   <groupId>org.apache.httpcomponents</groupId>
                   <artifactId>httpclient</artifactId>
-                  <version>4.5.2</version>
+                  <version>${httpclient.version}</version>
                   <type>jar</type>
+                </dependency>
+                
+                <!-- Apache HTTP multipart form upload -->
+                <dependency>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpmime</artifactId>
+                    <version>${httpclient.version}</version>
+                    <type>jar</type>
                 </dependency>
 
                 <!-- Jackson XML/JSON libraries -->
