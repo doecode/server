@@ -41,13 +41,16 @@ public class HttpUtil {
      * @throws IOException on IO errors
      */
     protected static String fetch(HttpGet get) throws IOException {
-        // set some reasonable default timeouts
-        RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
         // create an HTTP client to request through
         CloseableHttpClient hc = 
                 HttpClientBuilder
                 .create()
-                .setDefaultRequestConfig(rc)
+                .setDefaultRequestConfig(RequestConfig
+                    .custom()
+                    .setConnectTimeout(5000)
+                    .setConnectionRequestTimeout(5000)
+                    .setSocketTimeout(5000)
+                    .build())
                 .build();
         
         try {

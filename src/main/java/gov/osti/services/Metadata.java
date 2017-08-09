@@ -551,6 +551,7 @@ public class Metadata {
                         .custom()
                         .setSocketTimeout(5000)
                         .setConnectTimeout(5000)
+                        .setConnectionRequestTimeout(5000)
                         .build())
                 .build();
         
@@ -614,6 +615,7 @@ public class Metadata {
                 .custom()
                 .setSocketTimeout(5000)
                 .setConnectTimeout(5000)
+                .setConnectionRequestTimeout(5000)
                 .build();
         // create an HTTP client to request through
         CloseableHttpClient hc = 
@@ -850,12 +852,16 @@ public class Metadata {
             String publishing_host = context.getInitParameter("publishing.host");
             if (null!=publishing_host) {
                 // set some reasonable default timeouts
-                RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
                 // create an HTTP client to request through
                 CloseableHttpClient hc = 
                         HttpClientBuilder
                         .create()
-                        .setDefaultRequestConfig(rc)
+                        .setDefaultRequestConfig(RequestConfig
+                                .custom()
+                                .setSocketTimeout(5000)
+                                .setConnectTimeout(5000)
+                                .setConnectionRequestTimeout(5000)
+                                .build())
                         .build();
                 HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
                 post.setHeader("Content-Type", "application/json");

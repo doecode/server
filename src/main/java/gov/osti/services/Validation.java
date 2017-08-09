@@ -200,6 +200,7 @@ public class Validation {
                 .custom()
                 .setSocketTimeout(5000)
                 .setConnectTimeout(5000)
+                .setConnectionRequestTimeout(5000)
                 .build();
         CloseableHttpClient hc = HttpClientBuilder
                 .create()
@@ -291,12 +292,16 @@ public class Validation {
         ValidationResponse validationResponse = new ValidationResponse();
         
         // set some reasonable default timeouts
-        RequestConfig rc = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
         // create an HTTP client to request through
         CloseableHttpClient hc = 
                 HttpClientBuilder
                 .create()
-                .setDefaultRequestConfig(rc)
+                .setDefaultRequestConfig(RequestConfig
+                        .custom()
+                        .setSocketTimeout(5000)
+                        .setConnectTimeout(5000)
+                        .setConnectionRequestTimeout(5000)
+                        .build())
                 .build();
 
         try {

@@ -284,7 +284,7 @@ public class DOECodeMetadata implements Serializable {
     public void setKeywords(String keywords) {
             this.keywords = keywords;
     }
-    @Column (length = 1000)
+    @Column (length = 3000)
     public String getDisclaimers() {
             return disclaimers;
     }
