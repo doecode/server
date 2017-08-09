@@ -317,7 +317,6 @@ public class DataCite {
         sw.writeEndElement();
         
         sw.writeEndDocument();
-        log.info(out.toString());
         return out.toString();
     }
     

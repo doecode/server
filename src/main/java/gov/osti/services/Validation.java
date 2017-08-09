@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +28,11 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
+import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.lib.Ref;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -223,6 +229,38 @@ public class Validation {
         }
         return false;
     }
+    
+    /**
+     * Determine whether or not the passed-in value is a VALID repository link.
+     * 
+     * Presently, valid means a remote-accessible HTTP(S)-based git repository.
+     * 
+     * @param value the repository link/URL to check
+     * @return true if valid, false if not
+     */
+    public static boolean isValidRepositoryLink(String value) {
+        if ( StringUtils.isBlank(value))
+            return false;
+        
+        // presently only support HTTP(S)
+        if (!value.toLowerCase().startsWith("http"))
+            return false;
+        
+        try {
+            Collection<Ref> references = Git
+                    .lsRemoteRepository()
+                    .setHeads(true)
+                    .setTags(true)
+                    .setRemote(value)
+                    .call();
+            
+            // must be a valid repository if it has references
+            return true;
+        } catch ( GitAPIException e ) {
+            log.warn("Repository URL " + value + " failed: " + e.getMessage());
+            return false;
+        }
+    }
 
     /**
      * Determine whether or not a contract number is valid.
@@ -274,7 +312,7 @@ public class Validation {
             for ( String value : validationRequest.getValues() ) {
                 // apply each validation rule to each value to validate
                 for ( String validation : validationRequest.getValidations() ) {
-                    if ("DOI".equals(validation)) {
+                    if ("DOI".equalsIgnoreCase(validation)) {
                         // for now, just try an HTTP connection via DOI_BASE_URL + value
                         HttpGet get = new HttpGet(DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
                         HttpResponse response = hc.execute(get);
@@ -283,13 +321,16 @@ public class Validation {
                         validationResponse.add( HttpStatus.SC_OK==response.getStatusLine().getStatusCode() ?
                                 "" :
                                 value + " is not a valid DOI.");
-                    } else if ("Award".equals(validation)) {
+                    } else if ("Award".equalsIgnoreCase(validation)) {
                         // ensure we're configured for that
                         if (StringUtils.isBlank(API_HOST)) {
                             return Response.status(Response.Status.NOT_FOUND).build();
                         }
                         // call the VALIDATION API to get a response
                         validationResponse.add((isAwardNumberValid(value)) ? "" : value + " is not a valid Award Number.");
+                    } else if ("RepositoryLink".equalsIgnoreCase(validation)) {
+                        // ensure this repository link value IS a valid git repository
+                        validationResponse.add((isValidRepositoryLink(value)) ? "" : value + " is not a valid repository link.");
                     } else {
                         log.warn("Invalid validation request type: " + validation);
                         return Response

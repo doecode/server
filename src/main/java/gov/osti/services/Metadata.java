@@ -1023,6 +1023,9 @@ public class Metadata {
         }
         if (StringUtils.isNotBlank(m.getDoi()) && null==m.getReleaseDate())
             reasons.add("Release Date is required for DOI registration.");
+        // if repository link is present, it needs to be valid too
+        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
+            reasons.add("Repository URL is not a valid link.");
         return reasons;
     }
     
