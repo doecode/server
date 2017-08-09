@@ -15,11 +15,10 @@ public class User {
 		
 	}
 	
-	public User(String email, String password, String apiKey, String siteId, String confirmationCode) {
+	public User(String email, String password, String apiKey, String confirmationCode) {
 		this.password = password;
 		this.apiKey = apiKey;
 		this.email = email;
-		this.siteId = siteId;
 		this.confirmationCode = confirmationCode;
 	}
 	
