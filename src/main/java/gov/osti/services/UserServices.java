@@ -222,9 +222,6 @@ public Response register(String object) {
 		String confirmationCode = DOECodeCrypt.nextUniqueString();
 		
 		User newUser = new User(email,encryptedPassword,apiKey, confirmationCode);
-		Set<String> pendingRoles = new HashSet<>();
-		pendingRoles.add("ORNL");
-        newUser.setPendingRoles(pendingRoles);
         	
             em.getTransaction().begin();
             
