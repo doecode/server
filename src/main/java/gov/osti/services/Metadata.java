@@ -132,60 +132,6 @@ public class Metadata {
     }
     
     /**
-     * Simple class for validation responses in JSON.
-     */
-    private class ErrorResponse {
-        // HTTP status code
-        private int status;
-        // list of errors, if applicable
-        private List<String> errors = new ArrayList<>();
-        
-        /**
-         * Set the HTTP status code
-         * @param s the status code to set
-         */
-        public void setStatus(int s) { this.status = s; }
-        /**
-         * Get the HTTP status code
-         * @return the HTTP status code
-         */
-        public int getStatus() { return this.status; }
-        
-        /**
-         * Determine whether or not there are errors.  Does not serialize
-         * to JSON.
-         * @return true if errors are present, false otherwise
-         */
-        @JsonIgnore
-        public boolean isEmpty() { return errors.isEmpty(); }
-        
-        /**
-         * Add all messages at once.
-         * 
-         * @param messages messages to add to the errors
-         * @return true if list was modified
-         */
-        public boolean addAll(List<String> messages) { return errors.addAll(messages); }
-        
-        /**
-         * Add a single error message.
-         * 
-         * @param message a message to add to error messages
-         */
-        public void addError(String message) { errors.add(message); }
-        /**
-         * Set all the error messages at once.
-         * @param e a List of all error messages
-         */
-        public void setErrors(List<String> e) { errors = e; }
-        /**
-         * Get the error messages, if any
-         * @return the List of errors, possibly empty
-         */
-        public List<String> getErrors() { return this.errors; }
-    }
-    
-    /**
      * Creates a new instance of MetadataResource
      */
     public Metadata() {
@@ -203,62 +149,6 @@ public class Metadata {
         SimpleModule module = new SimpleModule();
         module.addSerializer(Agent.class, new AgentSerializer());
         index_mapper.registerModule(module);
-    }
-
-    /**
-     * Create a JSON error response in JSONAPI format if possible.
-     * 
-     * @param status the Response.Status HTTP status code of this error
-     * @param message an error message
-     * @return a Response in JSONAPI format
-     */
-    protected Response errorResponse(Response.Status status, String message) {
-        ErrorResponse errors = new ErrorResponse();
-        errors.setStatus(status.getStatusCode());
-        errors.addError(message);
-        
-        try {
-            // send back JSON error response
-            return Response
-                    .status(status)
-                    .entity(mapper.writeValueAsString(errors))
-                    .build();
-        } catch ( JsonProcessingException e ) {
-            log.warn("JSON Error: " + e.getMessage());
-            // fall back to plain text
-            return Response
-                    .status(status)
-                    .entity("Error: " + message)
-                    .build();
-        }
-    }
-    
-    /**
-     * Generate a JSON error response in JSONAPI given a set of error messages.
-     * 
-     * @param status the Response.Status HTTP status code for the error
-     * @param messages a List of messages to return
-     * @return a Response in JSONAPI format
-     */
-    protected Response errorResponse(Response.Status status, List<String> messages) {
-        ErrorResponse errors = new ErrorResponse();
-        errors.setStatus(status.getStatusCode());
-        errors.addAll(messages);
-        
-        try {
-            // send back JSON error response
-            return Response
-                    .status(status)
-                    .entity(mapper.writeValueAsString(errors))
-                    .build();
-        } catch ( JsonProcessingException e ) {
-            log.warn("JSON Error: " + e.getMessage());
-            // fall back to plain text
-            return Response
-                    .status(status)
-                    .entity("Error: " + StringUtils.join(messages, ", "))
-                    .build();
-        }
     }
     
     /**
@@ -297,17 +187,23 @@ public class Metadata {
         
         // no CODE ID?  Bad request.
         if (null==codeId)
-            return errorResponse(Response.Status.BAD_REQUEST, "Missing code id.");
+            return ErrorResponse
+                    .create(Response.Status.BAD_REQUEST, "Missing code ID.")
+                    .build();
         
         DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
 
         // no metadata?  404
         if ( null==md ) 
-            return errorResponse(Response.Status.NOT_FOUND, "Code ID not on file.");
+            return ErrorResponse
+                    .create(Response.Status.NOT_FOUND, "Code ID not on file.")
+                    .build();
 
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) )
-            return errorResponse(Response.Status.FORBIDDEN, "Permission denied.");
+            return ErrorResponse
+                    .create(Response.Status.FORBIDDEN, "Permission denied.")
+                    .build();
 
         // return the metadata
         return Response
@@ -340,11 +236,15 @@ public class Metadata {
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
             
             if ( null==md ) 
-                return errorResponse(Response.Status.NOT_FOUND, "Code ID not on file.");
+                return ErrorResponse
+                        .create(Response.Status.NOT_FOUND, "Code ID not on file.")
+                        .build();
             
             // non-Published workflow REQUIRES authentication, not for here; use /edit
             if (!Status.Published.equals(md.getWorkflowStatus())) {
-                return errorResponse(Response.Status.FORBIDDEN, "Access to record denied.");
+                return ErrorResponse
+                        .create(Response.Status.FORBIDDEN, "Access to record denied.")
+                        .build();
             }
             
             // if YAML is requested, return that; otherwise, default to JSON
@@ -365,7 +265,9 @@ public class Metadata {
             }
         } catch ( IOException e ) {
             log.warn("YAML exception: " + e.getMessage());
-            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Output conversion error.");
+            return ErrorResponse
+                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Output conversion error.")
+                    .build();
         } finally {
             em.close();
         }
@@ -450,7 +352,9 @@ public class Metadata {
                     .build();
             } catch ( IOException e ) {
                 log.warn("YAML conversion error: " + e.getMessage());
-                return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.");
+                return ErrorResponse
+                        .create(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.")
+                        .build();
             }
         } else {
             // send back the default JSON response
@@ -535,7 +439,9 @@ public class Metadata {
                     .build();
         } catch ( IOException e ) {
             log.warn("YAML conversion error: " + e.getMessage());
-            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.");
+            return ErrorResponse
+                    .create(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.")
+                    .build();
         }
     }
     
@@ -683,7 +589,9 @@ public class Metadata {
                     md.setFileName(fileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
-                    return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
+                    return ErrorResponse
+                            .create(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .build();
                 }
             }
             
@@ -695,17 +603,23 @@ public class Metadata {
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
-            return errorResponse(Response.Status.NOT_FOUND, e.getMessage());
+            return ErrorResponse
+                    .create(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error:  Invalid update attempt from " + user.getEmail());
             log.warn("Message: " + e.getMessage());
-            return errorResponse(Response.Status.FORBIDDEN, "Unable to persist update for indicated record.");
+            return ErrorResponse
+                    .create(Response.Status.FORBIDDEN, "Unable to persist update for indicated record.")
+                    .build();
         } catch ( IOException | InvocationTargetException e ) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
             log.warn("Persistence Error: " + e.getMessage());
-            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Save IO Error: " + e.getMessage());
+            return ErrorResponse
+                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Save IO Error: " + e.getMessage())
+                    .build();
         } finally {
             em.close();
         }
@@ -740,7 +654,9 @@ public class Metadata {
             List<String> errors = validatePublished(md);
             if ( !errors.isEmpty() ) {
                 // generate a JSONAPI errors object
-                return errorResponse(Response.Status.BAD_REQUEST, errors);
+                return ErrorResponse
+                        .create(Response.Status.BAD_REQUEST, errors)
+                        .build();
             }
             
             // if there's a FILE associated here, store it
@@ -753,7 +669,9 @@ public class Metadata {
                     md.setFileName(fileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
-                    return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
+                    return ErrorResponse
+                            .create(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .build();
                 }
             }
             // send this file upload along to archiver if configured
@@ -761,7 +679,9 @@ public class Metadata {
                 sendToArchiver(md);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
-                return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.");
+                return ErrorResponse
+                        .create(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
+                        .build();
             }
             
             // send to DataCite if needed
@@ -781,17 +701,23 @@ public class Metadata {
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
-            return errorResponse(Response.Status.NOT_FOUND, e.getMessage());
+            return ErrorResponse
+                    .create(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
-            return errorResponse(Response.Status.FORBIDDEN, "Logged in User is not allowed to modify this record.");
+            return ErrorResponse
+                    .create(Response.Status.FORBIDDEN, "Logged in User is not allowed to modify this record.")
+                    .build();
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
             log.warn("Persistence Error Publishing: " + e.getMessage());
-            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.");
+            return ErrorResponse
+                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.")
+                    .build();
         } finally {
             em.close();
         }
@@ -827,7 +753,9 @@ public class Metadata {
             // check validations
             List<String> errors = validateSubmit(md);
             if ( !errors.isEmpty() ) {
-                return errorResponse(Response.Status.BAD_REQUEST, errors);
+                return ErrorResponse
+                        .create(Response.Status.BAD_REQUEST, errors)
+                        .build();
             }
             
             // if there's a FILE associated here, store it
@@ -840,7 +768,9 @@ public class Metadata {
                     md.setFileName(fileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
-                    return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.");
+                    return ErrorResponse
+                            .create(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .build();
                 }
             }
             
@@ -897,17 +827,23 @@ public class Metadata {
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
-            return errorResponse(Response.Status.NOT_FOUND, e.getMessage());
+            return ErrorResponse
+                    .create(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
-            return errorResponse(Response.Status.FORBIDDEN, "Invalid Access: Unable to edit indicated record.");
+            return ErrorResponse
+                    .create(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit indicated record.")
+                    .build();
         } catch ( IOException |  InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
             
             log.warn("Persistence Error Publishing: " + e.getMessage());
-            return errorResponse(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.");
+            return ErrorResponse
+                    .create(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
+                    .build();
         } finally {
             em.close();
         }

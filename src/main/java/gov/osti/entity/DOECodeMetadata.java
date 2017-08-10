@@ -45,7 +45,8 @@ public class DOECodeMetadata implements Serializable {
     // Status values
     public enum Status {
         Saved,
-        Published
+        Published,
+        Approved
     }
     
     // Accessibility values
