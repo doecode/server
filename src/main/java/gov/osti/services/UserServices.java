@@ -140,6 +140,27 @@ public class UserServices {
                 .entity(mapper.createObjectNode().put("email", user.getEmail()).toString())
                 .build();
     }
+    
+    /**
+     * Process a "log out" request.
+     * 
+     * @return an OK Response
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Consumes ({MediaType.APPLICATION_JSON, MediaType.TEXT_HTML})
+    @Path ("/logout")
+    public Response logout() {
+        Subject subject = SecurityUtils.getSubject();
+        
+        if (null!=subject) subject.logout();
+        
+        return Response
+                .ok()
+                .cookie(DOECodeCrypt.invalidateCookie())
+                .entity(mapper.createObjectNode().put("success", "success").toString())
+                .build();
+    }
 
     /**
      * Process login requests.
@@ -148,6 +169,8 @@ public class UserServices {
      * 200 - login OK, sets token and cookie
      * 401 - authentication failed
      * 500 - internal system error, unable to read JSON, etc.
+     * 
+     * JSON returns email address and XSRF token.
      * 
      * @param object JSON containing "email" and "password" to authenticate.
      * @return an appropriate Response based on whether or not authentication succeeded
@@ -197,7 +220,11 @@ public class UserServices {
 	
         return Response
                 .status(Response.Status.OK)
-                .entity(mapper.createObjectNode().put("xsrfToken", xsrfToken).toString())
+                .entity(mapper
+                        .createObjectNode()
+                        .put("xsrfToken", xsrfToken)
+                        .put("email", currentUser.getEmail())
+                        .toString())
                 .cookie(cookie)
                 .build();
     }
@@ -277,9 +304,7 @@ public class UserServices {
             
             //  return an OK response
             return Response
-                    .ok(mapper
-                            .createObjectNode()
-                            .put("apiKey", newUser.getApiKey()).toString())
+                    .ok()
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())

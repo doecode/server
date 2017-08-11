@@ -11,6 +11,7 @@ import javax.ws.rs.core.NewCookie;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import java.time.LocalDate;
 
 public class DOECodeCrypt {
 
@@ -52,4 +53,11 @@ public class DOECodeCrypt {
 
 		return new NewCookie(cookie, "", 60*30, c.getTime(),false,true);
 	}
+        
+        public static NewCookie invalidateCookie() {
+            Cookie cookie = new Cookie("accessToken", "", "/", "");
+            
+            return new NewCookie(cookie, "", 0, new Date(), false, true);
+            
+        }
 }

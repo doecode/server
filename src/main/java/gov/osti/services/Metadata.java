@@ -46,6 +46,10 @@ import javax.persistence.TypedQuery;
 import javax.persistence.Query;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.ParameterExpression;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
@@ -286,29 +290,25 @@ public class Metadata {
     		this.records = records;
     	}
 
-		public List<DOECodeMetadata> getRecords() {
-			return records;
-		}
+        public List<DOECodeMetadata> getRecords() {
+                return records;
+        }
 
-		public void setRecords(List<DOECodeMetadata> records) {
-			this.records = records;
-		}
-                
-                public void setTotal(long count) { total = count; }
-                
-                public long getTotal() { return total; }
-                
-                public void setStart(int start) { this.start = start; }
-                
-                public int getStart() { return this.start; }
-                
-                public int getRows() {
-                    return (null==records) ? 0 : records.size();
-                }
-		
-	    public JsonNode toJson() {
-	        return mapper.valueToTree(this);
-	    }
+        public void setRecords(List<DOECodeMetadata> records) {
+                this.records = records;
+        }
+
+        public void setTotal(long count) { total = count; }
+
+        public long getTotal() { return total; }
+
+        public void setStart(int start) { this.start = start; }
+
+        public int getStart() { return this.start; }
+
+        public int getRows() {
+            return (null==records) ? 0 : records.size();
+        }
     }
     
     /**
@@ -333,13 +333,37 @@ public class Metadata {
         	RecordsList records = new RecordsList(query.setParameter("owner", user.getEmail()).getResultList());
                     return Response
                             .status(Response.Status.OK)
-                            .entity(mapper.createObjectNode().putPOJO("records", records.toJson()).toString())
+                            .entity(mapper.valueToTree(records).toString())
                             .build();
         } finally {
             em.close();
         }
     }
     
+    /**
+     * Acquire a List of records in pending ("Published") state, to be approved
+     * for indexing and searching.
+     * 
+     * JSON response is of the form:
+     * 
+     * {"records":[{"code_id":n, ...} ], 
+     *  "start":0, "rows":20, "total":100}
+     * 
+     * Where records is an array of DOECodeMetadata JSON, start is the beginning
+     * row number, rows is the number requested (or total if less available),
+     * and total is the total number of rows matching the filter.
+     * 
+     * Return Codes:
+     * 200 - OK, JSON is returned as above
+     * 401 - Unauthorized, login is required
+     * 403 - Forbidden, insufficient privileges (role required)
+     * 500 - unexpected error
+     * 
+     * @param start the starting row number (from 0)
+     * @param rows number of rows desired
+     * @param siteCode (optional) a SITE OWNERSHIP CODE to filter by site
+     * @return JSON of a records response
+     */
     @GET
     @Path ("/projects/pending")
     @Consumes (MediaType.APPLICATION_JSON)
@@ -352,27 +376,56 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
-            String whereClause = 
-                    "WHERE md.workflowStatus=:status " +
-                    ((null!=siteCode) ? "AND md.siteOwnershipCode=:site" : "");
-            TypedQuery<Long> counter = em.createQuery("SELECT COUNT(md.codeId) FROM DOECodeMetadata md " + whereClause, Long.class);
-            counter.setParameter("status", DOECodeMetadata.Status.Published);
-            if (null!=siteCode) 
-                counter.setParameter("site", siteCode);
+            // get a JPA CriteriaBuilder instance
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            // create a CriteriaQuery for the COUNT
+            CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+            Root<DOECodeMetadata> md = countQuery.from(DOECodeMetadata.class);
+            countQuery.select(cb.count(md));
             
-            long rowCount = (long) counter.getSingleResult();
+            Expression<String> workflowStatus = md.get("workflowStatus");
+            Expression<String> siteOwnershipCode = md.get("siteOwnershipCode");
+            ParameterExpression<String> status = cb.parameter(String.class, "status");
+            ParameterExpression<String> site = cb.parameter(String.class, "site");
+            
+            if (null==siteCode) {
+                countQuery.where(cb.equal(workflowStatus, status));
+            } else {
+                countQuery.where(cb.and(
+                        cb.equal(workflowStatus, status),
+                        cb.equal(siteOwnershipCode, site)));
+            }
+            // query for the COUNT
+            TypedQuery<Long> cq = em.createQuery(countQuery);
+            cq.setParameter("status", DOECodeMetadata.Status.Published);
+            if (null!=siteCode)
+                cq.setParameter("site", siteCode);
+            
+            long rowCount = cq.getSingleResult();
             // rows count should be less than 100; default is 20 if not specified
             rows = (rows>100) ? 100 : rows;
             rows = (0==rows) ? 20 : rows;
             
-            TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md " + whereClause, DOECodeMetadata.class);
-            query.setParameter("status", DOECodeMetadata.Status.Published);
-            if (null!=siteCode)
-                counter.setParameter("site", siteCode);
-            query.setFirstResult(start);
-            query.setMaxResults(rows);
+            // create a CriteriaQuery for the ROWS
+            CriteriaQuery<DOECodeMetadata> rowQuery = cb.createQuery(DOECodeMetadata.class);
+            rowQuery.select(md);
             
-            RecordsList records = new RecordsList(query.getResultList());
+            if (null==siteCode) {
+                rowQuery.where(cb.equal(workflowStatus, status));
+            } else {
+                rowQuery.where(cb.and(
+                        cb.equal(workflowStatus, status),
+                        cb.equal(siteOwnershipCode, site)));
+            }
+            
+            TypedQuery<DOECodeMetadata> rq = em.createQuery(rowQuery);
+            rq.setParameter("status", DOECodeMetadata.Status.Published);
+            if (null!=siteCode)
+                rq.setParameter("site", siteCode);
+            rq.setFirstResult(start);
+            rq.setMaxResults(rows);
+            
+            RecordsList records = new RecordsList(rq.getResultList());
             records.setTotal(rowCount);
             records.setStart(start);
             
