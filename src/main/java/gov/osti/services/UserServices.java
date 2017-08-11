@@ -223,6 +223,7 @@ public class UserServices {
                 .entity(mapper
                         .createObjectNode()
                         .put("xsrfToken", xsrfToken)
+                        .put("hasSite", !"CONTR".equals(currentUser.getSiteId()))
                         .put("email", currentUser.getEmail())
                         .toString())
                 .cookie(cookie)
