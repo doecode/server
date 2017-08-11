@@ -320,6 +320,55 @@ public class UserServices {
             em.close();  
         }
     }
+    
+    /**
+     * Generate a new API key for a User by request.  Must be authenticated, and
+     * will store the new key immediately and return it to the requestor.
+     * 
+     * Response Codes:
+     * 200 - OK, new API key in the JSON
+     * 500 - internal error occurred in the database or key generation
+     * 
+     * @return a Response containing the new API key, or error information
+     */
+    @GET
+    @RequiresAuthentication
+    @Produces (MediaType.APPLICATION_JSON)
+    @Consumes ({MediaType.APPLICATION_JSON, MediaType.TEXT_HTML})
+    @Path ("/newapikey")
+    public Response newApiKey() {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
+        try {
+            // generate a new API key and store it
+            String apiKey = DOECodeCrypt.nextUniqueString();
+            
+            user.setApiKey(apiKey);
+            
+            // store it in the database
+            em.getTransaction().begin();
+            
+            em.merge(user);
+            
+            em.getTransaction().commit();
+            
+            // send back the Response with information
+            return Response
+                    .ok(mapper.createObjectNode().put("apiKey", user.getApiKey()).toString())
+                    .build();
+        } catch ( Exception e ) {
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            log.warn("API Key generation failed: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("API key generation failed.")
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
 
     /**
      * Processes edits to a user.
