@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
@@ -165,7 +164,7 @@ public class UserServices {
             // TODO Auto-generated catch block
             log.warn("JSON Mapper error: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request.")
                     .build();
 	}
         User currentUser = null;
@@ -223,7 +222,7 @@ public class UserServices {
         } catch (IOException e) {
                 log.error("Error in register: ",e);
                 return ErrorResponse
-                        .create(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process JSON.")
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process JSON.")
                         .build();
         }
         
@@ -233,20 +232,20 @@ public class UserServices {
             // if there's already a user on file, cannot re-register if VERIFIED
             if ( user != null && user.isVerified() ) {
                 return ErrorResponse
-                        .create(Response.Status.BAD_REQUEST, "An account with this email address already exists.")
+                        .status(Response.Status.BAD_REQUEST, "An account with this email address already exists.")
                         .build();
             }	
 
             // ensure passwords sent match up
             if (!StringUtils.equals(request.getPassword(), request.getConfirmPassword())) {
                 return ErrorResponse
-                        .create(Response.Status.BAD_REQUEST, "Password does not match.")
+                        .status(Response.Status.BAD_REQUEST, "Password does not match.")
                         .build();
             }
             // ensure password is acceptable
             if (!validatePassword(request.getEmail(), request.getPassword())) 
                 return ErrorResponse
-                        .create(Response.Status.BAD_REQUEST, "Password is not acceptable.")
+                        .status(Response.Status.BAD_REQUEST, "Password is not acceptable.")
                         .build();
 
             String encryptedPassword = PASSWORD_SERVICE.encryptPassword(request.getPassword());
@@ -290,7 +289,7 @@ public class UserServices {
             //we'll deal with duplicate user name here as well...
             log.error("Persistence Error Registering User", e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
                     .build();
         } finally {
             em.close();  
@@ -317,14 +316,14 @@ public class UserServices {
         } catch (IOException e) {
                 log.error("Error in register: ",e);
                 return ErrorResponse
-                        .create(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request.")
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request.")
                         .build();
         }
         
         // no roles, no operation?
         if (null==request.getPendingRoles() && null==request.getPendingRole())
             return ErrorResponse
-                    .create(Response.Status.BAD_REQUEST, "No roles specified to set.")
+                    .status(Response.Status.BAD_REQUEST, "No roles specified to set.")
                     .build();
         
         // may specify a single role or multiple
@@ -355,7 +354,7 @@ public class UserServices {
             //we'll deal with duplicate user name here as well...
             log.error("Persistence Error Registering User", e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
                     .build();
         } finally {
             em.close();  
@@ -383,7 +382,7 @@ public class UserServices {
         } catch (IOException e) {
             log.error("Error in register: ",e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process request.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process request.")
                     .build();
         }
 
@@ -392,12 +391,12 @@ public class UserServices {
         
         if (!StringUtils.equals(request.getPassword(), request.getConfirmPassword())) {
             return ErrorResponse
-                    .create(Response.Status.BAD_REQUEST, "Passwords do not match.")
+                    .status(Response.Status.BAD_REQUEST, "Passwords do not match.")
                     .build();
         }
         if (!validatePassword(user.getEmail(), request.getPassword()))
             return ErrorResponse
-                    .create(Response.Status.BAD_REQUEST, "Password is not acceptable.")
+                    .status(Response.Status.BAD_REQUEST, "Password is not acceptable.")
                     .build();
         
         try {
@@ -405,7 +404,7 @@ public class UserServices {
 
             if (null==u) {
                 return ErrorResponse
-                        .create(Response.Status.BAD_REQUEST, "Unable to update user information.")
+                        .status(Response.Status.BAD_REQUEST, "Unable to update user information.")
                         .build();
             }
             
@@ -426,7 +425,7 @@ public class UserServices {
             //we'll deal with duplicate user name here as well...
             log.error("Persistence Error Registering User", e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
                     .build();
         } finally {
             em.close();  
@@ -456,7 +455,7 @@ public class UserServices {
         } catch (IOException e) {
                 log.error("Error in register: ",e);
                 return ErrorResponse
-                        .create(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process request.")
+                        .internalServerError("Unable to process request.")
                         .build();
         }
 
@@ -464,7 +463,7 @@ public class UserServices {
         
         if (null==user)
             return ErrorResponse
-                    .create(Response.Status.NOT_FOUND, "User is not on file.")
+                    .notFound("User is not on file.")
                     .build();
         	        	
         try {
@@ -487,7 +486,7 @@ public class UserServices {
             //we'll deal with duplicate user name here as well...
             log.error("Persistence Error Registering User", e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .internalServerError(e.getMessage())
                     .build();
         } finally {
             em.close();  
@@ -516,7 +515,7 @@ public class UserServices {
         } catch (IOException e) {
                 log.error("Error in register: ",e);
                 return ErrorResponse
-                        .create(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process request.")
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process request.")
                         .build();
         }
 
@@ -541,7 +540,7 @@ public class UserServices {
             //we'll deal with duplicate user name here as well...
             log.error("Persistence Error Registering User", e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
                     .build();
         } finally {
             em.close();  
@@ -585,27 +584,17 @@ public class UserServices {
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
+    /**
+     * A Role Request; defines an /update endpoint request to add one or more
+     * roles to an account, pending approval.
+     */
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class RoleRequest implements Serializable {
-        private String email;
         private String pendingRole;
         private String[] pendingRoles;
 
         public RoleRequest() {
             
-        }
-        /**
-         * @return the email
-         */
-        public String getEmail() {
-            return email;
-        }
-
-        /**
-         * @param email the email to set
-         */
-        public void setEmail(String email) {
-            this.email = email;
         }
 
         /**
@@ -637,6 +626,9 @@ public class UserServices {
         }
     }
     
+    /**
+     * an Email request; for approve/disapprove endpoints.
+     */
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class EmailRequest implements Serializable {
         private String email;
@@ -654,6 +646,12 @@ public class UserServices {
         }
     }
     
+    /**
+     * Static class to define the input properties of a Login request.
+     * 
+     * email - the login name/email address
+     * password - the password
+     */
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class LoginRequest implements Serializable {
         private String email;
@@ -692,6 +690,13 @@ public class UserServices {
         }
     }
     
+    /**
+     * Password Request -- for registration requests.
+     * 
+     * email - desired email address/login name
+     * password - desired password
+     * confirm_password - should be same as password
+     */
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class PasswordRequest implements Serializable {
         private String email;
@@ -804,55 +809,60 @@ public class UserServices {
     @Path ("/confirm")
     public Response confirmUser(@QueryParam("confirmation") String jwt) {
         User currentUser = null;
-
-        Claims claims = DOECodeCrypt.parseJWT(jwt);
-        String confirmationCode = claims.getId();
-        String email = claims.getSubject();
-
         EntityManager em = DoeServletContextListener.createEntityManager();
-        try {        
+        
+        try {
+            // attempt to parse the JWT token to get the confirmation code decrypted
+            Claims claims = DOECodeCrypt.parseJWT(jwt);
+            String confirmationCode = claims.getId();
+            String email = claims.getSubject();
 
-        currentUser = em.find(User.class, email);
+            currentUser = em.find(User.class, email);
+
+            if (currentUser == null) {
+                //no user matched, return with error
+                return ErrorResponse
+                        .status(Response.Status.NOT_FOUND, "User not on file.")
+                        .build();
+            }
+
+            if (currentUser.isVerified()) {
+                //return and note that user is already verified
+                return ErrorResponse
+                        .status(Response.Status.BAD_REQUEST, "User is already verified.")
+                        .build();
+            }
 
 
-        if (currentUser == null) {
-            //no user matched, return with error
-            return ErrorResponse
-                    .create(Response.Status.NOT_FOUND, "User not on file.")
-                    .build();
-        }
+            if (!StringUtils.equals(confirmationCode, currentUser.getConfirmationCode())) {
+                return ErrorResponse
+                        .status(Response.Status.UNAUTHORIZED, "Request is not authorized.")
+                        .build();
+            }
 
-        if (currentUser.isVerified()) {
-            //return and note that user is already verified
-            return ErrorResponse
-                    .create(Response.Status.BAD_REQUEST, "User is already verified.")
-                    .build();
-        }
+            String domain = email.substring(email.indexOf("@"));
+            TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
+            query.setParameter("domain", domain);
 
+            // look up the Site and set CODE, or CONTR if not found
+            List<Site> sites = query.getResultList();
+            currentUser.setSiteId((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
 
-        if (!StringUtils.equals(confirmationCode, currentUser.getConfirmationCode())) {
-            return ErrorResponse
-                    .create(Response.Status.UNAUTHORIZED, "Request is not authorized.")
-                    .build();
-        }
+            //if we got here, we're good. Verify and then set the confirmation code
+            currentUser.setVerified(true);
+            currentUser.setConfirmationCode("");
 
-        String domain = email.substring(email.indexOf("@"));
-        TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
-        query.setParameter("domain", domain);
-
-        // look up the Site and set CODE, or CONTR if not found
-        List<Site> sites = query.getResultList();
-        currentUser.setSiteId((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
-
-        //if we got here, we're good. Verify and then set the confirmation code
-        currentUser.setVerified(true);
-        currentUser.setConfirmationCode("");
-
-        em.getTransaction().begin();
+            em.getTransaction().begin();
 
             em.merge(currentUser);
             em.getTransaction().commit();
 
+            return Response
+                .ok()
+                .entity(mapper
+                        .createObjectNode()
+                        .put("apiKey", currentUser.getApiKey()).toString())
+                .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
@@ -860,18 +870,11 @@ public class UserServices {
             //we'll deal with duplicate user name here as well...
             log.error("Error on confirmation", e);
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
                     .build();
         } finally {
             em.close();  
         }
-
-        return Response
-                .ok()
-                .entity(mapper
-                        .createObjectNode()
-                        .put("apiKey", currentUser.getApiKey()).toString())
-                .build();
 
     }
 

@@ -25,6 +25,10 @@ import org.apache.commons.lang3.StringUtils;
  * { "status":400, "errors":["Message"] }
  * 
  * for example.
+ * 
+ * Includes several convenience constructor methods for common error responses,
+ * such as notFound(), forbidden(), etc.
+ * 
  * @author ensornl
  */
 public class ErrorResponse {
@@ -42,6 +46,10 @@ public class ErrorResponse {
         
     }
     
+    protected ErrorResponse(Response.Status status) {
+        this.status = status.getStatusCode();
+    }
+    
     protected ErrorResponse(Response.Status status, String message) {
         this.status = status.getStatusCode();
         errors.add(message);
@@ -53,11 +61,137 @@ public class ErrorResponse {
     }
     
     /**
-     * Instantiate an ErrorResponse Object to use.
-     * @return an ErrorResponse
+     * Construct an empty BAD REQUEST response.
+     * 
+     * @return an ErrorResponse of BAD REQUEST (400)
      */
-    public static ErrorResponse create() {
-        return new ErrorResponse();
+    public static ErrorResponse badRequest() {
+        return new ErrorResponse (Response.Status.BAD_REQUEST);
+    }
+    
+    /**
+     * Create a BAD REQUEST with a single message.
+     * 
+     * @param message the error message
+     * @return an ErrorResponse of BAD REQUEST
+     */
+    public static ErrorResponse badRequest(String message) {
+        return new ErrorResponse (Response.Status.BAD_REQUEST, message);
+    }
+    
+    /**
+     * Create a BAD REQUEST error message with a list of messages.
+     * @param messages the error messages
+     * @return an ErrorResponse of BAD REQUEST
+     */
+    public static ErrorResponse badRequest(List<String> messages) {
+        return new ErrorResponse (Response.Status.BAD_REQUEST, messages);
+    }
+    
+    /**
+     * Create an INTERNAL SERVER ERROR response.
+     * 
+     * @return an empty INTERNAL SERVER ERROR response
+     */
+    public static ErrorResponse internalServerError() {
+        return new ErrorResponse(Response.Status.INTERNAL_SERVER_ERROR);
+    }
+    
+    /**
+     * Create an INTERNAL SERVER ERROR response with a message.
+     * 
+     * @param message the error message
+     * @return an ErrorResponse of INTERNAL SERVER ERROR
+     */
+    public static ErrorResponse internalServerError(String message) {
+        return new ErrorResponse(Response.Status.INTERNAL_SERVER_ERROR, message);
+    }
+    
+    /**
+     * Create an INTERNAL SERVER ERROR response with a List of messages.
+     * @param messages the error messages
+     * @return an ErrorResponse of INTERNAL SERVER ERROR
+     */
+    public static ErrorResponse internalServerError(List<String> messages) {
+        return new ErrorResponse(Response.Status.INTERNAL_SERVER_ERROR, messages);
+    }
+    
+    /**
+     * Create a FORBIDDEN error response
+     * @return a FORBIDDEN error response
+     */
+    public static ErrorResponse forbidden() {
+        return new ErrorResponse(Response.Status.FORBIDDEN);
+    }
+    
+    /**
+     * Create a FORBIDDEN error response with a message
+     * @param message the error message
+     * @return a FORBIDDEN error response
+     */
+    public static ErrorResponse forbidden(String message) {
+        return new ErrorResponse(Response.Status.FORBIDDEN, message);
+    }
+    
+    /**
+     * Create a FORBIDDEN error response with a List of messages
+     * @param messages the error messages
+     * @return a FORBIDDEN error response
+     */
+    public static ErrorResponse forbidden(List<String> messages) {
+        return new ErrorResponse(Response.Status.FORBIDDEN, messages);
+    }
+    
+    /**
+     * Create an UNAUTHORIZED error response
+     * @return an UNAUTHORIZED error response
+     */
+    public static ErrorResponse unauthorized() {
+        return new ErrorResponse(Response.Status.UNAUTHORIZED);
+    }
+    
+    /**
+     * Create an UNAUTHORIZED error response with a message
+     * @param message the error message
+     * @return an UNAUTHORIZED error response
+     */
+    public static ErrorResponse unauthorized(String message) {
+        return new ErrorResponse (Response.Status.UNAUTHORIZED, message);
+    }
+    
+    /**
+     * Create an UNAUTHORIZED error response with a List of messages
+     * @param messages the error messages
+     * @return an UNAUTHORIZED error response
+     */
+    public static ErrorResponse unauthorized(List<String> messages) {
+        return new ErrorResponse (Response.Status.UNAUTHORIZED, messages);
+    }
+    
+    /**
+     * Create a NOT FOUND error response
+     * @return a NOT FOUND error response
+     */
+    public static ErrorResponse notFound() {
+        return new ErrorResponse(Response.Status.NOT_FOUND);
+    }
+    
+    /**
+     * Create a NOT FOUND error response with a message
+     * @param message the error message
+     * @return a NOT FOUND error response
+     */
+    public static ErrorResponse notFound(String message) {
+        return new ErrorResponse (Response.Status.NOT_FOUND, message);
+    }
+    
+    /**
+     * Create a NOT FOUND error response with a List of messages
+     * @param messages a List of error messages
+     * @return a NOT FOUND error response
+     */
+    public static ErrorResponse notFound(List<String> messages) {
+        return new ErrorResponse (Response.Status.NOT_FOUND, messages);
     }
     
     /**
@@ -66,7 +200,7 @@ public class ErrorResponse {
      * @param message the error message
      * @return an ErrorResponse
      */
-    public static ErrorResponse create(Response.Status s, String message) {
+    public static ErrorResponse status(Response.Status s, String message) {
         return new ErrorResponse(s, message);
     }
     
@@ -77,7 +211,7 @@ public class ErrorResponse {
      * @param messages a List of error messages
      * @return an ErrorResponse
      */
-    public static ErrorResponse create(Response.Status s, List<String> messages) {
+    public static ErrorResponse status(Response.Status s, List<String> messages) {
         return new ErrorResponse(s, messages);
     }
     

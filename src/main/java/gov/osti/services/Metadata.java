@@ -43,6 +43,9 @@ import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import javax.persistence.Query;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
@@ -73,6 +76,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
+import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.subject.Subject;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -188,7 +192,7 @@ public class Metadata {
         // no CODE ID?  Bad request.
         if (null==codeId)
             return ErrorResponse
-                    .create(Response.Status.BAD_REQUEST, "Missing code ID.")
+                    .badRequest("Missing code ID.")
                     .build();
         
         DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
@@ -196,13 +200,13 @@ public class Metadata {
         // no metadata?  404
         if ( null==md ) 
             return ErrorResponse
-                    .create(Response.Status.NOT_FOUND, "Code ID not on file.")
+                    .notFound("Code ID not on file.")
                     .build();
 
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) )
             return ErrorResponse
-                    .create(Response.Status.FORBIDDEN, "Permission denied.")
+                    .forbidden("Permission denied.")
                     .build();
 
         // return the metadata
@@ -237,13 +241,13 @@ public class Metadata {
             
             if ( null==md ) 
                 return ErrorResponse
-                        .create(Response.Status.NOT_FOUND, "Code ID not on file.")
+                        .notFound("Code ID not on file.")
                         .build();
             
             // non-Published workflow REQUIRES authentication, not for here; use /edit
             if (!Status.Published.equals(md.getWorkflowStatus())) {
                 return ErrorResponse
-                        .create(Response.Status.FORBIDDEN, "Access to record denied.")
+                        .forbidden("Access to record denied.")
                         .build();
             }
             
@@ -266,7 +270,7 @@ public class Metadata {
         } catch ( IOException e ) {
             log.warn("YAML exception: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Output conversion error.")
+                    .internalServerError("Output conversion error.")
                     .build();
         } finally {
             em.close();
@@ -275,6 +279,8 @@ public class Metadata {
     
     private class RecordsList {
     	private List<DOECodeMetadata> records;
+        private long total;
+        private int start;
     	
     	RecordsList(List<DOECodeMetadata> records) {
     		this.records = records;
@@ -287,13 +293,22 @@ public class Metadata {
 		public void setRecords(List<DOECodeMetadata> records) {
 			this.records = records;
 		}
+                
+                public void setTotal(long count) { total = count; }
+                
+                public long getTotal() { return total; }
+                
+                public void setStart(int start) { this.start = start; }
+                
+                public int getStart() { return this.start; }
+                
+                public int getRows() {
+                    return (null==records) ? 0 : records.size();
+                }
 		
 	    public JsonNode toJson() {
 	        return mapper.valueToTree(this);
 	    }
-
-    	
-    	
     }
     
     /**
@@ -320,6 +335,51 @@ public class Metadata {
                             .status(Response.Status.OK)
                             .entity(mapper.createObjectNode().putPOJO("records", records.toJson()).toString())
                             .build();
+        } finally {
+            em.close();
+        }
+    }
+    
+    @GET
+    @Path ("/projects/pending")
+    @Consumes (MediaType.APPLICATION_JSON)
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    @RequiresRoles("OSTI")
+    public Response listProjectsPending(@QueryParam("start") int start, 
+                                        @QueryParam("rows") int rows,
+                                        @QueryParam("site") String siteCode) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            String whereClause = 
+                    "WHERE md.workflowStatus=:status " +
+                    ((null!=siteCode) ? "AND md.siteOwnershipCode=:site" : "");
+            TypedQuery<Long> counter = em.createQuery("SELECT COUNT(md.codeId) FROM DOECodeMetadata md " + whereClause, Long.class);
+            counter.setParameter("status", DOECodeMetadata.Status.Published);
+            if (null!=siteCode) 
+                counter.setParameter("site", siteCode);
+            
+            long rowCount = (long) counter.getSingleResult();
+            // rows count should be less than 100; default is 20 if not specified
+            rows = (rows>100) ? 100 : rows;
+            rows = (0==rows) ? 20 : rows;
+            
+            TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md " + whereClause, DOECodeMetadata.class);
+            query.setParameter("status", DOECodeMetadata.Status.Published);
+            if (null!=siteCode)
+                counter.setParameter("site", siteCode);
+            query.setFirstResult(start);
+            query.setMaxResults(rows);
+            
+            RecordsList records = new RecordsList(query.getResultList());
+            records.setTotal(rowCount);
+            records.setStart(start);
+            
+            return Response
+                    .ok()
+                    .entity(mapper.valueToTree(records).toString())
+                    .build();
         } finally {
             em.close();
         }
@@ -353,7 +413,7 @@ public class Metadata {
             } catch ( IOException e ) {
                 log.warn("YAML conversion error: " + e.getMessage());
                 return ErrorResponse
-                        .create(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.")
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.")
                         .build();
             }
         } else {
@@ -440,11 +500,21 @@ public class Metadata {
         } catch ( IOException e ) {
             log.warn("YAML conversion error: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "YAML conversion error.")
+                    .internalServerError("YAML conversion error.")
                     .build();
         }
     }
     
+    /**
+     * Send this Metadata to the ARCHIVER external support process.
+     * 
+     * Archiver needs the CODE ID, a PROJECT NAME (taken from the acronym if
+     * present, or the title), an optional PROJECT DESCRIPTION, and either a
+     * REPOSITORY LINK value or FILE NAME if uploaded file exists.
+     * 
+     * @param md the DOECodeMetadata to archive
+     * @throws IOException on IO transmission errors
+     */
     private static void sendToArchiver(DOECodeMetadata md) throws IOException {
         if ( "".equals(ARCHIVER_URL) ) 
             return;
@@ -590,7 +660,7 @@ public class Metadata {
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
-                            .create(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .internalServerError("File upload failed.")
                             .build();
                 }
             }
@@ -604,13 +674,13 @@ public class Metadata {
                     .build();
         } catch ( NotFoundException e ) {
             return ErrorResponse
-                    .create(Response.Status.NOT_FOUND, e.getMessage())
+                    .notFound(e.getMessage())
                     .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error:  Invalid update attempt from " + user.getEmail());
             log.warn("Message: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.FORBIDDEN, "Unable to persist update for indicated record.")
+                    .forbidden("Unable to persist update for indicated record.")
                     .build();
         } catch ( IOException | InvocationTargetException e ) {
             if (em.getTransaction().isActive())
@@ -618,7 +688,7 @@ public class Metadata {
             
             log.warn("Persistence Error: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Save IO Error: " + e.getMessage())
+                    .internalServerError("Save IO Error: " + e.getMessage())
                     .build();
         } finally {
             em.close();
@@ -655,7 +725,7 @@ public class Metadata {
             if ( !errors.isEmpty() ) {
                 // generate a JSONAPI errors object
                 return ErrorResponse
-                        .create(Response.Status.BAD_REQUEST, errors)
+                        .status(Response.Status.BAD_REQUEST, errors)
                         .build();
             }
             
@@ -670,7 +740,7 @@ public class Metadata {
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
-                            .create(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .status(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
                             .build();
                 }
             }
@@ -680,7 +750,7 @@ public class Metadata {
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
-                        .create(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
                         .build();
             }
             
@@ -702,13 +772,13 @@ public class Metadata {
                     .build();
         } catch ( NotFoundException e ) {
             return ErrorResponse
-                    .create(Response.Status.NOT_FOUND, e.getMessage())
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
                     .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.FORBIDDEN, "Logged in User is not allowed to modify this record.")
+                    .status(Response.Status.FORBIDDEN, "Logged in User is not allowed to modify this record.")
                     .build();
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
@@ -716,7 +786,7 @@ public class Metadata {
             
             log.warn("Persistence Error Publishing: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.")
                     .build();
         } finally {
             em.close();
@@ -754,7 +824,7 @@ public class Metadata {
             List<String> errors = validateSubmit(md);
             if ( !errors.isEmpty() ) {
                 return ErrorResponse
-                        .create(Response.Status.BAD_REQUEST, errors)
+                        .status(Response.Status.BAD_REQUEST, errors)
                         .build();
             }
             
@@ -769,7 +839,7 @@ public class Metadata {
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
-                            .create(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .status(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
                             .build();
                 }
             }
@@ -828,13 +898,13 @@ public class Metadata {
                     .build();
         } catch ( NotFoundException e ) {
             return ErrorResponse
-                    .create(Response.Status.NOT_FOUND, e.getMessage())
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
                     .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit indicated record.")
+                    .status(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit indicated record.")
                     .build();
         } catch ( IOException |  InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
@@ -842,7 +912,7 @@ public class Metadata {
             
             log.warn("Persistence Error Publishing: " + e.getMessage());
             return ErrorResponse
-                    .create(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
                     .build();
         } finally {
             em.close();
