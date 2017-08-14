@@ -2,7 +2,6 @@
  */
 package gov.osti.services;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,12 +42,10 @@ import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import javax.persistence.Query;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.ParameterExpression;
-import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
@@ -125,6 +122,7 @@ public class Metadata {
     // regular expressions for validating phone numbers (US) and email addresses
     private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
+    private static final Pattern URL_PATTERN = Pattern.compile("\\\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
@@ -1163,6 +1161,15 @@ public class Metadata {
         }
         if (StringUtils.isNotBlank(m.getDoi()) && null==m.getReleaseDate())
             reasons.add("Release Date is required for DOI registration.");
+        // if "OS" accessibility, a REPOSITORY LINK is REQUIRED
+        if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
+            if (StringUtils.isBlank(m.getRepositoryLink()))
+                reasons.add("Repository URL is required for open source submissions.");
+        } else {
+            // non-OS submissions require a LANDING PAGE
+            if (!URL_PATTERN.matcher(m.getLandingPage()).matches())
+                reasons.add("A valid Landing Page URL is required for non-open source submissions.");
+        }
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid link.");
@@ -1222,6 +1229,10 @@ public class Metadata {
         }
         if (StringUtils.isBlank(m.getRecipientOrg()))
             reasons.add("Contact organization is required.");
+        
+        if (!DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility()))
+            if (StringUtils.isBlank(m.getFileName()))
+                reasons.add("A file archive must be included for non-open source submissions.");
         
         return reasons;
     }

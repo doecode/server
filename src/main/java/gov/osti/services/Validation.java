@@ -30,8 +30,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
-import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Ref;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,9 +241,9 @@ public class Validation {
         if ( StringUtils.isBlank(value))
             return false;
         
-        // presently only support HTTP(S)
+        // if not starting with HTTP, make it so then test
         if (!value.toLowerCase().startsWith("http"))
-            return false;
+            value = "http://" + value;
         
         try {
             Collection<Ref> references = Git
