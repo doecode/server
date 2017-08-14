@@ -36,7 +36,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -120,9 +122,9 @@ public class Metadata {
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     
     // regular expressions for validating phone numbers (US) and email addresses
-    private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
-    private static final Pattern URL_PATTERN = Pattern.compile("\\\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+    protected static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
+    protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
+    protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
@@ -172,6 +174,10 @@ public class Metadata {
      * Look up a record for EDITING, checks authentication and ownership prior
      * to succeeding.
      * 
+     * Ownership is defined as:  owner and user email match, OR user's roles
+     * include the SITE OWNERSHIP CODE of the record, OR user has the "OSTI"
+     * special administrative role.
+     * 
      * Result Codes:
      * 200 - OK, with JSON containing the metadata information
      * 400 - you didn't specify a CODE ID
@@ -205,8 +211,12 @@ public class Metadata {
                     .notFound("Code ID not on file.")
                     .build();
 
+        Set<String> roles = user.getRoles();
+        if (null==roles) roles = new HashSet<>(); // null protection
         // do you have permissions to get this?
-        if ( !user.getEmail().equals(md.getOwner()) )
+        if ( !user.getEmail().equals(md.getOwner()) &&
+             !roles.contains("OSTI") &&
+             !roles.contains(md.getSiteOwnershipCode()))
             return ErrorResponse
                     .forbidden("Permission denied.")
                     .build();
@@ -563,11 +573,18 @@ public class Metadata {
      * present, or the title), an optional PROJECT DESCRIPTION, and either a
      * REPOSITORY LINK value or FILE NAME if uploaded file exists.
      * 
+     * If nothing supplied to archive, do nothing.
+     * 
      * @param md the DOECodeMetadata to archive
      * @throws IOException on IO transmission errors
      */
     private static void sendToArchiver(DOECodeMetadata md) throws IOException {
         if ( "".equals(ARCHIVER_URL) ) 
+            return;
+        
+        // if NOTHING to archive (no FILE or REPOSITORY LINK) just leave
+        if (StringUtils.isBlank(md.getFileName()) && 
+            StringUtils.isBlank(md.getRepositoryLink()))
             return;
         
         // set up a connection
@@ -1166,8 +1183,11 @@ public class Metadata {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
         } else {
-            // non-OS submissions require a LANDING PAGE
-            if (!URL_PATTERN.matcher(m.getLandingPage()).matches())
+            // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
+            String landingUrl = (StringUtils.startsWithIgnoreCase(m.getLandingPage(), "http")) ?
+                    m.getLandingPage() :
+                    "http://" + m.getLandingPage();
+            if (!URL_PATTERN.matcher(landingUrl).matches())
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
         // if repository link is present, it needs to be valid too
