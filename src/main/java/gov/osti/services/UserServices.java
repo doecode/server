@@ -165,9 +165,14 @@ public class UserServices {
     /**
      * Process login requests.
      * 
+     * JSON includes email address and one of either password or confirmation_code
+     * JWT value.  The latter is to support forgot-my-password functionality for
+     * a one-time login request, as token is reset after success.
+     * 
      * Response Codes:
      * 200 - login OK, sets token and cookie
      * 401 - authentication failed
+     * 403 - forbidden access
      * 500 - internal system error, unable to read JSON, etc.
      * 
      * JSON returns email address and XSRF token.
@@ -187,31 +192,76 @@ public class UserServices {
             // TODO Auto-generated catch block
             log.warn("JSON Mapper error: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request.")
+                    .internalServerError("Error processing request.")
                     .build();
 	}
         User currentUser = null;
 
-        //String encryptedPassword = PASSWORD_SERVICE.encryptPassword(password);
         EntityManager em = DoeServletContextListener.createEntityManager();
         try {        
             currentUser = em.find(User.class, request.getEmail());
         } catch ( Exception e ) {
             log.warn("Error Retrieving User",e);
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage())
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
                     .build();
         } finally {
             em.close();  
         }
-
-        if (currentUser == null || !currentUser.isVerified() ||
-                !PASSWORD_SERVICE.passwordsMatch(request.getPassword(), currentUser.getPassword())) {
-            //no user matched, return with error
-            return Response
-                    .status(Response.Status.UNAUTHORIZED)
+        
+        // ensure the user exists and is verified
+        if (null==currentUser || !currentUser.isVerified()) 
+            return ErrorResponse
+                    .unauthorized()
                     .build();
+        
+        // if using a PASSWORD, ensure that matches what's on file.
+        if (null!=request.getPassword()) {
+            if (!PASSWORD_SERVICE.passwordsMatch(request.getPassword(), currentUser.getPassword()))
+                return ErrorResponse
+                    .unauthorized()
+                    .build();
+        } else {
+            // check the CONFIRMATION CODE token
+            em = DoeServletContextListener.createEntityManager();
+            try {
+                Claims claims = DOECodeCrypt.parseJWT(request.getConfirmationCode());
+                String confirmationCode = claims.getId();
+                String email = claims.getSubject();
+                
+                // if the EMAIL ADDRESS doesn't match the requesting user, it's an error
+                if (!currentUser.getEmail().equals(email))
+                    return ErrorResponse
+                            .forbidden("Email did not match.")
+                            .build();
+                
+                // ensure the confirmation codes match
+                if (!StringUtils.equals(currentUser.getConfirmationCode(), confirmationCode))
+                    return ErrorResponse
+                            .forbidden("Confirmation code invalid.")
+                            .build();
+                
+                // if successful, we need to CLEAR OUT the user TOKEN
+                em.getTransaction().begin();
+
+                currentUser.setConfirmationCode("");
+                em.merge(currentUser);
+                
+                em.getTransaction().commit();
+                
+            } catch ( Exception e ) {
+                // if DB error occurred, abort transaction
+                if ( em.getTransaction().isActive() )
+                    em.getTransaction().rollback();
+                
+                log.warn("JWT Login error: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError("Unable to process login request.")
+                        .build();
+            } finally {
+                em.close();
+            }
+            
         }
     
 	String xsrfToken = DOECodeCrypt.nextRandomString();
@@ -319,6 +369,76 @@ public class UserServices {
                     .build();
         } finally {
             em.close();  
+        }
+    }
+    
+    /**
+     * Process a "Forgot-my-password" request.  If the indicated EMAIL User 
+     * account is VERIFIED, a new confirmation code is issued and an email 
+     * sent to the account with a link to one-time log in based on that value.
+     * 
+     * Response Codes:
+     * 200 - OK (empty) request processed successfully
+     * 400 - unable to read JSON, or account not found/not verified
+     * 500 - unexpected error or database failure
+     * 
+     * @param object JSON containing the "email" address to use
+     * @return an appropriate Response
+     */
+    @POST
+    @Consumes (MediaType.APPLICATION_JSON)
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/forgotpassword")
+    public Response forgotPassword(String object) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        EmailRequest request;
+        
+        try {
+            request = mapper.readValue(object, EmailRequest.class);
+        } catch ( IOException e ) {
+            log.warn("JSON Error forgotpassword: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("Unable to process request.")
+                    .build();
+        }
+        
+        // attempt to process the request
+        try {
+            User user = em.find(User.class, request.getEmail());
+            
+            // account has to exist AND be verified
+            if (null==user || !user.isVerified()) 
+                return ErrorResponse
+                        .badRequest("Invalid account in request.")
+                        .build();
+            
+            // create a new CONFIRMATION CODE
+            String confirmationCode = DOECodeCrypt.nextUniqueString();
+            
+            // store it
+            em.getTransaction().begin();
+            
+            user.setConfirmationCode(confirmationCode);
+            
+            em.getTransaction().commit();
+            
+            // send an EMAIL
+            sendForgotPassword(user.getConfirmationCode(), user.getEmail());
+            // return OK
+            return Response
+                    .ok()
+                    .build();
+        } catch ( Exception e ) {
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("forgot password error: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+            
+        } finally {
+            em.close();
         }
     }
     
@@ -726,11 +846,13 @@ public class UserServices {
      * 
      * email - the login name/email address
      * password - the password
+     * confirmation_code - optional CONFIRMATION CODE JWT for one-time login
      */
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class LoginRequest implements Serializable {
         private String email;
         private String password;
+        private String confirmation_code;
         
         public LoginRequest() {
             
@@ -762,6 +884,20 @@ public class UserServices {
          */
         public void setPassword(String password) {
             this.password = password;
+        }
+
+        /**
+         * @return the confirmation_code
+         */
+        public String getConfirmationCode() {
+            return confirmation_code;
+        }
+
+        /**
+         * @param confirmation_code the confirmation_code to set
+         */
+        public void setConfirmationCode(String confirmation_code) {
+            this.confirmation_code = confirmation_code;
         }
     }
     
@@ -959,7 +1095,7 @@ public class UserServices {
      * @param confirmationCode the confirmation code associated with the user account
      * @param userEmail the user email address to send to
      */
-    private void sendRegistrationConfirmation(String confirmationCode, String userEmail) {
+    private static void sendRegistrationConfirmation(String confirmationCode, String userEmail) {
         HtmlEmail email = new HtmlEmail();
         email.setHostName(EMAIL_HOST);
 
@@ -977,6 +1113,34 @@ public class UserServices {
 
         } catch (EmailException e) {
                 log.error("Email error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send a "forgot-my-password" email for resetting the password.  The included link is a one-time 
+     * login key based on the confirmation code key.
+     * 
+     * @param confirmationCode the confirmation code associated with the user
+     * @param userEmail the user email address
+     */
+    private static void sendForgotPassword(String confirmationCode, String userEmail) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        try {
+            email.setFrom(EMAIL_FROM);
+            String loginEmail = SITE_URL + "/account?passcode=" + DOECodeCrypt.generateConfirmationJwt(confirmationCode, userEmail);
+            email.setSubject("Forgotten Password");
+            email.addTo(userEmail);
+            
+            String msg = "<html> A request to reset the password associated with your account on DOECode was recently issued.  In order to change your password, please log in by<br> ";
+            msg += "logging in to the link below.<p>";
+            msg += "<a href=\"" + loginEmail + "\">" + loginEmail + "</a></html>";
+            email.setHtmlMsg(msg);
+            email.send();
+            
+        } catch ( EmailException e ) {
+            log.error("Email Error: " + e.getMessage());
         }
     }
 

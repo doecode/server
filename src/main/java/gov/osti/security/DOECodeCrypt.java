@@ -33,10 +33,17 @@ public class DOECodeCrypt {
 		
 	}
 	
+        /**
+         * Generate a CONFIRMATION CODE JWT token.  Token no longer expires.
+         * 
+         * @param confirmationCode the text confirmation code value
+         * @param email the email address/user account
+         * @return a JWT based on the confirmation code
+         */
 	public static String generateConfirmationJwt(String confirmationCode, String email) {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.MINUTE, 30);
-	    return Jwts.builder().setIssuer("doecode").setId(confirmationCode).setSubject(email).setExpiration(c.getTime()).signWith(SignatureAlgorithm.HS256,"Secret").compact();
+	    return Jwts.builder().setIssuer("doecode").setId(confirmationCode).setSubject(email).signWith(SignatureAlgorithm.HS256,"Secret").compact();
 	}
 	
 	public static Claims parseJWT(String jwt) {
