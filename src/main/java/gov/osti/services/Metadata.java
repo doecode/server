@@ -1217,9 +1217,9 @@ public class Metadata {
             for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
                 if (StringUtils.isBlank(o.getOrganizationName()))
                     reasons.add("Sponsoring organization name is required.");
-                if (StringUtils.isBlank(o.getPrimaryAward()))
+                if (StringUtils.isBlank(o.getPrimaryAward()) && o.isDOE())
                     reasons.add("Primary award number is required.");
-                else if (!Validation.isAwardNumberValid(o.getPrimaryAward()))
+                else if (o.isDOE() && !Validation.isAwardNumberValid(o.getPrimaryAward()))
                     reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
             }
         }
