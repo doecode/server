@@ -70,7 +70,7 @@ public class BearerTokenAuthenticatingFilter extends AuthenticatingFilter {
 	    User currentUser = null;
 	    try {        
                 // only allow VERIFIED users
-	        TypedQuery<User> getUserByApiKey = em.createQuery("SELECT u FROM User u WHERE u.apiKey = :apiKey AND u.verified = TRUE", User.class);
+	        TypedQuery<User> getUserByApiKey = em.createQuery("SELECT u FROM User u WHERE u.apiKey = :apiKey AND u.verified = TRUE AND u.active = TRUE", User.class);
 	        currentUser = getUserByApiKey
                         .setParameter("apiKey", apiKey)
                         .getSingleResult();

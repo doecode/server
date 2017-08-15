@@ -37,7 +37,6 @@ import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -175,7 +174,8 @@ public class UserServices {
      * 403 - forbidden access
      * 500 - internal system error, unable to read JSON, etc.
      * 
-     * JSON returns email address and XSRF token.
+     * JSON returns email address, XSRF token, hasSite indiciating whether or not
+     * user is a lab site user, and first/last names if present.
      * 
      * @param object JSON containing "email" and "password" to authenticate.
      * @return an appropriate Response based on whether or not authentication succeeded
@@ -209,8 +209,8 @@ public class UserServices {
             em.close();  
         }
         
-        // ensure the user exists and is verified
-        if (null==currentUser || !currentUser.isVerified()) 
+        // ensure the user exists and is verified / active
+        if (null==currentUser || !currentUser.isVerified() || !currentUser.isActive()) 
             return ErrorResponse
                     .unauthorized()
                     .build();
@@ -275,13 +275,89 @@ public class UserServices {
                         .put("xsrfToken", xsrfToken)
                         .put("hasSite", !"CONTR".equals(currentUser.getSiteId()))
                         .put("email", currentUser.getEmail())
+                        .put("first_name", currentUser.getFirstName())
+                        .put("last_name", currentUser.getLastName())
                         .toString())
                 .cookie(cookie)
                 .build();
     }
+    
+    /**
+     * Query to determine SITE CODE based on EMAIL DOMAIN values.
+     * 
+     * Response Codes:
+     * 200 - OK, JSON contains EMAIL ADDRESS and SITE CODE (or "CONTR")
+     * 400 - Bad Request, missing required EMAIL
+     * 500 - Internal service error
+     * 
+     * @param object JSON containing the "email" to query
+     * @return a Response containing the JSON if found
+     */
+    @POST
+    @Consumes (MediaType.APPLICATION_JSON)
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/getsitecode")
+    public Response getSiteCode(String object) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        EmailRequest request;
+        
+        try {
+            request = mapper.readValue(object, EmailRequest.class);
+        } catch ( IOException e ) {
+            return ErrorResponse
+                    .internalServerError("Unable to process request.")
+                    .build();
+        }
+        
+        // no email?
+        if (StringUtils.isBlank(request.getEmail()))
+            return ErrorResponse
+                    .badRequest("Missing required email.")
+                    .build();
+        
+        try {
+            // assign as SITE if possible based on the EMAIL, or default to CONTRACTOR
+            String domain = request.getEmail().substring(request.getEmail().indexOf("@"));
+            TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
+            query.setParameter("domain", domain);
+
+            // look up the Site and set CODE, or CONTR if not found
+            List<Site> sites = query.getResultList();
+            String siteCode = ((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
+            
+            // return the results back
+            return Response
+                    .ok()
+                    .entity(mapper
+                            .createObjectNode()
+                            .put("email", request.getEmail())
+                            .put("site_code", siteCode).toString())
+                    .build();
+        } catch ( Exception e ) {
+            log.error("Site Lookup Error", e);
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
 
     /**
      * Process a registration request.
+     * 
+     * JSON should include an EMAIL ADDRESS, requested PASSWORD (and CONFIRMATION),
+     * and optionally a FIRST and LAST name.  If a Contractor, should also include
+     * a CONTRACT NUMBER; this will be validated and required at the confirmation
+     * stage prior to verification.
+     * 
+     * Response Codes:
+     * 200 - OK, confirmation code is sent to the email address indicated
+     * 400 - Bad request, missing required EMAIL address, or contract number is 
+     * invalid or missing for CONTRACTOR registration, or password is missing
+     * or unacceptable
+     * 500 - Unexpected internal service error
+     * 
      * 
      * @param object the JSON containing the registration request information
      * @return an OK Response if everything fine, or exception otherwise
@@ -293,16 +369,22 @@ public class UserServices {
     public Response register(String object) {
 	
         EntityManager em = DoeServletContextListener.createEntityManager();
-        PasswordRequest request;
+        RegistrationRequest request;
         
         try {
-            request = mapper.readValue(object, PasswordRequest.class);
+            request = mapper.readValue(object, RegistrationRequest.class);
         } catch (IOException e) {
                 log.error("Error in register: ",e);
                 return ErrorResponse
                         .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process JSON.")
                         .build();
         }
+        
+        // some values have to be set
+        if (StringUtils.isBlank(request.getEmail()))
+            return ErrorResponse
+                    .badRequest("Missing required email address for registration.")
+                    .build();
         
         try {
             User user = em.find(User.class, request.getEmail());
@@ -328,8 +410,33 @@ public class UserServices {
 
             String encryptedPassword = PASSWORD_SERVICE.encryptPassword(request.getPassword());
 
-            //check if the email is related to a valid site and assign site ID, for now just hardcoding as ORNL
+            // assign as SITE if possible based on the EMAIL, or default to CONTRACTOR
+            String domain = request.getEmail().substring(request.getEmail().indexOf("@"));
+            TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
+            query.setParameter("domain", domain);
 
+            // look up the Site and set CODE, or CONTR if not found
+            List<Site> sites = query.getResultList();
+            String siteCode = ((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
+            
+            // if CONTR, we need to REQUIRE and VALIDATE the CONTRACT NUMBER
+            if (StringUtils.equals(siteCode, "CONTR")) {
+                if (StringUtils.isBlank(request.getContractNumber()))
+                    return ErrorResponse
+                            .badRequest("Missing required contract number.")
+                            .build();
+                else if (!Validation.isAwardNumberValid(request.getContractNumber()))
+                    return ErrorResponse
+                            .badRequest("Contract number is not a valid DOE contract number.")
+                            .build();
+            }
+            
+            // first and last names are required
+            if (StringUtils.isBlank(request.getFirstName()) || StringUtils.isBlank(request.getLastName()))
+                return ErrorResponse
+                        .badRequest("Missing required first/last names.")
+                        .build();
+            
             String apiKey = DOECodeCrypt.nextUniqueString();
             String confirmationCode = DOECodeCrypt.nextUniqueString();
 
@@ -341,11 +448,19 @@ public class UserServices {
             // its values; if not, need to create and persist a new one
             if (null==user) {
                 user = new User(request.getEmail(), encryptedPassword, apiKey, confirmationCode);
+                user.setFirstName(request.getFirstName());
+                user.setLastName(request.getLastName());
+                user.setContractNumber(request.getContractNumber());
+                user.setSiteId(siteCode);
                 em.persist(user);
             } else {
                 user.setApiKey(apiKey);
                 user.setPassword(encryptedPassword);
                 user.setConfirmationCode(confirmationCode);
+                user.setFirstName(request.getFirstName());
+                user.setLastName(request.getLastName());
+                user.setContractNumber(request.getContractNumber());
+                user.setSiteId(siteCode);
             }
           
             em.getTransaction().commit();
@@ -508,7 +623,7 @@ public class UserServices {
      * 
      * @return an empty Response with the appropriate status code
      */
-    @POST
+    @GET
     @RequiresAuthentication
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -563,7 +678,15 @@ public class UserServices {
     }
 
     /**
-     * Processes edits to a user.
+     * Processes edits to a user.  Allows changing FIRST and LAST name.
+     * 
+     * Cannot change EMAIL or PASSWORD information from this endpoint.
+     * 
+     * Response Codes:
+     * 
+     * 200 - OK, user name changed
+     * 400 - Bad request, no name information sent
+     * 500 - Unable to parse request or internal system error
      * 
      * @param object the JSON containing the user information
      * @return an OK Response if everything fine, or exception otherwise
@@ -576,9 +699,9 @@ public class UserServices {
     public Response editUser(String object) {
 	
         EntityManager em = DoeServletContextListener.createEntityManager();
-        RoleRequest request;
+        RegistrationRequest request;
         try {
-            request = mapper.readValue(object, RoleRequest.class);
+            request = mapper.readValue(object, RegistrationRequest.class);
         } catch (IOException e) {
                 log.error("Error in register: ",e);
                 return ErrorResponse
@@ -586,27 +709,23 @@ public class UserServices {
                         .build();
         }
         
-        // no roles, no operation?
-        if (null==request.getPendingRoles() && null==request.getPendingRole())
+        // nothing to do?
+        if (StringUtils.isBlank(request.getFirstName()) ||
+            StringUtils.isBlank(request.getLastName()))
             return ErrorResponse
-                    .status(Response.Status.BAD_REQUEST, "No roles specified to set.")
+                    .badRequest("Required information missing.")
                     .build();
         
-        // may specify a single role or multiple
-        Set<String> pendingRoles = new HashSet<>();
-        if (null!=request.getPendingRoles()) {
-            pendingRoles.addAll(Arrays.asList(request.getPendingRoles()));
-        } else {
-            pendingRoles.add(request.getPendingRole());
-        }
-		
+        // get the USER from the session
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
         	
         try {
             em.getTransaction().begin();
-
-            user.setPendingRoles(pendingRoles);
+            
+            // update the names
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
             
             em.merge(user);
             
@@ -642,9 +761,9 @@ public class UserServices {
     public Response changePassword(String object) {
 	
         EntityManager em = DoeServletContextListener.createEntityManager();
-        PasswordRequest request;
+        RegistrationRequest request;
         try {
-            request = mapper.readValue(object, PasswordRequest.class);
+            request = mapper.readValue(object, RegistrationRequest.class);
         } catch (IOException e) {
             log.error("Error in register: ",e);
             return ErrorResponse
@@ -698,9 +817,85 @@ public class UserServices {
         }
     }
 
+    /**
+     * Administer a user.  Allows ADMIN account to activate/deactivate a
+     * User account by EMAIL.
+     * 
+     * Response Codes:
+     * 200 - OK, user action performed. JSON includes email address and active state flag
+     * 400 - Bad request, email is missing or account is not verified
+     * 401 - Unauthorized, user is not logged in
+     * 403 - Forbidden, user has no permission to access this function
+     * 404 - Not found, user email is not on file
+     * 500 - Internal error occurred
+     * 
+     * @param object JSON containing the request
+     * @return a Response based on the action taken
+     */
+    @POST
+    @RequiresAuthentication
+    @RequiresRoles("OSTI")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/admin")
+    public Response adminUser(String object) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        AdminRequest request;
+        try {
+            request = mapper.readValue(object, AdminRequest.class);
+        } catch ( IOException e ) {
+            log.error("Error in admin: ",e);
+                return ErrorResponse
+                        .internalServerError("Unable to process request.")
+                        .build();
+        }
+        
+        // required values
+        if (StringUtils.isBlank(request.getEmail()))
+            return ErrorResponse
+                    .badRequest("Missing required email address of user.")
+                    .build();
+        
+        try {
+            User user = em.find(User.class, request.getEmail());
+            
+            if (null==user)
+                return ErrorResponse
+                        .notFound("User not on file.")
+                        .build();
+            // user should be verified to administer
+            if (!user.isVerified())
+                return ErrorResponse
+                        .badRequest("User account is not verified.")
+                        .build();
+            
+            // modify the user according to the request
+            em.getTransaction().begin();
+            
+            user.setActive(request.isActivate());
+            
+            em.getTransaction().commit();
+            
+            // respond with success
+            return Response
+                    .ok()
+                    .entity(mapper.createObjectNode()
+                            .put("email", user.getEmail())
+                            .put("active", user.isActive()).toString())
+                    .build();
+        } catch ( Exception e ) {
+            log.error("Admin Error: ", e);
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
 
     /**
-     * Processes edits to a user.
+     * Processes edits to a user.  Approves any PENDING ROLES on the indicated
+     * user account.
      * 
      * @param object the JSON containing the user information
      * @return an OK Response if everything fine, or exception otherwise
@@ -760,7 +955,8 @@ public class UserServices {
     }
 
     /**
-     * Processes edits to a user.
+     * Processes edits to a user.  Disapproves any PENDING ROLES on the indicated
+     * user account.
      * 
      * @param object the JSON containing the user information
      * @return an OK Response if everything fine, or exception otherwise
@@ -851,48 +1047,6 @@ public class UserServices {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
     /**
-     * A Role Request; defines an /update endpoint request to add one or more
-     * roles to an account, pending approval.
-     */
-    @JsonIgnoreProperties (ignoreUnknown = true)
-    private static class RoleRequest implements Serializable {
-        private String pendingRole;
-        private String[] pendingRoles;
-
-        public RoleRequest() {
-            
-        }
-
-        /**
-         * @return the pendingRole
-         */
-        public String getPendingRole() {
-            return pendingRole;
-        }
-
-        /**
-         * @param pendingRole the pendingRole to set
-         */
-        public void setPendingRole(String pendingRole) {
-            this.pendingRole = pendingRole;
-        }
-
-        /**
-         * @return the pendingRoles
-         */
-        public String[] getPendingRoles() {
-            return pendingRoles;
-        }
-
-        /**
-         * @param pendingRoles the pendingRoles to set
-         */
-        public void setPendingRoles(String[] pendingRoles) {
-            this.pendingRoles = pendingRoles;
-        }
-    }
-    
-    /**
      * an Email request; for approve/disapprove endpoints.
      */
     @JsonIgnoreProperties (ignoreUnknown = true)
@@ -910,6 +1064,29 @@ public class UserServices {
         public String getEmail() {
             return this.email;
         }
+    }
+    
+    /**
+     * Administrative request, activate or deactivate Users based on EMAIL.
+     */
+    @JsonIgnoreProperties (ignoreUnknown=true)
+    private static class AdminRequest extends EmailRequest {
+        private boolean activate;
+
+        /**
+         * @return the activate
+         */
+        public boolean isActivate() {
+            return activate;
+        }
+
+        /**
+         * @param activate the activate to set
+         */
+        public void setActivate(boolean activate) {
+            this.activate = activate;
+        }
+        
     }
     
     /**
@@ -976,16 +1153,21 @@ public class UserServices {
      * Password Request -- for registration requests.
      * 
      * email - desired email address/login name
+     * first_name - desired first name
+     * last_name - desired last name
      * password - desired password
      * confirm_password - should be same as password
      */
     @JsonIgnoreProperties (ignoreUnknown = true)
-    private static class PasswordRequest implements Serializable {
+    private static class RegistrationRequest implements Serializable {
         private String email;
+        private String firstName;
+        private String lastName;
         private String password;
         private String confirmPassword;
+        private String contractNumber;
         
-        public PasswordRequest() {
+        public RegistrationRequest() {
             
         }
 
@@ -1029,6 +1211,48 @@ public class UserServices {
          */
         public void setConfirmPassword(String confirmPassword) {
             this.confirmPassword = confirmPassword;
+        }
+
+        /**
+         * @return the firstName
+         */
+        public String getFirstName() {
+            return firstName;
+        }
+
+        /**
+         * @param firstName the firstName to set
+         */
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
+
+        /**
+         * @return the lastName
+         */
+        public String getLastName() {
+            return lastName;
+        }
+
+        /**
+         * @param lastName the lastName to set
+         */
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        /**
+         * @return the contractNumber
+         */
+        public String getContractNumber() {
+            return contractNumber;
+        }
+
+        /**
+         * @param contractNumber the contractNumber to set
+         */
+        public void setContractNumber(String contractNumber) {
+            this.contractNumber = contractNumber;
         }
         
     }
@@ -1121,17 +1345,9 @@ public class UserServices {
                         .status(Response.Status.UNAUTHORIZED, "Request is not authorized.")
                         .build();
             }
-
-            String domain = email.substring(email.indexOf("@"));
-            TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
-            query.setParameter("domain", domain);
-
-            // look up the Site and set CODE, or CONTR if not found
-            List<Site> sites = query.getResultList();
-            currentUser.setSiteId((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
-
-            //if we got here, we're good. Verify and then set the confirmation code
+            //if we got here, we're good. Verify (and activate) and clear the confirmation code
             currentUser.setVerified(true);
+            currentUser.setActive(true);
             currentUser.setConfirmationCode("");
 
             em.getTransaction().begin();
