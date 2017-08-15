@@ -12,7 +12,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width">
 
-  <title>DOECode API Documentation</title>
+  <title>DOECode Metadata API Documentation</title>
 
   <!-- Flatdoc -->
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -33,7 +33,7 @@
         // fetcher: Flatdoc.file('DOECode API Services.md')
     // });
     Flatdoc.run({
-      fetcher: Flatdoc.github('doecode/server', 'src/main/java/gov/osti/services/DOECode API Services.md' )
+      fetcher: Flatdoc.github('doecode/server', 'src/main/java/gov/osti/services/Metadata.md' )
     });
   </script>
 </head>
@@ -41,7 +41,7 @@
 
   <div class='header'>
     <div class='left'>
-      <h1>DOECode Services API</h1>
+      <h1>DOECode Metadata Services API</h1>
       <ul>
         <li><a href='https://github.com/doecode/server'>View on GitHub</a></li>
         <li><a href='https://github.com/doecode/server/issues'>Issues</a></li>

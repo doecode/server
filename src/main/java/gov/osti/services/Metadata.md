@@ -6,7 +6,7 @@ Introduction
 
 Description of services provided by the API back end of DOECode.  The HTTP `GET` verb is used to retrieve information in various desired formats, and the `POST` verb used to send new and updated metadata information to the persistence back end.
 
-> The API is available via `/doecode/services/` on the DOECode server.
+> The API is available via `/doecodeapi/services/` on the DOECode server.
 
 [DOECode on GitHub >](https://github.com/doecode/doecode)
 
