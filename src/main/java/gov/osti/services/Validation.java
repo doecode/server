@@ -255,7 +255,8 @@ public class Validation {
             
             // must be a valid repository if it has references
             return true;
-        } catch ( GitAPIException e ) {
+        } catch ( Exception e ) {
+            // jgit occasionally throws sloppy runtime exceptions
             log.warn("Repository URL " + value + " failed: " + e.getMessage());
             return false;
         }

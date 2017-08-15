@@ -490,6 +490,77 @@ public class UserServices {
             em.close();
         }
     }
+    
+    /**
+     * Request site admin privileges for the logged-in user account.
+     * 
+     * CONTR users may not access this endpoint.  Logged in lab users may
+     * request permission to access other records from their site; this role
+     * is PENDING APPROVAL until a site admin user ("OSTI") either approves or
+     * disapproves that role.
+     * 
+     * Response Codes:
+     * 200 - OK, user already has or has requested this role
+     * 201 - CREATED, user role set to pending approval
+     * 401 - unauthorized, not currently logged in
+     * 403 - forbidden, unable to access
+     * 500 - unexpected or database error
+     * 
+     * @return an empty Response with the appropriate status code
+     */
+    @POST
+    @RequiresAuthentication
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/requestadmin")
+    public Response requestAdmin() {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
+        try {
+            // contractors MAY NOT do this
+            if (StringUtils.equals("CONTR", user.getSiteId()))
+                return ErrorResponse
+                        .forbidden("Operation not permitted.")
+                        .build();
+            
+            // already have this role?  Return OK
+            Set<String> pendingRoles = user.getPendingRoles();
+            Set<String> roles = user.getRoles();
+            if ((null!=roles && roles.contains(user.getSiteId())) ||
+                (null!=pendingRoles && pendingRoles.contains(user.getSiteId())))
+                return Response
+                        .ok()
+                        .build();
+            
+            // post a pending role request
+            em.getTransaction().begin();
+            pendingRoles = new HashSet<>();
+            pendingRoles.add(user.getSiteId());
+            
+            user.setPendingRoles(pendingRoles);
+            em.merge(user);
+            
+            em.getTransaction().commit();
+            
+            // return CREATED
+            return Response
+                    .status(Response.Status.CREATED)
+                    .entity("Site admin role requested.")
+                    .build();
+        } catch ( Exception e ) {
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Error: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
 
     /**
      * Processes edits to a user.
