@@ -21,9 +21,11 @@ HTTP Request Methods
 Service Endpoints
 -----------------
 
-### General User Information API
+## General User Information API
 
 General or non-account-specific informational API calls.
+
+### load
 
 `GET /load`
 
@@ -35,17 +37,24 @@ Authenticated end point, retrieves the logged-in User's email address if already
 | 401 | Unauthorized, no user session logged in |
 
 > Request:
->> GET /doecodeapi/services/user/load
-> Content-Type: application/json
-> Authorization: Basic user-api-key
-> 
+```html
+GET /doecodeapi/services/user/load
+Content-Type: application/json
+Authorization: Basic user-api-key
+```
+
 > Response:
-> 
-> >HTTP/1.1 200 OK
-> >Content-Type: application/json
-> > Content-Length: 27
-> > Date: Mon, 14 Aug 2017 14:55:04 GMT
-> > {"email":"useremail@domain.com"}
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 27
+Date: Mon, 14 Aug 2017 14:55:04 GMT
+```
+```json
+{"email":"useremail@domain.com"}
+```
+
+### getsitecode
 
 `POST /getsitecode`
 
@@ -56,20 +65,30 @@ Determine the site code associated with a given email address, or whether or not
 | 200 | OK, JSON contains email address and site code |
 
 > Request:
-> > POST /doecodeapi/services/user/getsitecode
-> Content-Type: application/json
-> { "email":"myaddress@domain.com" }
+```html
+POST /doecodeapi/services/user/getsitecode
+Content-Type: application/json
+```
+```json
+{ "email":"myaddress@domain.com" }
+```
 
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> {"email":"myaddress@domain.com","site_code":"CONTR"}
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"email":"myaddress@domain.com","site_code":"CONTR"}
+```
 
-### User Session Management
+## User Session Management
 
 API calls to manage user session state; log in and out of authenticated sessions.
 
-`GET /login`
+### login
+
+ `GET /login`
 
 Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and HTTP session management.   Requests may log in via password OR confirmation code (in case of forgotten passwords) for one time token use.
 
@@ -81,18 +100,28 @@ Logs a user session into DOECode.  User account must be verified and active to s
 | 500 | Internal service error |
 
 > Request:
-> > POST /doecodeapi/services/user/login
-> Content-Type: application/json
-> { "email":"myaccount@domain.com", "password":"mypassword" }
+```
+POST /doecodeapi/services/user/login
+Content-Type: application/json
+```
+```json
+{ "email":"myaccount@domain.com", "password":"mypassword" }
+```
 
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> { "email":"myaccount@domain.com",
-> "xsrfToken":"some-token-value",
-> "hasSite":false,
-> "first_name":"User",
-> "last_name":"Name"}
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"email":"myaccount@domain.com",
+ "xsrfToken":"some-token-value",
+ "hasSite":false,
+ "first_name":"User",
+ "last_name":"Name"}
+```
+
+### logout 
 
 `GET /logout`
 
@@ -102,9 +131,11 @@ Closes any logged-in Session in the application context.
 | --- | --- |
 | 200 | OK, session logged out |
 
-### User Registration and Account Maintenance
+## User Registration and Account Maintenance
 
 API calls to register, confirm, or otherwise manage specific user account attributes.
+
+### register
 
 `POST /register`
 
@@ -117,19 +148,20 @@ Request new user registration for an account on DOECode.  JSON included in the P
 | 500 | Unexpected or internal system error occurred |
 
 > Request:
-> > POST /doecodeapi/services/user/register
-> Content-Type: application/json
-> {"email":"myemail@domain.com", 
-> "password":"mypassword", 
-> "first_name":"User",
-> "last_name":"Name",
-> "confirm_password":"mypassword",
-> "contract_number":"mycontractnumber"}
-> 
-> Response:
-> >HTTP/1.1 200 OK
-> Content-Type: application/json
-> No Content
+```
+POST /doecodeapi/services/user/register
+Content-Type: application/json
+```
+```json
+{"email":"myemail@domain.com", 
+ "password":"mypassword", 
+ "first_name":"User",
+ "last_name":"Name",
+ "confirm_password":"mypassword",
+ "contract_number":"mycontractnumber"}
+```
+
+### confirm
 
 `GET /confirm?confirmation=account-token`
 
@@ -142,13 +174,22 @@ Request confirmation of a DOECode user account.  Query parameter "confirmation" 
 | 401 | Unauthorized, confirmation codes not valid |
 | 404 | User account is not on file |
 | 500 | Unexpected or internal system error |
+
 > Request:
-> > GET /doecodeapi/services/user/confirm?confirmation=ACCOUNT_TOKEN_VALUE
+```
+GET /doecodeapi/services/user/confirm?confirmation=ACCOUNT_TOKEN_VALUE
+```
 
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> {"apiKey":"your-api-key"}
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"apiKey":"your-api-key"}
+```
+
+### forgotpassword
 
 `POST /forgotpassword`
 
@@ -161,9 +202,15 @@ Send a password reset request to a given email address.  JSON should contain the
 | 500 | Internal processing error |
 
 > Request:
-> > POST /doecodeapi/services/user/forgotpassword
-> Content-Type: application/json
-> { "email":"youraccount@domain.com" }
+```
+POST /doecodeapi/services/user/forgotpassword
+Content-Type: application/json
+```
+```json
+{ "email":"youraccount@domain.com" }
+```
+
+### newapikey
 
 `GET /newapikey`
 
@@ -176,18 +223,22 @@ Authenticated request, requests a new API key be generated and associated with t
 | 500 | An unexpected service error occurred |
 
 > Request:
-> > GET /doecodeapi/services/user/newapikey
-> Host: apihost:port
-> Accept: */*
-> Content-Type: application/json
-> Authorization: Basic api-user-key
-> 
+```
+GET /doecodeapi/services/user/newapikey
+Content-Type: application/json
+Authorization: Basic api-user-key
+```
+
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> Content-Length: 27
-> Date: Mon, 14 Aug 2017 15:01:11 GMT
-> {"apiKey":"sample-api-key-value"}
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"apiKey":"sample-api-key-value"}
+```
+
+### requestadmin
 
 `GET /requestadmin`
 
@@ -201,6 +252,8 @@ Requires authentication.  Requests site administrative access for the logged-in 
 | 403 | Forbidden, unable to process request (contractor account) |
 | 500 | Internal service error |
 
+### update
+
 `POST /update`
 
 Modify current user login first and last name attributes.  Requires authentication access.
@@ -213,9 +266,15 @@ Modify current user login first and last name attributes.  Requires authenticati
 | 500 | Internal service error |
 
 > Request:
-> > POST /doecodeapi/services/user/update
-> Content-Type: application/json
-> { "first_name":"Some", "last_name":"User" }
+```
+POST /doecodeapi/services/user/update
+Content-Type: application/json
+```
+```json
+{ "first_name":"Some", "last_name":"User" }
+```
+
+### changepassword
 
 `POST /changepassword`
 
@@ -229,14 +288,19 @@ Set a new password on logged in user account.  Requires authentication.  Passwor
 | 500 | Internal service error |
 
 > Request:
-> > POST /doecodeapi/services/user/changepassword
-> Content-Type: application/json
-> { "password":"Mypassword", "confirm_password":"Mypassword" }
+```
+POST /doecodeapi/services/user/changepassword
+Content-Type: application/json
+```
+```json
+{ "password":"Mypassword", "confirm_password":"Mypassword" }
+```
 
-
-### Account Administrative Tasks and Roles
+## Account Administrative Tasks and Roles
 
 Special role-based administrative tasks for managing user account information.
+
+### requests
 
 `GET /requests`
 
@@ -248,16 +312,24 @@ Requires authentication, and administrative access roles.  Return a listing of u
 | 401 | Unauthorized, no current user login context |
 | 403 | Insufficient privileges to access this function |
 | 500 | Unexpected error or internal service error |
+
 >  Request:
-> > GET /doecodeapi/services/user/requests
-> Content-Type: application/json
-> Authorization: Basic user-api-key
->
+```
+GET /doecodeapi/services/user/requests
+Content-Type: application/json
+Authorization: Basic user-api-key
+```
+
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> Date: Mon, Aug 14 2017 15:27:12 GMT
-> {"requests":[{"user":"useraccount", "roles":["one", "two"]}, {"user":"usertwo", "roles":["role"]}]}
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"requests":[{"user":"useraccount", "roles":["one", "two"]}, {"user":"usertwo", "roles":["role"]}]}
+```
+
+### admin
 
 `POST /admin`
 
@@ -272,14 +344,24 @@ Requires authentication, and administrative role user.  Activate or deactivate a
 | 500 | Internal service error |
 
 > Request:
-> > POST /doecodeapi/services/user/admin
-> Content-Type: application/json
-> { "email":"user@account.com", "activate":false }
+```
+POST /doecodeapi/services/user/admin
+Content-Type: application/json
+```
+```json
+{ "email":"user@account.com", "activate":false }
+```
 
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> { "email":"user@account.com", "active":false }
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{ "email":"user@account.com", "active":false }
+```
+
+### approve
 
 `POST /approve`
 
@@ -293,14 +375,24 @@ Requires authentication, and administrative roles.  Approve pending user request
 | 500 | Unexpected or system error occurred |
 
 > Request:
-> > POST /doecodeapi/services/user/approveroles
-> Content-Type: application/json
-> {"email":"address@approved.com"}
+```
+POST /doecodeapi/services/user/approveroles
+Content-Type: application/json
+```
+```json
+{"email":"address@approved.com"}
+```
 
 > Response:
-> > HTTP/1.1 200 OK
-> Content-Type: application/json
-> {"success":"success"}
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"success":"success"}
+```
+
+### disapprove
 
 `POST /disapprove`
 
@@ -314,7 +406,10 @@ Requires authentication and administrative roles to access.  Denies requested us
 | 500 | Unknown or internal server error occurred |
 
 > Request:
-> > POST /doecodeapi/services/user/disapprove
-> Content-Type: application/json
-> {"email":"disapprove@domain.com"}
-
+```
+POST /doecodeapi/services/user/disapprove
+Content-Type: application/json
+```
+```json
+{"email":"disapprove@domain.com"}
+```
