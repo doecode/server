@@ -87,15 +87,15 @@ import org.glassfish.jersey.server.mvc.Viewable;
 
 /**
  * REST Web Service for Metadata.
- * 
+ *
  * endpoints:
- * 
+ *
  * GET
  * metadata/edit/{codeId} - retrieve JSON of metadata if permitted (requires authentication)
  * metadata/{codeId} - retrieve instance of JSON for codeId (PUBLISHED only), optionally in YAML format
  * metadata/autopopulate?repo={url} - attempt an auto-populate Connector call for
  * indicated URL, optionally in YAML format
- * 
+ *
  * POST
  * metadata - send JSON for persisting to the storage layer
  * metadata/submit - send JSON for posting to both ELINK and persistence layer
@@ -107,18 +107,17 @@ import org.glassfish.jersey.server.mvc.Viewable;
 public class Metadata {
     // inject a Context
     @Context ServletContext context;
-    
+
     // logger instance
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
-    
+
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
-    
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
         try {
@@ -131,13 +130,13 @@ public class Metadata {
             log.warn("Configuration failure: " + e.getMessage());
         }
     }
-    
+
     /**
      * Creates a new instance of MetadataResource
      */
     public Metadata() {
     }
-    
+
     // ObjectMapper instance for metadata interchange
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -151,10 +150,10 @@ public class Metadata {
         module.addSerializer(Agent.class, new AgentSerializer());
         index_mapper.registerModule(module);
     }
-    
+
     /**
      * Link to API Documentation template.
-     * 
+     *
      * @return a Viewable API documentation template
      */
     @GET
@@ -162,22 +161,21 @@ public class Metadata {
     public Viewable getDocumentation() {
         return new Viewable("/metadata");
     }
-    
+
     /**
      * Look up a record for EDITING, checks authentication and ownership prior
      * to succeeding.
-     * 
+     *
      * Ownership is defined as:  owner and user email match, OR user's roles
      * include the SITE OWNERSHIP CODE of the record, OR user has the "OSTI"
      * special administrative role.
-     * 
      * Result Codes:
      * 200 - OK, with JSON containing the metadata information
      * 400 - you didn't specify a CODE ID
      * 401 - authentication required
      * 403 - forbidden, logged in user does not have permission to this metadata
      * 404 - requested metadata is not on file
-     * 
+     *
      * @param codeId the CODE ID to look up
      * @return a Response containing JSON if successful
      */
@@ -189,17 +187,17 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
-        
+
         // no CODE ID?  Bad request.
         if (null==codeId)
             return ErrorResponse
                     .badRequest("Missing code ID.")
                     .build();
-        
+
         DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
 
         // no metadata?  404
-        if ( null==md ) 
+        if ( null==md )
             return ErrorResponse
                     .notFound("Code ID not on file.")
                     .build();
@@ -220,16 +218,16 @@ public class Metadata {
                 .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                 .build();
     }
-    
+
     /**
-     * Look up the METADATA if possible by its codeID value, and return the 
+     * Look up the METADATA if possible by its codeID value, and return the
      * result in the desired format.  Only retrieves PUBLISHED records.
-     * 
+     *
      * Response Codes:
      * 200 - OK, with the JSON of the metadata
      * 403 - access to this record is forbidden (not PUBLISHED)
      * 404 - record is not on file
-     * 
+     *
      * @param codeId the Metadata codeId to look for
      * @param format optionally specify the requested output format (JSON is the
      * default, or "text/yaml" if YAML desired)
@@ -240,22 +238,22 @@ public class Metadata {
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
     public Response load(@PathParam ("codeId") Long codeId, @QueryParam ("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        
+
         try {
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
-            
-            if ( null==md ) 
+
+            if ( null==md )
                 return ErrorResponse
                         .notFound("Code ID not on file.")
                         .build();
-            
+
             // non-Published workflow REQUIRES authentication, not for here; use /edit
             if (!Status.Published.equals(md.getWorkflowStatus())) {
                 return ErrorResponse
                         .forbidden("Access to record denied.")
                         .build();
             }
-            
+
             // if YAML is requested, return that; otherwise, default to JSON
             if ("yaml".equals(format)) {
                 // return the YAML
@@ -281,12 +279,12 @@ public class Metadata {
             em.close();
         }
     }
-    
+
     private class RecordsList {
     	private List<DOECodeMetadata> records;
         private long total;
         private int start;
-    	
+
     	RecordsList(List<DOECodeMetadata> records) {
     		this.records = records;
     	}
@@ -311,12 +309,12 @@ public class Metadata {
             return (null==records) ? 0 : records.size();
         }
     }
-    
+
     /**
      * Acquire a listing of all records by OWNER.
-     * 
+     *
      * @return the Metadata information in the desired format
-     * @throws JsonProcessingException 
+     * @throws JsonProcessingException
      */
     @GET
     @Path ("/projects")
@@ -324,11 +322,11 @@ public class Metadata {
     @RequiresAuthentication
     public Response load() throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        
+
         // get the security user in context
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
-        
+
         try {
         	TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class);
         	RecordsList records = new RecordsList(query.setParameter("owner", user.getEmail()).getResultList());
@@ -340,26 +338,26 @@ public class Metadata {
             em.close();
         }
     }
-    
+
     /**
      * Acquire a List of records in pending ("Published") state, to be approved
      * for indexing and searching.
-     * 
+     *
      * JSON response is of the form:
-     * 
-     * {"records":[{"code_id":n, ...} ], 
+     *
+     * {"records":[{"code_id":n, ...} ],
      *  "start":0, "rows":20, "total":100}
-     * 
+     *
      * Where records is an array of DOECodeMetadata JSON, start is the beginning
      * row number, rows is the number requested (or total if less available),
      * and total is the total number of rows matching the filter.
-     * 
+     *
      * Return Codes:
      * 200 - OK, JSON is returned as above
      * 401 - Unauthorized, login is required
      * 403 - Forbidden, insufficient privileges (role required)
      * 500 - unexpected error
-     * 
+     *
      * @param start the starting row number (from 0)
      * @param rows number of rows desired
      * @param siteCode (optional) a SITE OWNERSHIP CODE to filter by site
@@ -371,11 +369,11 @@ public class Metadata {
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
     @RequiresRoles("OSTI")
-    public Response listProjectsPending(@QueryParam("start") int start, 
+    public Response listProjectsPending(@QueryParam("start") int start,
                                         @QueryParam("rows") int rows,
                                         @QueryParam("site") String siteCode) {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        
+
         try {
             // get a JPA CriteriaBuilder instance
             CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -383,12 +381,12 @@ public class Metadata {
             CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
             Root<DOECodeMetadata> md = countQuery.from(DOECodeMetadata.class);
             countQuery.select(cb.count(md));
-            
+
             Expression<String> workflowStatus = md.get("workflowStatus");
             Expression<String> siteOwnershipCode = md.get("siteOwnershipCode");
             ParameterExpression<String> status = cb.parameter(String.class, "status");
             ParameterExpression<String> site = cb.parameter(String.class, "site");
-            
+
             if (null==siteCode) {
                 countQuery.where(cb.equal(workflowStatus, status));
             } else {
@@ -401,16 +399,16 @@ public class Metadata {
             cq.setParameter("status", DOECodeMetadata.Status.Published);
             if (null!=siteCode)
                 cq.setParameter("site", siteCode);
-            
+
             long rowCount = cq.getSingleResult();
             // rows count should be less than 100; default is 20 if not specified
             rows = (rows>100) ? 100 : rows;
             rows = (0==rows) ? 20 : rows;
-            
+
             // create a CriteriaQuery for the ROWS
             CriteriaQuery<DOECodeMetadata> rowQuery = cb.createQuery(DOECodeMetadata.class);
             rowQuery.select(md);
-            
+
             if (null==siteCode) {
                 rowQuery.where(cb.equal(workflowStatus, status));
             } else {
@@ -418,18 +416,18 @@ public class Metadata {
                         cb.equal(workflowStatus, status),
                         cb.equal(siteOwnershipCode, site)));
             }
-            
+
             TypedQuery<DOECodeMetadata> rq = em.createQuery(rowQuery);
             rq.setParameter("status", DOECodeMetadata.Status.Published);
             if (null!=siteCode)
                 rq.setParameter("site", siteCode);
             rq.setFirstResult(start);
             rq.setMaxResults(rows);
-            
+
             RecordsList records = new RecordsList(rq.getResultList());
             records.setTotal(rowCount);
             records.setStart(start);
-            
+
             return Response
                     .ok()
                     .entity(mapper.valueToTree(records).toString())
@@ -438,10 +436,10 @@ public class Metadata {
             em.close();
         }
     }
-    
+
     /**
      * Call to auto-populate Metadata information via Connector, if possible.
-     * 
+     *
      * @param url the REPOSITORY URL to look up information from
      * @param format optionally, the output format ("yaml" supported) JSON is default
      * @return a Metadata instance in the desired output format if information was found
@@ -452,10 +450,10 @@ public class Metadata {
     public Response autopopulate(@QueryParam("repo") String url,
                                  @QueryParam("format") String format) {
         JsonNode result = factory.read(url);
-        
+
         if (null==result)
             return Response.status(Response.Status.NO_CONTENT).build();
-        
+
         // if YAML is requested, return that; otherwise, default to JSON output
         if ("yaml".equals(format)) {
             try {
@@ -475,17 +473,17 @@ public class Metadata {
             return Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();
         }
     }
-    
+
     /**
      * Persist the DOECodeMetadata Object to the persistence layer.  Assumes an
      * open Transaction is already in progress, and it's up to the caller to
      * handle Exceptions or commit as appropriate.
-     * 
-     * If the "code ID" is already present in the Object to store, it will 
+     *
+     * If the "code ID" is already present in the Object to store, it will
      * attempt to merge changes; otherwise, a new Object will be instantiated
      * in the database.  Note that any WORKFLOW STATUS present will be preserved,
      * regardless of the incoming one.
-     * 
+     *
      * @param em the EntityManager to interface with the persistence layer
      * @param md the Object to store
      * @param user the User performing this action (must be the OWNER of the
@@ -495,34 +493,38 @@ public class Metadata {
      * owned by User
      * @throws InvocationTargetException on reflection errors
      */
-    private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException, 
+    private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException,
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
         md.setOpenSource( !Accessibility.CS.equals(md.getAccessibility()) );
-        
-        // if there's a CODE ID, attempt to look up the record first and 
+
+        // if there's a CODE ID, attempt to look up the record first and
         // copy attributes into it
         if ( null==md.getCodeId() || 0==md.getCodeId()) {
             em.persist(md);
         } else {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
-            
+
+            Set<String> roles = user.getRoles();
+            if (null==roles) roles = new HashSet<>(); // null protection
+
             if ( null!=emd ) {
-                // must be the OWNER in order to UPDATE
-                if (!user.getEmail().equals(emd.getOwner()))
+                // must be the OWNER or OSTI in order to UPDATE
+                if (!user.getEmail().equals(emd.getOwner()) &&
+                     !roles.contains("OSTI"))
                     throw new IllegalAccessException("Invalid access attempt.");
-                
-                // if already Published, keep it that way (can't go back to Saved)
-                if (Status.Published.equals(emd.getWorkflowStatus()))
+
+                // if already Published, but not being Approved, keep it that way (can't go back to Saved)
+                if ((Status.Published.equals(emd.getWorkflowStatus()) || Status.Approved.equals(emd.getWorkflowStatus())) && !Status.Approved.equals(md.getWorkflowStatus()))
                     md.setWorkflowStatus(Status.Published);
-                
+
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
-                
+
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
-                
+
                 // EntityManager should handle this attached Object
                 // NOTE: the returned Object is NOT ATTACHED to the EntityManager
             } else {
@@ -532,10 +534,10 @@ public class Metadata {
             }
         }
     }
-    
+
     /**
      * Convert incoming JSON object of Metadata information to YAML if possible.
-     * 
+     *
      * @param object JSON of the Metadata information
      * @return YAML of that JSON object, if mappable
      */
@@ -546,7 +548,7 @@ public class Metadata {
     public Response asYAML(String object) {
         try {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(object));
-            
+
             return Response
                     .status(Response.Status.OK)
                     .entity(HttpUtil.writeMetadataYaml(md))
@@ -558,28 +560,30 @@ public class Metadata {
                     .build();
         }
     }
-    
+
     /**
      * Send this Metadata to the ARCHIVER external support process.
-     * 
+     *
      * Archiver needs the CODE ID, a PROJECT NAME (taken from the acronym if
      * present, or the title), an optional PROJECT DESCRIPTION, and either a
      * REPOSITORY LINK value or FILE NAME if uploaded file exists.
-     * 
+
+     *
      * If nothing supplied to archive, do nothing.
-     * 
+     *
      * @param md the DOECodeMetadata to archive
      * @throws IOException on IO transmission errors
      */
     private static void sendToArchiver(DOECodeMetadata md) throws IOException {
-        if ( "".equals(ARCHIVER_URL) ) 
+        if ( "".equals(ARCHIVER_URL) )
             return;
-        
+
         // if NOTHING to archive (no FILE or REPOSITORY LINK) just leave
-        if (StringUtils.isBlank(md.getFileName()) && 
+        if (StringUtils.isBlank(md.getFileName()) &&
             StringUtils.isBlank(md.getRepositoryLink()))
             return;
-        
+
+
         // set up a connection
         CloseableHttpClient hc =
                 HttpClientBuilder
@@ -591,7 +595,7 @@ public class Metadata {
                         .setConnectionRequestTimeout(5000)
                         .build())
                 .build();
-        
+
         try {
             HttpPost post = new HttpPost(ARCHIVER_URL);
             // attributes to send
@@ -600,7 +604,7 @@ public class Metadata {
             request.put("project_name", (null==md.getAcronym()) ? md.getSoftwareTitle() : md.getAcronym());
             request.put("project_description", (null==md.getDescription()) ? "" : md.getDescription());
             request.put("repository_link", md.getRepositoryLink());
-            
+
             // determine if there's a file to send or not
             if (null==md.getFileName()) {
                 post.setHeader("Content-Type", "application/json");
@@ -618,9 +622,9 @@ public class Metadata {
                         .build());
             }
             HttpResponse response = hc.execute(post);
-            
+
             int statusCode = response.getStatusLine().getStatusCode();
-            
+
             if (HttpStatus.SC_OK!=statusCode && HttpStatus.SC_CREATED!=statusCode) {
                 throw new IOException ("Archiver Error: " + EntityUtils.toString(response.getEntity()));
             }
@@ -635,18 +639,18 @@ public class Metadata {
             }
         }
     }
-    
+
     /**
      * Attempt to send this Metadata information to the indexing service configured.
      * If no service is configured, do nothing.
-     * 
+     *
      * @param md the Metadata to send
      */
     private static void sendToIndex(DOECodeMetadata md) {
         // if indexing is not configured, skip this step
         if ("".equals(INDEX_URL))
             return;
-        
+
         // set some reasonable default timeouts
         RequestConfig rc = RequestConfig
                 .custom()
@@ -655,7 +659,7 @@ public class Metadata {
                 .setConnectionRequestTimeout(5000)
                 .build();
         // create an HTTP client to request through
-        CloseableHttpClient hc = 
+        CloseableHttpClient hc =
                 HttpClientBuilder
                 .create()
                 .setDefaultRequestConfig(rc)
@@ -666,9 +670,9 @@ public class Metadata {
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
             post.setEntity(new StringEntity(index_mapper.writeValueAsString(md)));
-            
+
             HttpResponse response = hc.execute(post);
-            
+
             if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode() ) {
                 log.warn("Indexing Error occurred for ID=" + md.getCodeId());
                 log.warn("Message: " + EntityUtils.toString(response.getEntity()));
@@ -685,10 +689,10 @@ public class Metadata {
             }
         }
     }
-    
+
     /**
      * Perform SAVE workflow on indicated METADATA.
-     * 
+     *
      * @param json the JSON String containing the metadata to SAVE
      * @param file a FILE associated with this record if any
      * @param fileInfo file disposition of information if any
@@ -699,22 +703,22 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
-        
+
         try {
             em.getTransaction().begin();
-            
+
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
             md.setWorkflowStatus(Status.Saved); // default to this
             md.setOwner(user.getEmail()); // this User should OWN it
             md.setSiteOwnershipCode(user.getSiteId());
-            
+
             store(em, md, user);
-            
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
-                
+
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
@@ -725,10 +729,10 @@ public class Metadata {
                             .build();
                 }
             }
-            
+
             // we're done here
             em.getTransaction().commit();
-            
+
             return Response
                     .status(200)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
@@ -746,7 +750,7 @@ public class Metadata {
         } catch ( IOException | InvocationTargetException e ) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
-            
+
             log.warn("Persistence Error: " + e.getMessage());
             return ErrorResponse
                     .internalServerError("Save IO Error: " + e.getMessage())
@@ -755,10 +759,10 @@ public class Metadata {
             em.close();
         }
     }
-    
+
     /**
      * Handle PUBLISH workflow logic.
-     * 
+     *
      * @param json JSON String containing the METADATA object to PUBLISH
      * @param file (optional) a FILE associated with this METADATA
      * @param fileInfo (optional) the FILE disposition information, if any
@@ -768,17 +772,17 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
-        
+
         try {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
-            
+
             em.getTransaction().begin();
-            
+
             // set the ownership and workflow status
             md.setOwner(user.getEmail());
             md.setWorkflowStatus(Status.Published);
             md.setSiteOwnershipCode(user.getSiteId());
-            
+
             // store it
             store(em, md, user);
             // check validations for Published workflow
@@ -789,12 +793,12 @@ public class Metadata {
                         .status(Response.Status.BAD_REQUEST, errors)
                         .build();
             }
-            
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
-                
+
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
@@ -814,18 +818,15 @@ public class Metadata {
                         .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
                         .build();
             }
-            
+
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
-                if ( !DataCite.register(md) ) 
+                if ( !DataCite.register(md) )
                     log.warn("DataCite registration failed for " + md.getDoi());
             }
             // commit it
             em.getTransaction().commit();
-            
-            // send this information to SOLR as well, if configured
-            sendToIndex(md);
-            
+
             // we are done here
             return Response
                     .status(Response.Status.OK)
@@ -844,7 +845,7 @@ public class Metadata {
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
-            
+
             log.warn("Persistence Error Publishing: " + e.getMessage());
             return ErrorResponse
                     .status(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.")
@@ -853,10 +854,10 @@ public class Metadata {
             em.close();
         }
     }
-    
+
     /**
      * Perform SUBMIT workflow operation, optionally with associated file uploads.
-     * 
+     *
      * @param json String containing JSON of the Metadata to SUBMIT
      * @param file the FILE (if any) to attach to this metadata
      * @param fileInfo file disposition information if FILE present
@@ -867,10 +868,10 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
-        
+
         try {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
-            
+
             em.getTransaction().begin();
             // set the OWNER
             md.setOwner(user.getEmail());
@@ -878,7 +879,7 @@ public class Metadata {
             md.setWorkflowStatus(Status.Published);
             // set the SITE
             md.setSiteOwnershipCode(user.getSiteId());
-            
+
             // persist this to the database
             store(em, md, user);
             // check validations
@@ -888,12 +889,12 @@ public class Metadata {
                         .status(Response.Status.BAD_REQUEST, errors)
                         .build();
             }
-            
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
-                
+
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
@@ -904,17 +905,17 @@ public class Metadata {
                             .build();
                 }
             }
-            
+
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
             omd.set(md);
-            
+
             // if configured, post this to OSTI
             String publishing_host = context.getInitParameter("publishing.host");
             if (null!=publishing_host) {
                 // set some reasonable default timeouts
                 // create an HTTP client to request through
-                CloseableHttpClient hc = 
+                CloseableHttpClient hc =
                         HttpClientBuilder
                         .create()
                         .setDefaultRequestConfig(RequestConfig
@@ -928,7 +929,7 @@ public class Metadata {
                 post.setHeader("Content-Type", "application/json");
                 post.setHeader("Accept", "application/json");
                 post.setEntity(new StringEntity(omd.toJsonString()));
-                
+
                 try {
                     HttpResponse response = hc.execute(post);
                     String text = EntityUtils.toString(response.getEntity());
@@ -948,10 +949,7 @@ public class Metadata {
             }
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
-            
-            // send it to the indexer
-            sendToIndex(md);
-            
+
             // and we're happy
             return Response
                     .status(Response.Status.OK)
@@ -970,7 +968,7 @@ public class Metadata {
         } catch ( IOException |  InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
-            
+
             log.warn("Persistence Error Publishing: " + e.getMessage());
             return ErrorResponse
                     .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
@@ -979,17 +977,17 @@ public class Metadata {
             em.close();
         }
     }
-    
+
     /**
      * Support multipart-file upload POSTs to PUBLISH.
-     * 
+     *
      * Response Codes:
      * 200 - OK, JSON returned of the metadata information published
      * 400 - validation error, errors returned in JSON
      * 401 - authentication is required to POST
      * 403 - access is forbidden to this record
      * 500 - file upload or database operation failed
-     * 
+     *
      * @param metadata contains the JSON of the record metadata information
      * @param file the uploaded file to attach
      * @param fileInfo disposition information for the file name
@@ -1005,17 +1003,17 @@ public class Metadata {
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
         return doPublish(metadata, file, fileInfo);
     }
-            
-    
+
+
     /**
-     * PUBLISH a Metadata Object; this operation signifies the project is 
+     * PUBLISH a Metadata Object; this operation signifies the project is
      * ready to be posted to DOECode's output search services.  This endpoint
-     * DOES NOT transmit the project to OSTI's software services for publication 
+     * DOES NOT transmit the project to OSTI's software services for publication
      * there.
-     * 
+     *
      * Will return a FORBIDDEN attempt should a User attempt to modify someone
      * else's record.
-     * 
+     *
      * @param object JSON of the DOECodeMetadata object to PUBLISH
      * @return a Response containing the persisted metadata entity in JSON
      * @throws InternalServerErrorException on JSON parsing or other IO errors
@@ -1028,14 +1026,14 @@ public class Metadata {
     public Response publish(String object) {
         return doPublish(object, null, null);
     }
-    
+
     /**
      * SUBMIT endpoint; saves Software record to DOECode and sends results to
      * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
-     * 
+     *
      * Will return a FORBIDDEN response if the OWNER logged in does not match
      * the record's OWNER.
-     * 
+     *
      * @param object the JSON of the record to PUBLISH/SUBMIT.
      * @return a Response containing the resulting JSON metadata sent to OSTI,
      * including any DOI registered.
@@ -1049,17 +1047,17 @@ public class Metadata {
     public Response submit(String object) {
         return doSubmit(object, null, null);
     }
-    
+
     /**
      * Perform SUBMIT workflow with associated file upload.
-     * 
+     *
      * Response Codes:
      * 200 - OK, response includes metadata JSON
      * 400 - record validation failed, errors in JSON
      * 401 - Authentication is required to POST
      * 403 - Access is forbidden to this record
      * 500 - JSON parsing error or other unhandled exception
-     * 
+     *
      * @param metadata the METADATA to SUBMIT
      * @param file a FILE to associate with this METADATA
      * @param fileInfo file disposition information for the FILE
@@ -1075,12 +1073,12 @@ public class Metadata {
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
         return doSubmit(metadata, file, fileInfo);
     }
-    
+
     /**
-     * POST a Metadata JSON object to the persistence layer. 
+     * POST a Metadata JSON object to the persistence layer.
      * Saves the object to persistence layer; if the entity is already Published,
      * this operation is invalid.
-     * 
+     *
      * @param object the JSON to post
      * @return the JSON after persistence; perhaps containing assigned codeId, etc.
      */
@@ -1091,10 +1089,10 @@ public class Metadata {
     public Response save(String object) {
         return doSave(object, null, null);
     }
-    
+
     /**
      * POST a Metadata to be SAVED with a file upload.
-     * 
+     *
      * @param metadata the JSON containing the Metadata information
      * @param file a FILE associated with this record
      * @param fileInfo file disposition information for the FILE
@@ -1110,11 +1108,92 @@ public class Metadata {
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
         return doSave(metadata, file, fileInfo);
     }
-    
+
+    /**
+     * APPROVE endpoint; sends the Metadata of a targeted project to Index.
+     *
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * the record's OWNER.
+     *
+     * @param integer the CODE ID of the record to APPROVE.
+     * @return a Response containing the JSON of the approved record if successful, or
+     * error information if not
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @GET
+    @Path ("/approve")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    @RequiresRoles("OSTI")
+    public Response approve(@QueryParam("code_id") Long codeId) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+
+        try {
+            //DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(metadata));
+            //Long codeId = md.getCodeId();
+
+            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+
+            if ( null==md )
+                return ErrorResponse
+                        .notFound("Code ID not on file.")
+                        .build();
+
+            Set<String> roles = user.getRoles();
+            if (null==roles) roles = new HashSet<>(); // null protection
+            // do you have permissions to get this?
+            if (!roles.contains("OSTI"))
+                return ErrorResponse
+                        .forbidden("Permission denied.")
+                        .build();
+
+            em.getTransaction().begin();
+            // set the WORKFLOW STATUS
+            md.setWorkflowStatus(Status.Approved);
+
+            // persist this to the database, as validations should already be complete at this stage.
+            store(em, md, user);
+
+            // if we make it this far, go ahead and commit the transaction
+            em.getTransaction().commit();
+
+            // send it to the indexer
+            sendToIndex(md);
+
+            // and we're happy
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( NotFoundException e ) {
+            return ErrorResponse
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return ErrorResponse
+                    .status(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit indicated record.")
+                    .build();
+        } catch ( InvocationTargetException e ) {
+            if ( em.getTransaction().isActive())
+                em.getTransaction().rollback();
+
+            log.warn("Persistence Error Publishing: " + e.getMessage());
+            return ErrorResponse
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+
     /**
      * Store a File to a specific directory location. All files associated with
      * a CODEID are stored in the same folder.
-     * 
+     *
      * @param in the InputStream containing the file content
      * @param codeId the CODE ID associated with this file content
      * @param fileName the base file name of the file
@@ -1123,25 +1202,24 @@ public class Metadata {
      */
     private static String writeFile(InputStream in, Long codeId, String fileName) throws IOException {
         // store this file in a designated base path
-        java.nio.file.Path destination = 
+        java.nio.file.Path destination =
                 Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
         // make intervening folders if needed
         Files.createDirectories(destination.getParent());
         // save it (CLOBBER existing, if one there)
         Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
-        
+
         return destination.toString();
     }
-    
+
     /**
      * Perform validations for PUBLISHED records.
-     * 
+     *
      * @param m the Metadata information to validate
      * @return a List of error messages if any validation errors, empty if none
      */
     private static List<String> validatePublished(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
-        
         if (null==m.getAccessibility())
             reasons.add("Missing Source Accessibility.");
         if (StringUtils.isBlank(m.getRepositoryLink()) && StringUtils.isBlank(m.getLandingPage()))
@@ -1182,16 +1260,15 @@ public class Metadata {
             reasons.add("Repository URL is not a valid repository.");
         return reasons;
     }
-    
+
     /**
      * Perform SUBMIT validations on metadata.
-     * 
+     *
      * @param m the Metadata to check
      * @return a List of submission validation errors, empty if none
      */
     private static List<String> validateSubmit(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
-        
         // get all the PUBLISHED reasons, if any
         reasons.addAll(validatePublished(m));
         // add SUBMIT-specific validations
@@ -1233,11 +1310,11 @@ public class Metadata {
         }
         if (StringUtils.isBlank(m.getRecipientOrg()))
             reasons.add("Contact organization is required.");
-        
+
         if (!DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility()))
             if (StringUtils.isBlank(m.getFileName()))
                 reasons.add("A file archive must be included for non-open source submissions.");
-        
+
         return reasons;
     }
 }
