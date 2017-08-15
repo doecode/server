@@ -45,6 +45,7 @@ import javax.persistence.TypedQuery;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.subject.Subject;
+import org.glassfish.jersey.server.mvc.Viewable;
 
 @Path("user")
 public class UserServices {
@@ -99,6 +100,16 @@ public class UserServices {
         return true;
     }
     
+    /**
+     * View the API documentation.
+     * 
+     * @return a Viewable to the documentation
+     */
+    @GET
+    @Produces (MediaType.TEXT_HTML)
+    public Viewable getDocumentation() {
+        return new Viewable ("/userservices");
+    }
 
     /**
      * Endpoint to determine whether or not a Session/user exists and is logged in.

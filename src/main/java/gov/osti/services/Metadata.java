@@ -166,7 +166,7 @@ public class Metadata {
     @GET
     @Produces (MediaType.TEXT_HTML)
     public Viewable getDocumentation() {
-        return new Viewable("/docs");
+        return new Viewable("/metadata");
     }
     
     /**
