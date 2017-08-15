@@ -97,6 +97,7 @@ Logs a user session into DOECode.  User account must be verified and active to s
 `GET /logout`
 
 Closes any logged-in Session in the application context.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, session logged out |
@@ -108,6 +109,7 @@ API calls to register, confirm, or otherwise manage specific user account attrib
 `POST /register`
 
 Request new user registration for an account on DOECode.  JSON included in the POST body should contain the account email, a requested password, first and last name, and the confirmation of the same password.  If the account is for a contractor, a valid DOE contract number is also required for user registration.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, account request created, email with confirmation link sent |
@@ -132,6 +134,7 @@ Request new user registration for an account on DOECode.  JSON included in the P
 `GET /confirm?confirmation=account-token`
 
 Request confirmation of a DOECode user account.  Query parameter "confirmation" should contain the generated token in the account registration email.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, account is confirmed, JSON containing API key is returned |
@@ -165,6 +168,7 @@ Send a password reset request to a given email address.  JSON should contain the
 `GET /newapikey`
 
 Authenticated request, requests a new API key be generated and associated with the currently-logged-in User account.  Note that any API key will be replaced by this operation, and become invalid going forward.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, JSON contains newly created API key |
@@ -237,6 +241,7 @@ Special role-based administrative tasks for managing user account information.
 `GET /requests`
 
 Requires authentication, and administrative access roles.  Return a listing of user accounts containing pending, requested roles for administrative processing.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, JSON returns listing of user information with pending requested roles |
@@ -279,6 +284,7 @@ Requires authentication, and administrative role user.  Activate or deactivate a
 `POST /approve`
 
 Requires authentication, and administrative roles.  Approve pending user request for roles to be added to a user account.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, JSON contains "success":"success" response |
@@ -299,6 +305,7 @@ Requires authentication, and administrative roles.  Approve pending user request
 `POST /disapprove`
 
 Requires authentication and administrative roles to access.  Denies requested user roles pending approval.  Pass in user email for account information to deny role requests.
+
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, JSON contains "success":"success" response |
