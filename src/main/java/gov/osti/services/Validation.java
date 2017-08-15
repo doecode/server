@@ -5,6 +5,9 @@ package gov.osti.services;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringReader;
@@ -29,7 +32,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,10 +181,30 @@ public class Validation {
     // static DOI resolution prefix
     private static final String DOI_BASE_URL = "https://doi.org/";
     
+    private static PhoneNumberUtil phoneNumberValidator = PhoneNumberUtil.getInstance();
+    
     /**
      * Creates a new instance of ValidationResource
      */
     public Validation() {
+    }
+    
+    /**
+     * Determine whether or not the phone number is valid, defaulting to US.
+     * 
+     * @param value the PHONE NUMBER
+     * @return true if a valid number, false if not
+     */
+    public static boolean isValidPhoneNumber(String value) {
+        try {
+            if (null!=value) {
+                PhoneNumber number = phoneNumberValidator.parse(value, "US");
+                return phoneNumberValidator.isValidNumber(number);
+            }
+        } catch ( NumberParseException e ) {
+            log.warn("Phone Number error: " + e.getMessage());
+        }
+        return false;
     }
     
     /**

@@ -121,8 +121,7 @@ public class Metadata {
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     
-    // regular expressions for validating phone numbers (US) and email addresses
-    protected static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^(?:(?:\\+?1\\s*(?:[.-]\\s*)?)?(?:\\(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\\s*\\)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})(?:\\s*(?:#|x\\.?|ext\\.?|extension)\\s*(\\d+))?$");
+    // regular expressions for validating email addresses and URLs
     protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     
@@ -1243,8 +1242,7 @@ public class Metadata {
         if (StringUtils.isBlank(m.getRecipientPhone()))
             reasons.add("Contact phone number is required.");
         else {
-            matcher = PHONE_NUMBER_PATTERN.matcher(m.getRecipientPhone());
-            if (!matcher.matches())
+            if (!Validation.isValidPhoneNumber(m.getRecipientPhone()))
                 reasons.add("Contact phone number is not valid.");
         }
         if (StringUtils.isBlank(m.getRecipientOrg()))

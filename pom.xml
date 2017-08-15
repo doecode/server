@@ -69,6 +69,15 @@
                     <version>1.22</version>
                 </dependency>
                 
+                <!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
+                <!-- for phone number validation, including international -->
+                <dependency>
+                    <groupId>com.googlecode.libphonenumber</groupId>
+                    <artifactId>libphonenumber</artifactId>
+                    <version>8.7.1</version>
+                </dependency>
+
+                
                 <!-- Apache HTTP components for connector communication -->
                 <dependency>
                   <groupId>org.apache.httpcomponents</groupId>
