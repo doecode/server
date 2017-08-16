@@ -41,7 +41,6 @@ PUBLISHED records.
 > GET /doecodeapi/services/metadata/234
 > Content-Type: application/json
 > ```
-
 > Response:
 > ```html
 > HTTP/1.1 200 OK
@@ -102,7 +101,6 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > ```json
 > { "software_title" : "Sample Data", ... }
 > ```
-
 > Response:
 > ```html
 > HTTP/1.1 200 OK
@@ -111,7 +109,6 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > ```json
 > { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
 > ```
-
 > Error Response:
 > ```html
 > HTTP/1.1 500
@@ -138,17 +135,15 @@ this operation will be returned.
 Validation rules are:
 
 * source accessibility is required:
-  "OS" (Open Source), 
-  "ON" (Open Source, Not Publically Available), or 
-  "CS" (Closed Source)
-
-  if "OS", repository link is required, and must be an accessible git repository
-  if "ON" or "CS", a landing page URL is required
+  * "OS" (Open Source), also requires a valid accessible repository link
+  * "ON" (Open Source, Not Publically Available), requires a landing page
+  * "CS" (Closed Source), also requires a landing page
 * software title
 * description
 * at least one license
 * at least one developer
-  developers must have a first and last name, and if email is provided, is must be valid
+  * each developer must have a first and last name
+  * if email is provided, it must be valid
 * if DOI is specified, release date is required
 
 > Request:
@@ -160,7 +155,6 @@ Validation rules are:
 > ```json
 > { "code_id":123, "software_title":"Sample Data", ... }
 > ```
-
 > Response:
 > ```html
 > HTTP/1.1 200 OK
@@ -169,7 +163,6 @@ Validation rules are:
 > ```json
 > { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
 > ```
-
 > Error Response:
 > ```html
 > HTTP/1.1 400 BAD REQUEST
@@ -197,13 +190,14 @@ be submitted to DOE.  Additional validations are required for final submission:
 * All above Publish validations apply
 * A release date is required
 * At least one sponsoring organization is required
-  Any sponsoring organizations must have a name, and if DOE, must have a valid primary award number
+  * each organization must have a name
+  * if DOE, must also have a valid primary award number
 * At least one research organization is required
-  Any research organization must have a name
+  * each organization must have a name
 * Contact information is required
-  Contact email is required and must be in valid format
-  Contact phone number is required and must be valid
-  Contact organization name is required
+  * email must be valid
+  * phone number must be valid
+  * organization name is required
 * If project is not Open Source ("OS") availability, a file upload is required
 
 > Request:
@@ -215,7 +209,6 @@ be submitted to DOE.  Additional validations are required for final submission:
 > ```json
 > { "code_id":123, "software_title":"Sample Data", ... }
 > ```
-
 > Response:
 > ```html
 > HTTP/1.1 200 OK
@@ -224,7 +217,6 @@ be submitted to DOE.  Additional validations are required for final submission:
 > ```json
 > { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
 > ```
-
 > Error Response:
 > ```html
 > HTTP/1.1 400 BAD REQUEST
