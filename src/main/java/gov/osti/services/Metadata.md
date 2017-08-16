@@ -95,31 +95,31 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 *code_id* value for reference.
 
 > Request:
-```html
-POST /services/metadata
-Content-Type: application/json
-```
-```json
-{ "software_title" : "Sample Data", ... }
-```
+> ```html
+> POST /services/metadata
+> Content-Type: application/json
+> ```
+> ```json
+> { "software_title" : "Sample Data", ... }
+> ```
 
 > Response:
-```html
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
-```json
-{ "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
-```
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
+> ```
 
 > Error Response:
-```html
-HTTP/1.1 500
-Content-Type: application/json
-```
-```json
-{ "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
-```
+> ```html
+> HTTP/1.1 500
+> Content-Type: application/json
+> ```
+> ```json
+> { "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
+> ```
 
 | Response Code | Information |
 | --- | --- |
@@ -136,9 +136,14 @@ Send JSON metadata to be persisted in the *Published* work-flow state.  Validati
 this operation will be returned.  
 
 Validation rules are:
-* source accessibility, one of "OS" (Open Source), "ON" (Open Source, Not Publically Available), or "CS" (Closed Source)
-  if OS, repository link is required, and must be an accessible git repository
-  if ON or CS, a landing page URL is required
+
+* source accessibility is required:
+  "OS" (Open Source), 
+  "ON" (Open Source, Not Publically Available), or 
+  "CS" (Closed Source)
+
+  if "OS", repository link is required, and must be an accessible git repository
+  if "ON" or "CS", a landing page URL is required
 * software title
 * description
 * at least one license
@@ -147,32 +152,32 @@ Validation rules are:
 * if DOI is specified, release date is required
 
 > Request:
-```html
-POST /services/metadata/publish
-Content-Type: application/json
-Authorization: Basic user-api-key
-```
-```json
-{ "code_id":123, "software_title":"Sample Data", ... }
-```
+> ```html
+> POST /services/metadata/publish
+> Content-Type: application/json
+> Authorization: Basic user-api-key
+> ```
+> ```json
+> { "code_id":123, "software_title":"Sample Data", ... }
+> ```
 
 > Response:
-```html
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
-```json
-{ "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
-```
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
+> ```
 
 > Error Response:
-```html
-HTTP/1.1 400 BAD REQUEST
-Content-Type: application/json
-```
-```json
-{ "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
-```
+> ```html
+> HTTP/1.1 400 BAD REQUEST
+> Content-Type: application/json
+> ```
+> ```json
+> { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
+> ```
 
 | HTTP Response Code | Information |
 | --- | --- |
@@ -202,32 +207,32 @@ be submitted to DOE.  Additional validations are required for final submission:
 * If project is not Open Source ("OS") availability, a file upload is required
 
 > Request:
-```html
-POST /services/metadata/submit
-Content-Type: application/json
-Authorization: Basic user-api-key
-```
-```json
-{ "code_id":123, "software_title":"Sample Data", ... }
-```
+> ```html
+> POST /services/metadata/submit
+> Content-Type: application/json
+> Authorization: Basic user-api-key
+> ```
+> ```json
+> { "code_id":123, "software_title":"Sample Data", ... }
+> ```
 
 > Response:
-```html
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
-```json
-{ "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
-```
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
+> ```
 
 > Error Response:
-```html
-HTTP/1.1 400 BAD REQUEST
-Content-Type: application/json
-```
-```json
-{ "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
-```
+> ```html
+> HTTP/1.1 400 BAD REQUEST
+> Content-Type: application/json
+> ```
+> ```json
+> { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
+> ```
 
 | HTTP Response Code | Information |
 | --- | --- |
@@ -268,21 +273,21 @@ Developers and Contributors are one-to-many Objects within a software project's 
 Developers are usually required information, while contributors may be optional.  Each are
 arrays, so multiple values may be specified.
 
-```json
-"developers": [ 
-  { "first_name" : "John", 
-    "last_name" : "Jones",
-    "email" : "jjones@someplace.com",
-    "affiliations" : ["My Company, Inc."] },
-    ... ],
-"contributors": [ 
-    { "first_name" : "Testy",  
-      "last_name" : "McTesterson",
-      "email" : "testy@testing.com",
-      "affiliations" : ["Testing Company"],
-      "contributor_type" : "DataCurator" },
-     ...  ]
-```
+> ```json
+> "developers": [ 
+> { "first_name" : "John", 
+>   "last_name" : "Jones",
+>   "email" : "jjones@someplace.com",
+>   "affiliations" : ["My Company, Inc."] },
+> ... ],
+> "contributors": [ 
+> { "first_name" : "Testy",  
+>   "last_name" : "McTesterson",
+>   "email" : "testy@testing.com",
+>   "affiliations" : ["Testing Company"],
+>   "contributor_type" : "DataCurator" },
+> ...  ]
+> ```
 
 | Field Name | Description |
 | --- | --- |
@@ -300,29 +305,29 @@ funding identifiers or award numbers, while Contributing organizations provide t
 of contribution made to the project.  DOE sponsoring organizations are required to send a valid 
 DOE contract number as a "primary_award" field.
 
-```json
-"sponsoring_organizations":[
-  {"organization_name":"Payments, Inc.",
-   "funding_identifiers":[
-    { "identifier_type":"AwardNumber", 
-      "identifier_value":"AWARD-001" },
-    ... ] },
-  {"organization_name":"DOE Lab",
-   "DOE":true,
-   "primary_award":"award-number"},
-    ... 
-  ],
-"contributing_organizations":[
-   {"organization_name":"Boilerplate Code Productions",
-    "contributor_type":"Producer"},
-    ... ],
-  ...
- ],
-"research_organizations":[
-  {"organization_name":"ACME, Inc."},
-  ...
- ]
-```
+> ```json
+> "sponsoring_organizations":[
+> {"organization_name":"Payments, Inc.",
+>  "funding_identifiers":[
+> { "identifier_type":"AwardNumber", 
+>  "identifier_value":"AWARD-001" },
+> ... ] },
+> {"organization_name":"DOE Lab",
+>  "DOE":true,
+>  "primary_award":"award-number"},
+> ... 
+> ],
+> "contributing_organizations":[
+> {"organization_name":"Boilerplate Code Productions",
+>  "contributor_type":"Producer"},
+> ... ],
+> ...
+> ],
+> "research_organizations":[
+> {"organization_name":"ACME, Inc."},
+> ...
+> ]
+> ```
 
 | Field Name | Description |
 | ---  | --- |
