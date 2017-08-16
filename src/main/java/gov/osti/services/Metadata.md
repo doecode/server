@@ -1,4 +1,4 @@
-DOECode Services
+DOECode Metadata Services
 ==================
 
 Introduction
@@ -20,10 +20,13 @@ HTTP Request Methods
 | `PUT` | *Not currently used* |
 | `DELETE` | *Not currently used* |
 
-Metadata Service Endpoints
---------------------------
+Service Endpoints
+-----------------
 
-## Metadata Retrieval API
+## Metadata Retrieval
+
+Information retrieval API for obtaining records already posted to DOECode or
+general repository information.
 
 ### read published record
 
@@ -76,11 +79,13 @@ Retrieve JSON for a given metadata.  User must be authenticated and be the owner
 Attempt to read information from the given *repository URL* value.  Supports github.com, bitbucket.org, and sourceforge.com. 
 Any relevant information from the repository API will be returned in JSON metadata format.
 Mapped repository information varies according to service API-supplied metadata.  Optionally, you may specify
-a query parameter of "format=yaml" to receive YAML file suitable for download.  If a DOECode YAML file is present
+a query parameter of "format=yaml" to receive YAML file suitable for download.  
+
+If a DOECode YAML file is present
 in the source repository at the base URL (named either "metadata.yml" or "doecode.yml") that file will
 be read for more complete repository information.
 
-## Submission of Metadata
+## Metadata Submission
 
 ### save
 
