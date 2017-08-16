@@ -37,21 +37,21 @@ Optionally, you may specify the query path parameter "format=yaml" to retrieve t
 PUBLISHED records.
 
 > Request:
-```html
-GET /doecodeapi/services/metadata/234
-Content-Type: application/json
-```
+> ```html
+> GET /doecodeapi/services/metadata/234
+> Content-Type: application/json
+> ```
 
 > Response:
-```html
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
-```json 
-{ "metadata" : 
-  { "software_title" : "Sample Data", "code_id": 234 ... } 
-}
-```
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json 
+> { "metadata" : 
+>   { "software_title" : "Sample Data", "code_id": 234 ... } 
+> }
+>```
 
 | Response Code | Information |
 | --- | --- |
@@ -132,14 +132,78 @@ Content-Type: application/json
 
 `POST /services/metadata/publish`
 
-Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing this operation will be returned.  
+Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing 
+this operation will be returned.  
 
-Required fields are: source accessibility, software title, repository link OR landing page URL, description, at least one license, at least one developer, any
-developers must have first and last name, and if email is provided, it must be valid.  If a DOI is specified to post, release date is also required.
+Validation rules are:
+* source accessibility, one of "OS" (Open Source), "ON" (Open Source, Not Publically Available), or "CS" (Closed Source)
+  if OS, repository link is required, and must be an accessible git repository
+  if ON or CS, a landing page URL is required
+* software title
+* description
+* at least one license
+* at least one developer
+  developers must have a first and last name, and if email is provided, is must be valid
+* if DOI is specified, release date is required
 
 > Request:
 ```html
 POST /services/metadata/publish
+Content-Type: application/json
+Authorization: Basic user-api-key
+```
+```json
+{ "code_id":123, "software_title":"Sample Data", ... }
+```
+
+> Response:
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{ "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
+```
+
+> Error Response:
+```html
+HTTP/1.1 400 BAD REQUEST
+Content-Type: application/json
+```
+```json
+{ "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
+```
+
+| HTTP Response Code | Information |
+| --- | --- |
+| 200 | Metadata published successfully to DOECode.  JSON metadata information returned with code_id reference. |
+| 400 | One or more validation errors occurred during publication, error information in the response. |
+| 401 | Authentication is required to POST |
+| 403 | User is not permitted to alter this record |
+| 500 | Persistence layer error or unable to process JSON submission information. |
+
+### submit
+
+`POST /doecodeapi/services/metadata/submit`
+
+Send JSON formatted metadata to DOECode for a software project that is considered fully complete and ready to 
+be submitted to DOE.  Additional validations are required for final submission:
+
+* All above Publish validations apply
+* A release date is required
+* At least one sponsoring organization is required
+  Any sponsoring organizations must have a name, and if DOE, must have a valid primary award number
+* At least one research organization is required
+  Any research organization must have a name
+* Contact information is required
+  Contact email is required and must be in valid format
+  Contact phone number is required and must be valid
+  Contact organization name is required
+* If project is not Open Source ("OS") availability, a file upload is required
+
+> Request:
+```html
+POST /services/metadata/submit
 Content-Type: application/json
 Authorization: Basic user-api-key
 ```
@@ -183,9 +247,9 @@ A full JSON example is [provided below.](#json_example)
 | Field Name | Description |
 | --- | --- |
 | code_id | The unique value given to a particular DOECode Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or published successfully. |
-| open_source | Boolean value indicating whether or not the source code is available to the public. |
-| site_ownership_code | The site or office submitting this project information. |
+| accessibility | Project source code accessibility value; must be one of "OS" (open source), "ON" (open source, not public) or "CS" (closed source) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public repository URL should be provided here. |
+| landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |
 | developers | An array of Objects, providing information about a project's developers or creators. Fields are [specified below.](#persons_fields) |
 | contributors | An array of information about project contributors. Fields are [specified below.](#persons_fields). Contributors must specify a [type of contribution](#contributor_types) made to the project. |
 | sponsoring_organizations | (Array) Information about the project sponsoring organizations, including any funding identifier information. Fields are [specified below.](#organization_fields) |
@@ -193,12 +257,11 @@ A full JSON example is [provided below.](#json_example)
 | research_organizations | (Array) Information about organizations providing research information for the project. Fields are [specified below.](#organization_fields) |
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
 | description | An abstract about the software project. |
-| licenses | Any software licenses or rights information about the software project. |
+| licenses | Any software licenses or rights information about the software project, may have multiple values. |
 | doi | A [Digital Object Identifier](http://doi.org/) assigned to this software project. |
 | acronym | A short descriptive acronym or abbreviation for this software project. |
 | date_of_issuance | The date the software project was made available or published. |
 | software_title | The software title. |
-| workflow_status | The state of the software project in DOECode; either "Saved" in a temporary submission state, or "Published" if the work has been formally submitted to DOE. |
 
 ### <a name="persons_fields"></a>Developers and Contributors
 Developers and Contributors are one-to-many Objects within a software project's metadata information.  
@@ -305,7 +368,7 @@ metadata fields.
 {
 "code_id":2651,
 "site_ownership_code":"OSTI",
-"open_source":true,
+"accessibility":"OS",
 "repository_link":"https://github.com/doecode/doecode",
 "developers":[
  {"first_name":"Project",
