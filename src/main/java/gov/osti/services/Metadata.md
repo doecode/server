@@ -6,7 +6,7 @@ Introduction
 
 Description of services provided by the API back end of DOECode.  The HTTP `GET` verb is used to retrieve information in various desired formats, and the `POST` verb used to send new and updated metadata information to the persistence back end.
 
-> The API is available via `/doecodeapi/services/` on the DOECode server.
+> The API is available via `/doecodeapi/services/metadata` on the DOECode server.
 
 [DOECode on GitHub >](https://github.com/doecode/doecode)
 
@@ -23,13 +23,27 @@ HTTP Request Methods
 Metadata Service Endpoints
 --------------------------
 
-### Retrieve metadata in JSON format
-`GET` /services/metadata/{codeId}
+## Metadata Retrieval API
+
+### read published record
+
+`GET /{codeId}`
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
 Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Only retrieves
 PUBLISHED records.
 
+> Request:
+```html
+GET /doecodeapi/services/metadata/234
+Content-Type: application/json
+```
+
+> Response:
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
 ```json 
 { "metadata" : 
   { "software_title" : "Sample Data", "code_id": 234 ... } 
@@ -41,10 +55,11 @@ PUBLISHED records.
 | 200 | OK, response includes JSON |
 | 403 | Access to unpublished metadata is not permitted |
 
-### Retrieve any metadata, authenticated
-`GET` /services/metadata/edit/{codeId}
+### /edit/{codeId}
 
-Retrieve JSON for a given metadata.  User must be authenticated and be the owner of the given metadata.
+`GET /services/metadata/edit/{codeId}`
+
+Retrieve JSON for a given metadata.  User must be authenticated and be the owner of the given metadata, or a site administrator account for the site.
 
 | Response Code | Information |
 | --- | --- |
@@ -54,29 +69,49 @@ Retrieve JSON for a given metadata.  User must be authenticated and be the owner
 | 403 | Logged-in user is not permitted to access this metadata |
 | 404 | Metadata CODE ID is not on file |
 
-### Retrieve information from repository API
-`GET` /services/metadata/autopopulate?repo={url}
+### autopopulate
+
+`GET /services/metadata/autopopulate?repo={url}`
 
 Attempt to read information from the given *repository URL* value.  Supports github.com, bitbucket.org, and sourceforge.com. 
 Any relevant information from the repository API will be returned in JSON metadata format.
 Mapped repository information varies according to service API-supplied metadata.  Optionally, you may specify
-a query parameter of "format=yaml" to receive YAML file suitable for download.
+a query parameter of "format=yaml" to receive YAML file suitable for download.  If a DOECode YAML file is present
+in the source repository at the base URL (named either "metadata.yml" or "doecode.yml") that file will
+be read for more complete repository information.
 
-### Save metadata information
-`POST` /services/metadata
+## Submission of Metadata
+
+### save
+
+`POST /services/metadata`
 
 Send JSON metadata to be persisted in the back-end.  This service persists the data in the *Saved* work-flow state. Returns metadata information in JSON format, if successful, with
 *code_id* value for reference.
 
-> Incoming JSON format:
+> Request:
+```html
+POST /services/metadata
+Content-Type: application/json
+```
 ```json
 { "software_title" : "Sample Data", ... }
 ```
-> Successful Response:
+
+> Response:
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
 ```json
 { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
 ```
+
 > Error Response:
+```html
+HTTP/1.1 500
+Content-Type: application/json
+```
 ```json
 { "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
 ```
@@ -88,21 +123,41 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 | 403 | User is not permitted to alter this metadata |
 | 500 | Persistence error or unable to parse JSON information. |
 
-### Publish metadata information
-`POST` /services/metadata/publish
+### publish
+
+`POST /services/metadata/publish`
 
 Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing this operation will be returned.  
 
 Required fields are: source accessibility, software title, repository link OR landing page URL, description, at least one license, at least one developer, any
 developers must have first and last name, and if email is provided, it must be valid.  If a DOI is specified to post, release date is also required.
 
-> Successful Response:
+> Request:
+```html
+POST /services/metadata/publish
+Content-Type: application/json
+Authorization: Basic user-api-key
+```
+```json
+{ "code_id":123, "software_title":"Sample Data", ... }
+```
+
+> Response:
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
 ```json
 { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
 ```
+
 > Error Response:
+```html
+HTTP/1.1 400 BAD REQUEST
+Content-Type: application/json
+```
 ```json
-{ "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid", ... ] }
+{ "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 ```
 
 | HTTP Response Code | Information |
@@ -118,7 +173,7 @@ DOECode Metadata
 A DOECode metadata Object is expressed as a JSON entity.  Each of the fields making up the entity are defined below, and an example record is provided in JSON format.
 A full JSON example is [provided below.](#json_example)
 
-### Metadata Information
+## Metadata Field Information
 
 | Field Name | Description |
 | --- | --- |
@@ -150,13 +205,13 @@ arrays, so multiple values may be specified.
   { "first_name" : "John", 
     "last_name" : "Jones",
     "email" : "jjones@someplace.com",
-    "affiliations" : "My Company, Inc." },
+    "affiliations" : ["My Company, Inc."] },
     ... ],
 "contributors": [ 
     { "first_name" : "Testy",  
       "last_name" : "McTesterson",
       "email" : "testy@testing.com",
-      "affiliations" : "Testing Company",
+      "affiliations" : ["Testing Company"],
       "contributor_type" : "DataCurator" },
      ...  ]
 ```
@@ -174,7 +229,8 @@ arrays, so multiple values may be specified.
 The software project may specify many different types of organizations, such as Sponsoring, Research, and Contributing Organizations, but each contains similar field name information, as defined below.
 Organizations are distinguished by particular information:  Sponsors contain one or more
 funding identifiers or award numbers, while Contributing organizations provide the type
-of contribution made to the project.
+of contribution made to the project.  DOE sponsoring organizations are required to send a valid 
+DOE contract number as a "primary_award" field.
 
 ```json
 "sponsoring_organizations":[
@@ -183,6 +239,9 @@ of contribution made to the project.
     { "identifier_type":"AwardNumber", 
       "identifier_value":"AWARD-001" },
     ... ] },
+  {"organization_name":"DOE Lab",
+   "DOE":true,
+   "primary_award":"award-number"},
     ... 
   ],
 "contributing_organizations":[
@@ -232,8 +291,8 @@ in the software project.
 | WorkPackageLeader	| A Work Package is a recognized data product, not all of which is included in publication. |
 | Other	| Any person or institution making a significant contribution, but whose contribution does not "fit". |
 
-<a name="json_example"></a>Example Metadata JSON
-==================
+## <a name="json_example"></a>Example Metadata JSON
+
 Example metadata information supplied in JSON format, utilizing all the indicated
 metadata fields.
 
@@ -247,18 +306,20 @@ metadata fields.
  {"first_name":"Project",
   "middle_name":"A.",
   "last_name":"Lead",
-  "affiliations":"DOE Programming Department",
+  "affiliations":["DOE Programming Department"],
   "email":"leadguy@infosystems.doe.gov"},
   {"first_name":"A.",
   "last_name":"Developer",
   "email":"codemonkey@someplace.gov"}],
 "contributors":[
  {"email":"testguy@testing.com",
-  "affiliations":"Testing Services, Inc.",
+  "affiliations":["Testing Services, Inc."],
   "first_name":"Tester",
   "contributor_type":"DataCurator"}],
 "sponsoring_organizations":[
   {"organization_name":"OSTI",
+   "primary_award":"DE-OR-111",
+   "DOE":true,
    "funding_identifiers":[
     {"identifier_type":"AwardNumber",
      "identifier_value":"DE-OR-1234"},
@@ -271,6 +332,8 @@ metadata fields.
      {"identifier_type":"AwardNumber",
       "identifier_value":"NE-2017-2342"}]},
   {"organization_name":"ORNL",
+   "DOE":true,
+   "primary_award":"ORNL-FG-2034",
    "funding_identifiers":[
      {"identifier_type":"AwardNumber",
       "identifier_value":"ORNL-IDNO-001"}]}],
