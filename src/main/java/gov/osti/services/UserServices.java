@@ -126,6 +126,7 @@ public class UserServices {
         // return an OK if authenticated, otherwise authentication services will handle status
         return Response
                 .status(Response.Status.OK)
+                .entity(mapper.createObjectNode().put("status", "success").toString())
                 .build();
     }
 
@@ -168,7 +169,7 @@ public class UserServices {
         return Response
                 .ok()
                 .cookie(DOECodeCrypt.invalidateCookie())
-                .entity(mapper.createObjectNode().put("success", "success").toString())
+                .entity(mapper.createObjectNode().put("status", "success").toString())
                 .build();
     }
 
@@ -482,6 +483,7 @@ public class UserServices {
             //  return an OK response
             return Response
                     .ok()
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
@@ -553,6 +555,7 @@ public class UserServices {
             // return OK
             return Response
                     .ok()
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
                     .build();
         } catch ( Exception e ) {
             if (em.getTransaction().isActive())
@@ -658,6 +661,7 @@ public class UserServices {
                 (null!=pendingRoles && pendingRoles.contains(user.getSiteId())))
                 return Response
                         .ok()
+                        .entity(mapper.createObjectNode().put("status", "success").toString())
                         .build();
             
             // post a pending role request
@@ -673,7 +677,7 @@ public class UserServices {
             // return CREATED
             return Response
                     .status(Response.Status.CREATED)
-                    .entity("Site admin role requested.")
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
                     .build();
         } catch ( Exception e ) {
             if (em.getTransaction().isActive())
@@ -742,7 +746,10 @@ public class UserServices {
             
             em.getTransaction().commit();
 
-            return Response.ok().build();
+            return Response
+                    .ok()
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
+                    .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
@@ -813,6 +820,7 @@ public class UserServices {
 
             return Response
                     .ok()
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
@@ -948,7 +956,7 @@ public class UserServices {
             
             return Response
                     .ok()
-                    .entity(mapper.createObjectNode().put("success", "success").toString())
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
@@ -1003,7 +1011,7 @@ public class UserServices {
             
             return Response
                     .ok()
-                    .entity(mapper.createObjectNode().put("success", "success").toString())
+                    .entity(mapper.createObjectNode().put("status", "success").toString())
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())

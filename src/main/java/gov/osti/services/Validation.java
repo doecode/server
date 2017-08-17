@@ -348,7 +348,7 @@ public class Validation {
     @Path ("/phonenumber")
     public Response checkPhoneNumber(@QueryParam("value") String value) {
         return ( isValidPhoneNumber(value) ) ?
-                Response.ok().build() :
+                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
                 ErrorResponse.badRequest("\"" + value + "\" is not a valid phone number.").build();
     }
     
@@ -367,7 +367,7 @@ public class Validation {
     @Path ("/awardnumber")
     public Response checkAwardNumber(@QueryParam("value") String value) {
         return ( isValidAwardNumber(value) ) ?
-                Response.ok().build() :
+                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
                 ErrorResponse.badRequest("\"" + value + "\" is not a valid award number.").build();
     }
     
@@ -386,7 +386,7 @@ public class Validation {
     @Path ("/doi")
     public Response checkDoi(@QueryParam("value") String value) {
         return ( isValidDoi(value) ) ?
-                Response.ok().build() :
+                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
                 ErrorResponse.badRequest("\"" + value + "\" is not a valid DOI.").build();
     }
     
@@ -405,7 +405,7 @@ public class Validation {
     @Path ("/repositorylink")
     public Response checkRepositoryLink(@QueryParam("value") String value) {
         return ( isValidRepositoryLink(value) ) ?
-                Response.ok().build() :
+                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
                 ErrorResponse.badRequest("\"" + value + "\" is not a valid repository link.").build();
     }
     
@@ -424,7 +424,7 @@ public class Validation {
     @Path ("/url")
     public Response checkUrl(@QueryParam("value") String value) {
         return ( isValidUrl(value) ) ?
-                Response.ok().build() :
+                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
                 ErrorResponse.badRequest("\"" + value + "\" is not a valid URL.").build();
     }
 
