@@ -509,8 +509,9 @@ public class Metadata {
             if (null==roles) roles = new HashSet<>(); // null protection
 
             if ( null!=emd ) {
-                // must be the OWNER or OSTI in order to UPDATE
+                // must be the OWNER, SITE ADMIN, or OSTI in order to UPDATE
                 if (!user.getEmail().equals(emd.getOwner()) &&
+                     !roles.contains(emd.getSiteOwnershipCode()) &&
                      !roles.contains("OSTI"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
@@ -1115,7 +1116,7 @@ public class Metadata {
      * Will return a FORBIDDEN response if the OWNER logged in does not match
      * the record's OWNER.
      *
-     * @param integer the CODE ID of the record to APPROVE.
+     * @param codeId the CODE ID of the record to APPROVE.
      * @return a Response containing the JSON of the approved record if successful, or
      * error information if not
      * @throws InternalServerErrorException on JSON parsing or other IO errors
@@ -1140,13 +1141,11 @@ public class Metadata {
                 return ErrorResponse
                         .notFound("Code ID not on file.")
                         .build();
-
-            Set<String> roles = user.getRoles();
-            if (null==roles) roles = new HashSet<>(); // null protection
-            // do you have permissions to get this?
-            if (!roles.contains("OSTI"))
+            
+            // make sure this is Published
+            if (!DOECodeMetadata.Status.Published.equals(md.getWorkflowStatus()))
                 return ErrorResponse
-                        .forbidden("Permission denied.")
+                        .badRequest("Metadata is not in the Published workflow state.")
                         .build();
 
             em.getTransaction().begin();

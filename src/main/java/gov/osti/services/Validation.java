@@ -270,7 +270,7 @@ public class Validation {
         
         // if not starting with HTTP, make it so then test
         if (!value.toLowerCase().startsWith("http"))
-            value = "http://" + value;
+            value = "https://" + value;
         
         try {
             Collection<Ref> references = Git

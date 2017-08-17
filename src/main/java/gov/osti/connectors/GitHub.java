@@ -95,7 +95,8 @@ public class GitHub implements ConnectorInterface {
             if (null!=uri.getHost()) {
                 if (uri.getHost().contains("github.com")) {
                     String path = uri.getPath();
-                    return path.substring(path.indexOf("/")+1);
+                    return path.substring(path.indexOf("/")+1)
+                            .replaceAll("/$", ""); // remove the trailing slash if present
                 }
             }
         } catch ( URISyntaxException e ) {
