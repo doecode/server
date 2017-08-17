@@ -2,6 +2,7 @@
  */
 package gov.osti.services;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +11,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -38,53 +40,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Ref;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Incoming JSON holding the Validation Request information.
- * 
- * Must be non-inner-class for Jackson.
- */
-class ValidationRequest {
-    private String[] values;
-    private String[] validations;
-
-    public ValidationRequest() {
-
-    }
-
-    /**
-     * Acquire the set of VALUES to validate.
-     * 
-     * @return the set of Values to check
-     */
-    public String[] getValues() {
-        return values;
-    }
-
-    /**
-     * Request a set of String VALUES to validate
-     * @param values the values to set
-     */
-    public void setValues(String[] values) {
-        this.values = values;
-    }
-
-    /**
-     * A String set of validations to apply to the values
-     * @return the validations to check
-     */
-    public String[] getValidations() {
-        return validations;
-    }
-
-    /**
-     * Set the type of validations to perform
-     * @param validations the validations to set
-     */
-    public void setValidations(String[] validations) {
-        this.validations = validations;
-    }
-}
 
 /**
  * Private Class for Validation Responses.
@@ -131,39 +86,6 @@ class ApiResponse {
 }
 
 /**
- * Set of "error message" responses for the indicated validations.
- * 
- * A simple Class for easier Jackson serialization, and future extension should
- * errors require more information or resolution.
- * 
- * @author ensornl
- */
-class ValidationResponse {
-    // set of errors; empty String means "ok"
-    private List<String> errors = new ArrayList<>();
-    
-    public ValidationResponse() {
-        
-    }
-    
-    /**
-     * Get the List of error messages.
-     * @return an ArrayList of String error messages
-     */
-    public List<String> getErrors() {
-        return errors;
-    }
-    
-    /**
-     * Add an "error message"; blank means validation passed.
-     * @param message the message to add
-     */
-    public void add(String message) {
-        errors.add(message);
-    }
-}
-
-/**
  *
  * REST web services for validation purposes.
  * 
@@ -190,6 +112,55 @@ public class Validation {
     protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     protected static final Pattern DOI_PATTERN = Pattern.compile("10.\\d{4,9}/[-._;()/:A-Za-z0-9]+$");
+    
+    @JsonIgnoreProperties (ignoreUnknown = true)
+    private static class ValidationRequest implements Serializable {
+        private String type;
+        private String value;
+        private String error;
+
+        /**
+         * @return the type
+         */
+        public String getType() {
+            return type;
+        }
+
+        /**
+         * @param type the type to set
+         */
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        /**
+         * @return the value
+         */
+        public String getValue() {
+            return value;
+        }
+
+        /**
+         * @param value the value to set
+         */
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        /**
+         * @return the error
+         */
+        public String getError() {
+            return error;
+        }
+
+        /**
+         * @param error the error to set
+         */
+        public void setError(String error) {
+            this.error = error;
+        }
+    }
     
     /**
      * Creates a new instance of ValidationResource
@@ -220,7 +191,7 @@ public class Validation {
     public static boolean isValidUrl(String value) {
         return ( null==value ) ?
                 false :
-                (value.toLowerCase().startsWith("http")) ?
+                (value.toLowerCase().startsWith("http") || value.contains("://")) ?
                 URL_PATTERN.matcher(value).matches() :
                 URL_PATTERN.matcher("http://"+value).matches();
     }
@@ -461,21 +432,21 @@ public class Validation {
      * Determine whether or not a contract number is valid.
      * 
      * Receive JSON: 
-     * { "values":["value1", "value2", ...],
-     *   "validations:[ "rules", "to", "apply" ] }
+     * [ { "value":"value1", "type":"type1" }, {"value":"value2", "type":"type2"} ]
      * 
      * Return:
      * 
-     * { "errors":["value1-error-message", "value2-error-message", ... ] }
+     * [ { "value":"value1", "type":"type1", "error":"Not a valid type1"}, ...]
      * 
      * Empty "error messages" implies value was accepted and passes indicated validation
-     * rule(s).  Currently supported "rules" are "Award" (validate award number)
-     * and "DOI" (validate reachable DOI).  There should exist one output error
-     * message per incoming value, in the order received.
+     * rule(s). 
+     * 
+     * Types supported (NOT case-sensitive): "doi", "awardnumber", "phonenumber",
+     * "email", "url", "repositorylink".
      * 
      * @param object the String containing JSON of the validation request
      * 
-     * @return "errors" JSON Object if any; empty if accepted
+     * @return JSON containing records with "error" messages with each
      * 
      * @throws java.io.IOException on IO or HTTP client errors
      */
@@ -483,10 +454,8 @@ public class Validation {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response request(String object) throws IOException {
-        ValidationResponse validationResponse = new ValidationResponse();
-        
         try {
-            ValidationRequest validationRequest = mapper.readValue(new StringReader(object), ValidationRequest.class);
+            ValidationRequest[] requests = mapper.readValue(object, ValidationRequest[].class);
             
             /**
              * Validations:
@@ -495,33 +464,30 @@ public class Validation {
              * "Award" -- call known validation endpoint with value, check for "isValid" true response
              * 
              */
-            for ( String value : validationRequest.getValues() ) {
-                // apply each validation rule to each value to validate
-                for ( String validation : validationRequest.getValidations() ) {
-                    if ("DOI".equalsIgnoreCase(validation)) {
-                        validationResponse.add((isValidDoi(value)) ? "" : value + " is not a valid DOI.");
-                    } else if ("Award".equalsIgnoreCase(validation)) {
-                        // ensure we're configured for that
-                        if (StringUtils.isBlank(API_HOST)) {
-                            return Response.status(Response.Status.NOT_FOUND).build();
-                        }
-                        // call the VALIDATION API to get a response
-                        validationResponse.add((isValidAwardNumber(value)) ? "" : value + " is not a valid Award Number.");
-                    } else if ("RepositoryLink".equalsIgnoreCase(validation)) {
-                        // ensure this repository link value IS a valid git repository
-                        validationResponse.add((isValidRepositoryLink(value)) ? "" : value + " is not a valid repository link.");
-                    } else {
-                        log.warn("Invalid validation request type: " + validation);
-                        return Response
-                                .status(HttpStatus.SC_BAD_REQUEST)
-                                .build();
-                    }
+            for ( ValidationRequest vr : requests ) {
+                if (StringUtils.equalsIgnoreCase(vr.getType(), "doi")) {
+                    vr.setError((isValidDoi(vr.getValue()) ? "" : vr.getValue() + "is not a valid DOI."));
+                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "repositorylink")) {
+                    vr.setError((isValidRepositoryLink(vr.getValue()) ? "" : vr.getValue() + "is not a valid repository link."));
+                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "phonenumber")) {
+                    vr.setError((isValidPhoneNumber(vr.getValue()) ? "" : vr.getValue() + "is not a valid phone number."));
+                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "url")) {
+                    vr.setError((isValidUrl(vr.getValue()) ? "" : vr.getValue() + "is not a valid URL."));
+                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "email")) {
+                    vr.setError((isValidEmail(vr.getValue()) ? "" : vr.getValue() + "is not a valid email address."));
+                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "awardnumber")) {
+                    vr.setError((isValidAwardNumber(vr.getValue()) ? "" : vr.getValue() + "is not a valid Award Number."));
+                } else {
+                    log.warn("Unknown validation request type: " + vr.getType());
+                    return ErrorResponse
+                            .badRequest("Unknown request type: " + vr.getType())
+                            .build();
                 }
             }
             // at the end, return any error message
             return Response
                     .ok()
-                    .entity(mapper.valueToTree(validationResponse).toString())
+                    .entity(mapper.valueToTree(requests).toString())
                     .build();
         } catch ( JsonParseException | JsonMappingException e ) {
             log.warn("Bad Request: " + object);

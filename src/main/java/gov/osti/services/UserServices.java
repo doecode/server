@@ -82,7 +82,7 @@ public class UserServices {
                specialPattern = ".*[" + Pattern.quote(specialCharacters) + "].*";
         
         // must be at least 8 characters (also null protection)
-        if ( StringUtils.length(password)<=8 || null==password )
+        if ( StringUtils.length(password)<8 || null==password )
             return false;
         // cannot be equivalent to (or contain?) the email address
         if ( StringUtils.containsIgnoreCase(password, email) )

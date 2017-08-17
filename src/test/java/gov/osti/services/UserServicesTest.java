@@ -42,7 +42,8 @@ public class UserServicesTest {
             "EMAIL@COMPANY.COM$4me!", "justEMAIL@company.COM2hide"
         };
         String[] good_passwords = {
-            "Just$4kicks!", "Some4!funTIMES", "Not#2SHORTguy"
+            "Just$4kicks!", "Some4!funTIMES", "Not#2SHORTguy",
+            "Lori12**"
         };
         
         for ( String password : bad_passwords ) {
