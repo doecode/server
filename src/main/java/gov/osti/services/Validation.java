@@ -35,6 +35,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Ref;
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -331,6 +332,17 @@ public class Validation {
                 log.warn("Close Error: " + e.getMessage());
             }
         }
+    }
+    
+    /**
+     * View the API documentation.
+     * 
+     * @return a Viewable to the documentation
+     */
+    @GET
+    @Produces (MediaType.TEXT_HTML)
+    public Viewable getDocumentation() {
+        return new Viewable ("/validation");
     }
     
     /**
