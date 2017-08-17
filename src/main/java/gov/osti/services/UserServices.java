@@ -436,7 +436,7 @@ public class UserServices {
                     return ErrorResponse
                             .badRequest("Missing required contract number.")
                             .build();
-                else if (!Validation.isAwardNumberValid(request.getContractNumber()))
+                else if (!Validation.isValidAwardNumber(request.getContractNumber()))
                     return ErrorResponse
                             .badRequest("Contract number is not a valid DOE contract number.")
                             .build();

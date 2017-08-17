@@ -15,13 +15,16 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Produces;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
@@ -181,12 +184,45 @@ public class Validation {
     // static DOI resolution prefix
     private static final String DOI_BASE_URL = "https://doi.org/";
     
+    // Phone number validation
     private static PhoneNumberUtil phoneNumberValidator = PhoneNumberUtil.getInstance();
+    // regular expressions for validating email addresses and URLs
+    protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
+    protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+    protected static final Pattern DOI_PATTERN = Pattern.compile("10.\\d{4,9}/[-._;()/:A-Za-z0-9]+$");
     
     /**
      * Creates a new instance of ValidationResource
      */
     public Validation() {
+    }
+    
+    /**
+     * Determine whether or not this VALUE conforms to an EMAIL ADDRESS pattern.
+     * 
+     * @param value the value to check
+     * @return true if matches an EMAIL ADDRESS pattern, false if not
+     */
+    public static boolean isValidEmail(String value) {
+        return ( null==value ) ?
+                false :
+                EMAIL_PATTERN.matcher(value).matches();
+    }
+    
+    /**
+     * Check to see if a VALUE appears to be a valid URL.
+     * 
+     * If no "http" prefix found, add one and try that value.
+     * 
+     * @param value the VALUE to check
+     * @return true if appears to be a URL, false if not
+     */
+    public static boolean isValidUrl(String value) {
+        return ( null==value ) ?
+                false :
+                (value.toLowerCase().startsWith("http")) ?
+                URL_PATTERN.matcher(value).matches() :
+                URL_PATTERN.matcher("http://"+value).matches();
     }
     
     /**
@@ -215,7 +251,7 @@ public class Validation {
      * @param value the CONTRACT/AWARD NUMBER to check
      * @return true if valid, false if not
      */
-    public static boolean isAwardNumberValid(String value) {
+    public static boolean isValidAwardNumber(String value) {
         RequestConfig rc = RequestConfig
                 .custom()
                 .setSocketTimeout(5000)
@@ -283,6 +319,143 @@ public class Validation {
             return false;
         }
     }
+    
+    /**
+     * Check to see if DOI is valid or not.
+     * 
+     * @param value the DOI to check
+     * @return true if the DOI is valid and reachable; false if not
+     */
+    public static boolean isValidDoi(String value) {
+        // set some reasonable default timeouts
+        // create an HTTP client to request through
+        CloseableHttpClient hc = 
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(RequestConfig
+                        .custom()
+                        .setSocketTimeout(5000)
+                        .setConnectTimeout(5000)
+                        .setConnectionRequestTimeout(5000)
+                        .build())
+                .build();
+        
+        try {
+            // if value is missing or doesn't appear to be a DOI, don't bother
+            if (null==value || !DOI_PATTERN.matcher(value).matches())
+                return false;
+            // for now, just try an HTTP connection via DOI_BASE_URL + value
+            HttpGet get = new HttpGet(DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
+            HttpResponse response = hc.execute(get);
+            
+            // URL found? OK
+            return (HttpStatus.SC_OK==response.getStatusLine().getStatusCode());
+        } catch ( IOException e ) { 
+            log.warn("IO Error Checking DOI: " + value, e);
+            return false;
+        } finally {
+            try {
+                hc.close();
+            } catch ( IOException e ) {
+                log.warn("Close Error: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Determine whether or not the PHONE NUMBER is valid.
+     * 
+     * Response Codes: 
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     * 
+     * @param value a PHONE NUMBER to check
+     * @return a Response containing validity
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/phonenumber")
+    public Response checkPhoneNumber(@QueryParam("value") String value) {
+        return ( isValidPhoneNumber(value) ) ?
+                Response.ok().build() :
+                ErrorResponse.badRequest("\"" + value + "\" is not a valid phone number.").build();
+    }
+    
+    /**
+     * Check an AwardNumber for valid DOE contract number value.
+     * 
+     * Response Codes: 
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     * 
+     * @param value the AWARD NUMBER
+     * @return a Response containing validity
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/awardnumber")
+    public Response checkAwardNumber(@QueryParam("value") String value) {
+        return ( isValidAwardNumber(value) ) ?
+                Response.ok().build() :
+                ErrorResponse.badRequest("\"" + value + "\" is not a valid award number.").build();
+    }
+    
+    /**
+     * Check a DOI.
+     * 
+     * Response Codes: 
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     * 
+     * @param value the DOI to check
+     * @return a Response
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/doi")
+    public Response checkDoi(@QueryParam("value") String value) {
+        return ( isValidDoi(value) ) ?
+                Response.ok().build() :
+                ErrorResponse.badRequest("\"" + value + "\" is not a valid DOI.").build();
+    }
+    
+    /**
+     * Check a REPOSITORY LINK value.
+     * 
+     * Response Codes: 
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     * 
+     * @param value a REPOSITORY LINK to check
+     * @return a Response containing whether or not this was valid
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/repositorylink")
+    public Response checkRepositoryLink(@QueryParam("value") String value) {
+        return ( isValidRepositoryLink(value) ) ?
+                Response.ok().build() :
+                ErrorResponse.badRequest("\"" + value + "\" is not a valid repository link.").build();
+    }
+    
+    /**
+     * Check a URL value.
+     * 
+     * Response Codes: 
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     * 
+     * @param value a URL value to check
+     * @return a Response containing validity
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/url")
+    public Response checkUrl(@QueryParam("value") String value) {
+        return ( isValidUrl(value) ) ?
+                Response.ok().build() :
+                ErrorResponse.badRequest("\"" + value + "\" is not a valid URL.").build();
+    }
 
     /**
      * Determine whether or not a contract number is valid.
@@ -312,19 +485,6 @@ public class Validation {
     public Response request(String object) throws IOException {
         ValidationResponse validationResponse = new ValidationResponse();
         
-        // set some reasonable default timeouts
-        // create an HTTP client to request through
-        CloseableHttpClient hc = 
-                HttpClientBuilder
-                .create()
-                .setDefaultRequestConfig(RequestConfig
-                        .custom()
-                        .setSocketTimeout(5000)
-                        .setConnectTimeout(5000)
-                        .setConnectionRequestTimeout(5000)
-                        .build())
-                .build();
-
         try {
             ValidationRequest validationRequest = mapper.readValue(new StringReader(object), ValidationRequest.class);
             
@@ -339,21 +499,14 @@ public class Validation {
                 // apply each validation rule to each value to validate
                 for ( String validation : validationRequest.getValidations() ) {
                     if ("DOI".equalsIgnoreCase(validation)) {
-                        // for now, just try an HTTP connection via DOI_BASE_URL + value
-                        HttpGet get = new HttpGet(DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
-                        HttpResponse response = hc.execute(get);
-
-                        // add empty String for no error, or error message if not found
-                        validationResponse.add( HttpStatus.SC_OK==response.getStatusLine().getStatusCode() ?
-                                "" :
-                                value + " is not a valid DOI.");
+                        validationResponse.add((isValidDoi(value)) ? "" : value + " is not a valid DOI.");
                     } else if ("Award".equalsIgnoreCase(validation)) {
                         // ensure we're configured for that
                         if (StringUtils.isBlank(API_HOST)) {
                             return Response.status(Response.Status.NOT_FOUND).build();
                         }
                         // call the VALIDATION API to get a response
-                        validationResponse.add((isAwardNumberValid(value)) ? "" : value + " is not a valid Award Number.");
+                        validationResponse.add((isValidAwardNumber(value)) ? "" : value + " is not a valid Award Number.");
                     } else if ("RepositoryLink".equalsIgnoreCase(validation)) {
                         // ensure this repository link value IS a valid git repository
                         validationResponse.add((isValidRepositoryLink(value)) ? "" : value + " is not a valid repository link.");
@@ -377,8 +530,6 @@ public class Validation {
             return Response
                     .status(Response.Status.BAD_REQUEST)
                     .build();
-        } finally {
-            hc.close();
         }
     }
 }

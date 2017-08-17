@@ -39,8 +39,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -120,10 +118,6 @@ public class Metadata {
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
-    
-    // regular expressions for validating email addresses and URLs
-    protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
-    protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
@@ -1147,7 +1141,6 @@ public class Metadata {
      */
     private static List<String> validatePublished(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
-        Matcher matcher;
         
         if (null==m.getAccessibility())
             reasons.add("Missing Source Accessibility.");
@@ -1168,9 +1161,7 @@ public class Metadata {
                 if ( StringUtils.isBlank(developer.getLastName()) )
                     reasons.add("Developer missing last name.");
                 if ( StringUtils.isNotBlank(developer.getEmail()) ) {
-                    matcher = EMAIL_PATTERN.matcher(developer.getEmail());
-
-                    if (!matcher.matches())
+                    if (!Validation.isValidEmail(developer.getEmail()))
                         reasons.add("Developer email \"" + developer.getEmail() +"\" is not valid.");
                 }
             }
@@ -1183,15 +1174,12 @@ public class Metadata {
                 reasons.add("Repository URL is required for open source submissions.");
         } else {
             // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
-            String landingUrl = (StringUtils.startsWithIgnoreCase(m.getLandingPage(), "http")) ?
-                    m.getLandingPage() :
-                    "http://" + m.getLandingPage();
-            if (!URL_PATTERN.matcher(landingUrl).matches())
+            if (!Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
-            reasons.add("Repository URL is not a valid link.");
+            reasons.add("Repository URL is not a valid repository.");
         return reasons;
     }
     
@@ -1203,7 +1191,6 @@ public class Metadata {
      */
     private static List<String> validateSubmit(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
-        Matcher matcher;
         
         // get all the PUBLISHED reasons, if any
         reasons.addAll(validatePublished(m));
@@ -1218,7 +1205,7 @@ public class Metadata {
                     reasons.add("Sponsoring organization name is required.");
                 if (StringUtils.isBlank(o.getPrimaryAward()) && o.isDOE())
                     reasons.add("Primary award number is required.");
-                else if (o.isDOE() && !Validation.isAwardNumberValid(o.getPrimaryAward()))
+                else if (o.isDOE() && !Validation.isValidAwardNumber(o.getPrimaryAward()))
                     reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
             }
         }
@@ -1235,8 +1222,7 @@ public class Metadata {
         if (StringUtils.isBlank(m.getRecipientEmail()))
             reasons.add("Contact email is required.");
         else {
-            matcher = EMAIL_PATTERN.matcher(m.getRecipientEmail());
-            if (!matcher.matches())
+            if (!Validation.isValidEmail(m.getRecipientEmail()))
                 reasons.add("Contact email is not valid.");
         }
         if (StringUtils.isBlank(m.getRecipientPhone()))
