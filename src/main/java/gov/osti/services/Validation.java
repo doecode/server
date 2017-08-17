@@ -12,11 +12,8 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.StringReader;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.regex.Pattern;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -107,7 +104,7 @@ public class Validation {
     private static final String DOI_BASE_URL = "https://doi.org/";
     
     // Phone number validation
-    private static PhoneNumberUtil phoneNumberValidator = PhoneNumberUtil.getInstance();
+    private static final PhoneNumberUtil PHONE_NUMBER_VALIDATOR = PhoneNumberUtil.getInstance();
     // regular expressions for validating email addresses and URLs
     protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
@@ -205,8 +202,8 @@ public class Validation {
     public static boolean isValidPhoneNumber(String value) {
         try {
             if (null!=value) {
-                PhoneNumber number = phoneNumberValidator.parse(value, "US");
-                return phoneNumberValidator.isValidNumber(number);
+                PhoneNumber number = PHONE_NUMBER_VALIDATOR.parse(value, "US");
+                return PHONE_NUMBER_VALIDATOR.isValidNumber(number);
             }
         } catch ( NumberParseException e ) {
             log.warn("Phone Number error: " + e.getMessage());
@@ -316,7 +313,10 @@ public class Validation {
             if (null==value || !DOI_PATTERN.matcher(value).matches())
                 return false;
             // for now, just try an HTTP connection via DOI_BASE_URL + value
-            HttpGet get = new HttpGet(DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
+            HttpGet get = new HttpGet(
+                    (value.startsWith("https://doi.org") || value.startsWith("http://doi.org")) ?
+                            value : 
+                            DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
             HttpResponse response = hc.execute(get);
             
             // URL found? OK
@@ -464,23 +464,23 @@ public class Validation {
              * "Award" -- call known validation endpoint with value, check for "isValid" true response
              * 
              */
-            for ( ValidationRequest vr : requests ) {
-                if (StringUtils.equalsIgnoreCase(vr.getType(), "doi")) {
-                    vr.setError((isValidDoi(vr.getValue()) ? "" : vr.getValue() + "is not a valid DOI."));
-                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "repositorylink")) {
-                    vr.setError((isValidRepositoryLink(vr.getValue()) ? "" : vr.getValue() + "is not a valid repository link."));
-                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "phonenumber")) {
-                    vr.setError((isValidPhoneNumber(vr.getValue()) ? "" : vr.getValue() + "is not a valid phone number."));
-                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "url")) {
-                    vr.setError((isValidUrl(vr.getValue()) ? "" : vr.getValue() + "is not a valid URL."));
-                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "email")) {
-                    vr.setError((isValidEmail(vr.getValue()) ? "" : vr.getValue() + "is not a valid email address."));
-                } else if (StringUtils.equalsIgnoreCase(vr.getType(), "awardnumber")) {
-                    vr.setError((isValidAwardNumber(vr.getValue()) ? "" : vr.getValue() + "is not a valid Award Number."));
+            for ( ValidationRequest req : requests ) {
+                if (StringUtils.equalsIgnoreCase(req.getType(), "doi")) {
+                    req.setError((isValidDoi(req.getValue()) ? "" : req.getValue() + " is not a valid DOI."));
+                } else if (StringUtils.equalsIgnoreCase(req.getType(), "repositorylink")) {
+                    req.setError((isValidRepositoryLink(req.getValue()) ? "" : req.getValue() + " is not a valid repository link."));
+                } else if (StringUtils.equalsIgnoreCase(req.getType(), "phonenumber")) {
+                    req.setError((isValidPhoneNumber(req.getValue()) ? "" : req.getValue() + " is not a valid phone number."));
+                } else if (StringUtils.equalsIgnoreCase(req.getType(), "url")) {
+                    req.setError((isValidUrl(req.getValue()) ? "" : req.getValue() + " is not a valid URL."));
+                } else if (StringUtils.equalsIgnoreCase(req.getType(), "email")) {
+                    req.setError((isValidEmail(req.getValue()) ? "" : req.getValue() + " is not a valid email address."));
+                } else if (StringUtils.equalsIgnoreCase(req.getType(), "awardnumber")) {
+                    req.setError((isValidAwardNumber(req.getValue()) ? "" : req.getValue() + " is not a valid Award Number."));
                 } else {
-                    log.warn("Unknown validation request type: " + vr.getType());
+                    log.warn("Unknown validation request type: " + req.getType());
                     return ErrorResponse
-                            .badRequest("Unknown request type: " + vr.getType())
+                            .badRequest("Unknown request type: " + req.getType())
                             .build();
                 }
             }
