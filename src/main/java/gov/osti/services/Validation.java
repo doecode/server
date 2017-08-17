@@ -403,6 +403,25 @@ public class Validation {
     }
     
     /**
+     * Check an email address.
+     * 
+     * Response Codes: 
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     * 
+     * @param value the email address to check
+     * @return a Response
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/email")
+    public Response checkEmail(@QueryParam("value") String value) {
+        return ( isValidEmail(value) ) ?
+                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
+                ErrorResponse.badRequest("\"" + value + "\" is not a valid email address.").build();
+    }
+    
+    /**
      * Check a REPOSITORY LINK value.
      * 
      * Response Codes: 

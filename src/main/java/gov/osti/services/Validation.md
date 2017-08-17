@@ -31,6 +31,27 @@ following endpoints.  Each share a common set of response codes, detailed below.
 | 200 | OK, value validates successful |
 | 400 | Bad Request, value is not valid for the requested type |
 
+Responses are also common to each of these individual valiation endpoints, all will
+be of the form shown.  An example of success and failure for email validation is
+shown here.
+
+> Success:
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{ "value":"OK" }
+```
+> Failure:
+```html
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+```
+```json
+{"status":400,"errors":["\"value\" is not a valid email address."]}
+```
+
 ### phonenumber
 
 `GET /doecodeapi/services/validation/phonenumber?value=*value-to-check*`
