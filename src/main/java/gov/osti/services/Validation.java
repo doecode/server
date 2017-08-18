@@ -28,7 +28,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -290,48 +289,15 @@ public class Validation {
     }
     
     /**
-     * Check to see if DOI is valid or not.
+     * Check to see if DOI is valid or not.  Matches the pattern of a DOI URL, or
+     * bare DOI value.
      * 
      * @param value the DOI to check
-     * @return true if the DOI is valid and reachable; false if not
+     * @return true if the DOI is a valid pattern; false if not
      */
     public static boolean isValidDoi(String value) {
-        // set some reasonable default timeouts
-        // create an HTTP client to request through
-        CloseableHttpClient hc = 
-                HttpClientBuilder
-                .create()
-                .setDefaultRequestConfig(RequestConfig
-                        .custom()
-                        .setSocketTimeout(5000)
-                        .setConnectTimeout(5000)
-                        .setConnectionRequestTimeout(5000)
-                        .build())
-                .build();
-        
-        try {
-            // if value is missing or doesn't appear to be a DOI, don't bother
-            if (null==value || !DOI_PATTERN.matcher(value).matches())
-                return false;
-            // for now, just try an HTTP connection via DOI_BASE_URL + value
-            HttpGet get = new HttpGet(
-                    (value.startsWith("https://doi.org") || value.startsWith("http://doi.org")) ?
-                            value : 
-                            DOI_BASE_URL + URLEncoder.encode(value.trim(), "UTF-8"));
-            HttpResponse response = hc.execute(get);
-            
-            // URL found? OK
-            return (HttpStatus.SC_OK==response.getStatusLine().getStatusCode());
-        } catch ( IOException e ) { 
-            log.warn("IO Error Checking DOI: " + value, e);
-            return false;
-        } finally {
-            try {
-                hc.close();
-            } catch ( IOException e ) {
-                log.warn("Close Error: " + e.getMessage());
-            }
-        }
+        // make sure the value, if present, conforms to DOI pattern.
+        return (null==value) ? false : DOI_PATTERN.matcher(value).find();
     }
     
     /**

@@ -13,6 +13,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,8 @@ public class SourceForge implements ConnectorInterface {
     private static final String SOURCEFORGE_API_BASEURL = "https://sourceforge.net/rest/p/";
     // the logger implementation
     private static final Logger log = LoggerFactory.getLogger(SourceForge.class);
+    // pattern to match for PROJECT NAME
+    private static final Pattern PROJECT_NAME_PATTERN = Pattern.compile("/projects/(.*)$");
     
     /**
      * initialize this Connector
@@ -46,7 +50,7 @@ public class SourceForge implements ConnectorInterface {
      * @param url the URL to process
      * @return the PROJECT NAME if possible, or null if not
      */
-    private static String getProjectNameFromUrl(String url) {
+    protected static String getProjectNameFromUrl(String url) {
         try {
             String safeUrl = (null==url) ? "" : url.trim();
             // err on the side of encryption, if no protocol provided
@@ -59,8 +63,13 @@ public class SourceForge implements ConnectorInterface {
             if (null!=uri.getHost()) {
                 if (uri.getHost().contains("sourceforge.net")) {
                     // assume SourceForge path is formed by "/projects/project-name"
-                    String path = uri.getPath();
-                    return path.substring(path.lastIndexOf("/")+1);
+                    if (null==uri.getPath())
+                        return null;
+                    
+                    Matcher m = PROJECT_NAME_PATTERN.matcher(uri.getPath());
+                    return (m.find()) ? 
+                            m.group(1) :
+                            null;
                 }
             }
         } catch ( URISyntaxException e ) {

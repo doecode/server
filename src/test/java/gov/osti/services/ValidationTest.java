@@ -118,13 +118,22 @@ public class ValidationTest {
 
     @Test
     public void testIsValidDoi() {
-        // validates against external DOI values, test only bad patterns
+        // some bad non-DOI patterns
         String[] invalid = { "0.2343/232343/2323", "1.2234/is/not/a/DOI",
             "http://notadoi.com/", ""
+        };
+        // valid DOI patterns
+        String[] valid = { "10.5072/238492", "10.5072/software/version01/1283",
+            "10.3334/just/sample/data010", "http://doi.org/10.5072/348293",
+            "https://doi.org/10.5072/999/23423.journal.2342"
         };
         
         for ( String doi : invalid ) {
             assertFalse ("Shouldn't accept: " + doi, Validation.isValidDoi(doi));
+        }
+        
+        for ( String doi : valid ) {
+            assertTrue  ("DOI " + doi + " should pass.", Validation.isValidDoi(doi));
         }
     }
     
