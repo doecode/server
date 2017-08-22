@@ -671,14 +671,12 @@ public class Metadata {
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
             post.setEntity(new StringEntity(index_mapper.writeValueAsString(md)));
-
+            
             HttpResponse response = hc.execute(post);
 
             if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode() ) {
                 log.warn("Indexing Error occurred for ID=" + md.getCodeId());
                 log.warn("Message: " + EntityUtils.toString(response.getEntity()));
-            } else {
-                log.info("Response OK: " + EntityUtils.toString(response.getEntity()));
             }
         } catch ( IOException e ) {
             log.warn("Indexing Error: " + e.getMessage() + " ID=" + md.getCodeId());
@@ -822,8 +820,10 @@ public class Metadata {
 
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
-                if ( !DataCite.register(md) )
+                if ( !DataCite.register(md) ) {
                     log.warn("DataCite registration failed for " + md.getDoi());
+                    throw new IOException ("DOI registration failed.");
+                }
             }
             // commit it
             em.getTransaction().commit();
@@ -941,8 +941,10 @@ public class Metadata {
                     }
                     // if appropriate, register or update the DOI with DataCite
                     if ( null!=md.getDoi() ) {
-                        if ( !DataCite.register(md) )
+                        if ( !DataCite.register(md) ) {
                             log.warn("DataCite DOI registration failed.");
+                            throw new IOException ("DOI registration failed.");
+                        }
                     }
                 } finally {
                     hc.close();

@@ -23,6 +23,7 @@ ${publishing.host} | base URL for submitting final metadata to OSTI (via /submit
 ${datacite.username} | (optional) DataCite user account name for registering DOIs
 ${datacite.password} | (optional) DataCite account password for DOI registration
 ${datacite.baseurl} | (optional) DataCite base URL prefix to use for DOI registration
+${datacite.prefix} | (optional) DataCite registration DOI prefix value
 ${index.url} | (optional) URL to indexing service (e.g., SOLR, see below)
 ${search.url} | (optional) base URL to searching service (SOLR, see below)
 ${site.url} | base URL of the client front-end services

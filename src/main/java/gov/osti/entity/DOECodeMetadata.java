@@ -1,7 +1,6 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -64,8 +63,6 @@ public class DOECodeMetadata implements Serializable {
     private String landingPage = null;
     private Accessibility accessibility = null;
     
-    private String doiStatus = null;
-
     // set of Access Limitations (Strings)
     private List<String> accessLimitations;
     
@@ -450,15 +447,6 @@ public class DOECodeMetadata implements Serializable {
 
 	public void setLandingPage(String landingPage) {
 		this.landingPage = landingPage;
-	}
-
-    @Column (name="DOI_STATUS")
-	public String getDoiStatus() {
-		return doiStatus;
-	}
-
-	public void setDoiStatus(String doiStatus) {
-		this.doiStatus = doiStatus;
 	}
 
         @Enumerated (EnumType.STRING)

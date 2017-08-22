@@ -8,18 +8,19 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import gov.osti.entity.Contributor;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
+import gov.osti.entity.DoiStatus;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.SponsoringOrganization;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Properties;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import javax.ws.rs.core.HttpHeaders;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -49,6 +50,7 @@ public class DataCite {
     private static String DATACITE_LOGIN = DoeServletContextListener.getConfigurationProperty("datacite.user");
     private static String DATACITE_PASSWORD = DoeServletContextListener.getConfigurationProperty("datacite.password");
     private static String DATACITE_BASE_URL = DoeServletContextListener.getConfigurationProperty("datacite.baseurl");
+    private static String DATACITE_PREFIX = DoeServletContextListener.getConfigurationProperty("datacite.prefix");
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -419,6 +421,54 @@ public class DataCite {
     }
     
     /**
+     * Determine whether or not this DOI belongs to this CODE ID value.  If not
+     * already on file, attempt to register to this CODE ID.  If found, ensure
+     * CODE ID values match before allowing registration.
+     * 
+     * @param m the DOECodeMetadata to check
+     * @return true if registration should proceed, false if not
+     */
+    private static boolean verifyOrRegisterDoi(DOECodeMetadata m) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            TypedQuery<DoiStatus> query = em.createNamedQuery("DoiStatus.findByDoi", DoiStatus.class)
+                    .setParameter("doi", m.getDoi());
+            List<DoiStatus> results = query.getResultList();
+            
+            if (results.isEmpty()) {
+                // register this one now
+                DoiStatus status = new DoiStatus();
+                status.setDoi(m.getDoi());
+                status.setCodeId(m.getCodeId());
+                
+                // persist this value to the database
+                em.getTransaction().begin();
+                em.persist(status);
+                em.getTransaction().commit();
+                
+            } else {
+                // get the first one
+                DoiStatus status = results.get(0);
+                
+                // if this DOI doesn't belong here, return false
+                if (!status.getCodeId().equals(m.getCodeId())) {
+                    log.warn("DOI " + m.getDoi() + " registered to another project.");
+                    return false;
+                }
+            }
+            
+        } catch ( Exception e ) {
+            log.warn("Unable to check DOI owner: ",e);
+            return false;
+        } finally {
+            em.close();
+        }
+        // should be OK to proceed, DOI status is registered to this metadata
+        return true;
+    }
+    
+    /**
      * Register DOI information with DataCite.
      * 
      * If DataCite information is not configured, or the register contains no
@@ -435,6 +485,14 @@ public class DataCite {
         // if no DOI is requested, skip this
         if (null==m.getDoi())
             return true;
+        
+        // ensure the DOI to be registered is recognized and valid for this record
+        // do we know this prefix?
+        if (!m.getDoi().startsWith(DATACITE_PREFIX))
+            return true;
+        // if we've registered this prefix before, does it belong to this record?
+        if (!verifyOrRegisterDoi(m))
+            return false;
         
         // try the registration, returning success or failure
         return (registerMetadata(m) && registerDoi(m));
