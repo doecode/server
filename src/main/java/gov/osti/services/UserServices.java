@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.persistence.TypedQuery;
+import javax.ws.rs.NotFoundException;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.subject.Subject;
@@ -207,83 +208,61 @@ public class UserServices {
                     .internalServerError("Error processing request.")
                     .build();
 	}
-        User currentUser = null;
-
+        // a User object to use
+        User user = null;
+        
         // is this a typical username + password login attempt?
         if (null!=request.getEmail() && null!=request.getPassword()) {
-            EntityManager em = DoeServletContextListener.createEntityManager();
-            
-            try {        
-                currentUser = em.find(User.class, request.getEmail());
-            } catch ( Exception e ) {
-                log.warn("Error Retrieving User",e);
-                return ErrorResponse
-                        .internalServerError("Error processing request.")
-                        .build();
-            } finally {
-                em.close();  
-            }
-        
-            // ensure the user exists and is verified / active
-            if (null==currentUser || !currentUser.isVerified() || !currentUser.isActive()) 
+            // attempt to look up the user
+            user = findUserByEmail(request.getEmail());
+
+            // ensure the user exists and is verified / active and password is NOT expired
+            if (null==user || !user.isVerified() || !user.isActive() || user.isPasswordExpired()) 
                 return ErrorResponse
                     .unauthorized()
                     .build();
-        
-            // ensure the PASSWORD matches
-            if (!PASSWORD_SERVICE.passwordsMatch(request.getPassword(), currentUser.getPassword()))
+
+            // ensure the PASSWORD matches, or implement three-strikes failure policy
+            if (!PASSWORD_SERVICE.passwordsMatch(request.getPassword(), user.getPassword())) {
+                log.warn("Password mismatch for " + request.getEmail());
+
+                // implement three-strikes rule
+                processUserLogin(request.getEmail(), true);
+                // inform the user of the failure in generic terms
                 return ErrorResponse
                         .unauthorized()
                         .build();
+            }
+            // success, set the failure count to zero
+            processUserLogin(request.getEmail(), false);
         } else if (null!=request.getConfirmationCode()) {
             // check the CONFIRMATION CODE token for the EMAIL + CODE
-            EntityManager em = DoeServletContextListener.createEntityManager();
-            try {
-                Claims claims = DOECodeCrypt.parseJWT(request.getConfirmationCode());
-                String confirmationCode = claims.getId();
-                String email = claims.getSubject();
-                
-                currentUser = em.find(User.class, email);
-                
-                // user MUST be active and verified, and exist
-                if (null==currentUser || !currentUser.isActive() || !currentUser.isVerified())
-                    return ErrorResponse
-                            .unauthorized()
-                            .build();
-                
-                // if the EMAIL ADDRESS doesn't match the requesting user, it's an error
-                if (!currentUser.getEmail().equals(email))
-                    return ErrorResponse
-                            .forbidden("Confirmation code invalid.")
-                            .build();
-                
-                // ensure the confirmation codes match
-                if (!StringUtils.equals(currentUser.getConfirmationCode(), confirmationCode))
-                    return ErrorResponse
-                            .forbidden("Confirmation code invalid.")
-                            .build();
-                
-                // if successful, we need to CLEAR OUT the user TOKEN
-                em.getTransaction().begin();
+            Claims claims = DOECodeCrypt.parseJWT(request.getConfirmationCode());
+            String confirmationCode = claims.getId();
+            String email = claims.getSubject();
 
-                currentUser.setConfirmationCode("");
-                em.merge(currentUser);
-                
-                em.getTransaction().commit();
-                
-            } catch ( Exception e ) {
-                // if DB error occurred, abort transaction
-                if ( em.getTransaction().isActive() )
-                    em.getTransaction().rollback();
-                
-                log.warn("JWT Login error: " + e.getMessage());
+            user = findUserByEmail(email);
+
+            // user MUST be active and verified, and exist
+            if (null==user || !user.isActive() || !user.isVerified())
                 return ErrorResponse
-                        .internalServerError("Unable to process login request.")
+                        .unauthorized()
                         .build();
-            } finally {
-                em.close();
-            }
-            
+
+            // if the EMAIL ADDRESS doesn't match the requesting user, it's an error
+            if (!user.getEmail().equals(email))
+                return ErrorResponse
+                        .forbidden("Confirmation code invalid.")
+                        .build();
+
+            // ensure the confirmation codes match
+            if (!StringUtils.equals(user.getConfirmationCode(), confirmationCode))
+                return ErrorResponse
+                        .forbidden("Confirmation code invalid.")
+                        .build();
+
+            // if successful, we need to CLEAR OUT the user TOKEN
+            resetUserToken(email);
         } else {
             // no username+password OR confirmation code, bad request
             return ErrorResponse
@@ -292,7 +271,7 @@ public class UserServices {
         }
     
 	String xsrfToken = DOECodeCrypt.nextRandomString();
-	String accessToken = DOECodeCrypt.generateLoginJWT(currentUser.getApiKey(), xsrfToken);
+	String accessToken = DOECodeCrypt.generateLoginJWT(user.getApiKey(), xsrfToken);
 	NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
 	
         return Response
@@ -300,10 +279,10 @@ public class UserServices {
                 .entity(mapper
                         .createObjectNode()
                         .put("xsrfToken", xsrfToken)
-                        .put("hasSite", !"CONTR".equals(currentUser.getSiteId()))
-                        .put("email", currentUser.getEmail())
-                        .put("first_name", currentUser.getFirstName())
-                        .put("last_name", currentUser.getLastName())
+                        .put("hasSite", !"CONTR".equals(user.getSiteId()))
+                        .put("email", user.getEmail())
+                        .put("first_name", user.getFirstName())
+                        .put("last_name", user.getLastName())
                         .toString())
                 .cookie(cookie)
                 .build();
@@ -829,7 +808,10 @@ public class UserServices {
             //  set the new password
             em.getTransaction().begin();
 
+            // set the encrypted password
             u.setPassword(PASSWORD_SERVICE.encryptPassword(request.getPassword()));
+            // set the date to now
+            u.setDatePasswordChanged();
             
             em.getTransaction().commit();
 
@@ -1464,5 +1446,131 @@ public class UserServices {
             log.error("Email Error: " + e.getMessage());
         }
     }
+    
+    /**
+     * Send an email message to the User should their account become inactivated
+     * due to repeated password failures.
+     * 
+     * @param userEmail the user email in question
+     */
+    private static void sendLockedAccountEmail(String userEmail) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        try {
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOECode User Account Locked Out");
+            email.addTo(userEmail);
+            
+            email.setHtmlMsg("<html>Your account has been automatically deactivated due to after 3 unsuccessful logon attempts.  "
+                    + "<p>Please contact doecode@osti.gov as an administrator will need to reactivate your account before you "
+                    + "can sign-in to DOE CODE.</html>");
+            
+        } catch ( EmailException e ) {
+            log.error("Email Error: ",e);
+        }
+    }
 
+    /**
+     * Locate a User record by EMAIL address.
+     * 
+     * @param email the EMAIL to look for
+     * @return a User object if possible or null if not found or errors
+     */
+    private static User findUserByEmail(String email) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            return em.find(User.class, email);
+        } catch ( Exception e ) {
+            log.warn("Error locating user : " + email, e);
+            return null;
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Process success or failure of a user password login.
+     * 
+     * On success, reset the failure count to 0.  On failure, increment failed
+     * count; if that reaches 3, deactivate the user account.
+     * 
+     * @param email the EMAIL address
+     * @param failure whether or not the attempt failed
+     */
+    private static void processUserLogin(String email, boolean failure) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            // find the User
+            User user = em.find(User.class, email);
+            
+            // this shouldn't happen
+            if (null==user) 
+                throw new NotFoundException("User not on file!");
+            
+            em.getTransaction().begin();
+            
+            if ( failure ) {
+                // add up a failure mark
+                user.setFailedCount( user.getFailedCount()+1 );
+
+                // if it exceeds the threshold, mark the user inactive
+                if (user.getFailedCount()>=3) {
+                    // mark account inactive and unable to log in
+                    user.setActive(false);
+                    // inform the user
+                    sendLockedAccountEmail(email);
+                }
+            } else {
+                // success
+                user.setFailedCount(0);
+            }
+            
+            // store it
+            em.getTransaction().commit();
+            
+        } catch ( Exception e ) {
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Unable to mark failed user login for: " + email, e);
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Reset the "user token" (confirmation code) values.  Also, update number
+     * of failed logins, in case there are any, for that account.  This presumes
+     * to be called as the result of a successful access attempt.
+     * 
+     * @param email the email address to affect changes
+     */
+    private static void resetUserToken(String email) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            User user = em.find(User.class, email);
+            
+            if (null==user)
+                throw new NotFoundException("Unable to locate user " + email);
+            
+            em.getTransaction().begin();
+            
+            user.setConfirmationCode("");
+            user.setFailedCount(0);
+            
+            em.getTransaction().commit();
+        } catch ( Exception e ) {
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
+            
+            log.warn("Unable to clear token for " + email, e);
+        } finally {
+            em.close();
+        }
+    }
+    
 }
