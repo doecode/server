@@ -91,6 +91,10 @@ API calls to manage user session state; log in and out of authenticated sessions
  `GET /login`
 
 Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
+Repeated login attempts via password authentication WILL result in the account being locked. 
+Locked accounts will receive an email message indicating administrative intervention is required to
+unlock the account.  Additionally, if the password expiration date is due, the login will fail, and
+a password change will be required to proceed.
 
 | HTTP Response Code | Description |
 | --- | --- |
@@ -280,6 +284,7 @@ Content-Type: application/json
 `POST /changepassword`
 
 Set a new password on logged in user account.  Requires authentication.  Password must conform to allowed standards.
+Account must be currently logged in to change password.
 
 | HTTP Response Code | Description |
 | --- | --- |

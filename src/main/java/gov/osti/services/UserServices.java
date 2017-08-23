@@ -216,11 +216,19 @@ public class UserServices {
             // attempt to look up the user
             user = findUserByEmail(request.getEmail());
 
-            // ensure the user exists and is verified / active and password is NOT expired
-            if (null==user || !user.isVerified() || !user.isActive() || user.isPasswordExpired()) 
+            // ensure the user exists and is verified / active
+            if (null==user || !user.isVerified() || !user.isActive())
                 return ErrorResponse
                     .unauthorized()
                     .build();
+            
+            // if account password is expired, we need to inform the user
+            if (user.isPasswordExpired()) {
+                sendPasswordExpiredEmail(request.getEmail());
+                return ErrorResponse
+                        .unauthorized()
+                        .build();
+            }
 
             // ensure the PASSWORD matches, or implement three-strikes failure policy
             if (!PASSWORD_SERVICE.passwordsMatch(request.getPassword(), user.getPassword())) {
@@ -1465,6 +1473,29 @@ public class UserServices {
             email.setHtmlMsg("<html>Your account has been automatically deactivated due to after 3 unsuccessful logon attempts.  "
                     + "<p>Please contact doecode@osti.gov as an administrator will need to reactivate your account before you "
                     + "can sign-in to DOE CODE.</html>");
+            
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Email Error: ",e);
+        }
+    }
+    
+    /**
+     * Send an email message when a User password expires.
+     * @param userEmail the user account email address
+     */
+    private static void sendPasswordExpiredEmail(String userEmail) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        try {
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOECode User Account Password Expired");
+            email.addTo(userEmail);
+            
+            email.setHtmlMsg("<html>Your account password has expired.  Please submit a forgotten password request from DOECode in order to change it.  "
+                    + "<p>Please contact doecode@osti.gov if you have any questions about this message or trouble processing any requests.</html>");
+            email.send();
             
         } catch ( EmailException e ) {
             log.error("Email Error: ",e);
