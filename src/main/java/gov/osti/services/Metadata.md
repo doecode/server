@@ -71,6 +71,68 @@ Retrieve JSON for a given metadata.  User must be authenticated and be the owner
 | 403 | Logged-in user is not permitted to access this metadata |
 | 404 | Metadata CODE ID is not on file |
 
+### /projects
+
+`GET /services/metadata/projects`
+
+Requires authenticated login.  Retrieve all metadata projects owned by the current logged-in user account in JSON format.
+
+| Response Code | Information |
+| --- | --- |
+| 200 | OK, JSON array returned |
+| 401 | Unauthorized, user login is required |
+
+> Request:
+> ```html
+> GET /doecodeapi/services/metadata/projects
+> Content-Type: application/json
+> Authorization: Basic *user-api-key*
+> ```
+> Response:
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "records":[{"code_id":234,"software_title":"Test Project", ...}, ... ] }
+> ```
+
+### /projects/pending
+
+`GET /services/metadata/projects/pending`
+
+Requires authentication, and special administrative privileges. Retrieve all metadata projects currently pending 
+approval (that is, Published records), optionally from a given *site code*.  You may specify the optional URL
+parameters of "start" (beginning row number to retrieve, from 0), "rows" (the number of rows desired at once, 0
+being all of them), and "site" (only records from a given site code).  If not specified, all rows from all sites
+are returned.
+
+Responses will contain the requested number of rows (or total if unlimited), a total count, and the starting
+row number of the request.
+
+| Response Code | Information |
+| --- | --- |
+| 200 | OK, JSON array returned |
+| 401 | Unauthorized, user login is required |
+| 403 | Forbidden, insufficient user access |
+
+> Request:
+> ```html
+> GET /doecodeapi/services/metadata/projects/pending?start=20&rows=10
+> Content-Type: application/json
+> Authorization: Basic *user-api-key*
+> ```
+> Response:
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "records":[{"code_id":234,"software_title":"Test Project", ...}, ... ],
+> "total":45, "start":20, "rows":10 }
+> ```
+
+
 ### autopopulate
 
 `GET /services/metadata/autopopulate?repo={url}`

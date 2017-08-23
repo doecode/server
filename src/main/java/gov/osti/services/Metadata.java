@@ -359,7 +359,7 @@ public class Metadata {
      * 500 - unexpected error
      *
      * @param start the starting row number (from 0)
-     * @param rows number of rows desired
+     * @param rows number of rows desired (0 is unlimited)
      * @param siteCode (optional) a SITE OWNERSHIP CODE to filter by site
      * @return JSON of a records response
      */
@@ -401,9 +401,8 @@ public class Metadata {
                 cq.setParameter("site", siteCode);
 
             long rowCount = cq.getSingleResult();
-            // rows count should be less than 100; default is 20 if not specified
+            // rows count should be less than 100 for pagination; 0 is a special case
             rows = (rows>100) ? 100 : rows;
-            rows = (0==rows) ? 20 : rows;
 
             // create a CriteriaQuery for the ROWS
             CriteriaQuery<DOECodeMetadata> rowQuery = cb.createQuery(DOECodeMetadata.class);
@@ -422,7 +421,7 @@ public class Metadata {
             if (null!=siteCode)
                 rq.setParameter("site", siteCode);
             rq.setFirstResult(start);
-            rq.setMaxResults(rows);
+            if (0!=rows) rq.setMaxResults(rows);
 
             RecordsList records = new RecordsList(rq.getResultList());
             records.setTotal(rowCount);
