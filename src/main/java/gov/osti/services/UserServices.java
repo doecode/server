@@ -176,7 +176,7 @@ public class UserServices {
     /**
      * Process login requests.
      * 
-     * JSON includes email address and one of either password or confirmation_code
+     * JSON includes email address and password OR confirmation_code
      * JWT value.  The latter is to support forgot-my-password functionality for
      * a one-time login request, as token is reset after success.
      * 
@@ -209,42 +209,52 @@ public class UserServices {
 	}
         User currentUser = null;
 
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        try {        
-            currentUser = em.find(User.class, request.getEmail());
-        } catch ( Exception e ) {
-            log.warn("Error Retrieving User",e);
-            return ErrorResponse
-                    .internalServerError(e.getMessage())
-                    .build();
-        } finally {
-            em.close();  
-        }
+        // is this a typical username + password login attempt?
+        if (null!=request.getEmail() && null!=request.getPassword()) {
+            EntityManager em = DoeServletContextListener.createEntityManager();
+            
+            try {        
+                currentUser = em.find(User.class, request.getEmail());
+            } catch ( Exception e ) {
+                log.warn("Error Retrieving User",e);
+                return ErrorResponse
+                        .internalServerError("Error processing request.")
+                        .build();
+            } finally {
+                em.close();  
+            }
         
-        // ensure the user exists and is verified / active
-        if (null==currentUser || !currentUser.isVerified() || !currentUser.isActive()) 
-            return ErrorResponse
-                    .unauthorized()
-                    .build();
-        
-        // if using a PASSWORD, ensure that matches what's on file.
-        if (null!=request.getPassword()) {
-            if (!PASSWORD_SERVICE.passwordsMatch(request.getPassword(), currentUser.getPassword()))
+            // ensure the user exists and is verified / active
+            if (null==currentUser || !currentUser.isVerified() || !currentUser.isActive()) 
                 return ErrorResponse
                     .unauthorized()
                     .build();
-        } else {
-            // check the CONFIRMATION CODE token
-            em = DoeServletContextListener.createEntityManager();
+        
+            // ensure the PASSWORD matches
+            if (!PASSWORD_SERVICE.passwordsMatch(request.getPassword(), currentUser.getPassword()))
+                return ErrorResponse
+                        .unauthorized()
+                        .build();
+        } else if (null!=request.getConfirmationCode()) {
+            // check the CONFIRMATION CODE token for the EMAIL + CODE
+            EntityManager em = DoeServletContextListener.createEntityManager();
             try {
                 Claims claims = DOECodeCrypt.parseJWT(request.getConfirmationCode());
                 String confirmationCode = claims.getId();
                 String email = claims.getSubject();
                 
+                currentUser = em.find(User.class, email);
+                
+                // user MUST be active and verified, and exist
+                if (null==currentUser || !currentUser.isActive() || !currentUser.isVerified())
+                    return ErrorResponse
+                            .unauthorized()
+                            .build();
+                
                 // if the EMAIL ADDRESS doesn't match the requesting user, it's an error
                 if (!currentUser.getEmail().equals(email))
                     return ErrorResponse
-                            .forbidden("Email did not match.")
+                            .forbidden("Confirmation code invalid.")
                             .build();
                 
                 // ensure the confirmation codes match
@@ -274,6 +284,11 @@ public class UserServices {
                 em.close();
             }
             
+        } else {
+            // no username+password OR confirmation code, bad request
+            return ErrorResponse
+                    .badRequest("Invalid login request.")
+                    .build();
         }
     
 	String xsrfToken = DOECodeCrypt.nextRandomString();

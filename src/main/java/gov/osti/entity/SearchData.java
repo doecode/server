@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 
 @JsonIgnoreProperties ( ignoreUnknown = true )
@@ -25,6 +26,9 @@ public class SearchData implements Serializable {
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(Include.NON_NULL);
+    
+    // set of special characters to be escaped before sending to SOLR
+    protected static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|\"]");
     
     private String allFields = null;
     private String softwareTitle = null;
@@ -139,6 +143,18 @@ public class SearchData implements Serializable {
 		this.sort = sort;
 	}
         
+        /**
+         * Escape SOLR special characters in search expressions.
+         * 
+         * @param in the input String
+         * @return the String with any special characters escaped
+         */
+        protected static String escape(String in) {
+            return (null==in) ? 
+                    "" :
+                    SPECIAL_REGEX_CHARS.matcher(in).replaceAll("\\\\$0");
+        }
+        
     /**
      * Translate this Bean into a SOLR query parameter set.
      * 
@@ -151,53 +167,53 @@ public class SearchData implements Serializable {
         
         if (!StringUtils.isEmpty(getAllFields())) {
             if (q.length()>0) q.append(" ");
-            q.append("_text_:(").append(getAllFields()).append(")");
+            q.append("_text_:(").append(escape(getAllFields())).append(")");
         }
         if (null!=getAccessibility()) {
             StringBuilder codes = new StringBuilder();
             for ( String code : getAccessibility()) {
                 if (codes.length()>0) codes.append(" OR ");
-                codes.append(code);
+                codes.append("accessibility:").append(code);
             }
             if ( codes.length()>0 ) {
                 if (q.length()>0) q.append(" ");
-                q.append("accessibility:(").append(codes.toString()).append(")");
+                q.append("(").append(codes.toString()).append(")");
             }
         }
         if (null!=getLicenses()) {
             StringBuilder values = new StringBuilder();
             for ( String license : getLicenses() ) {
                 if (values.length()>0) values.append(" OR ");
-                values.append("\"").append(license).append("\"");
+                values.append("licenses:\"").append(escape(license)).append("\"");
             }
             if (values.length()>0) {
                 if (q.length()>0) q.append(" ");
-                q.append("licenses:(").append(values.toString()).append(")");
+                q.append("(").append(values.toString()).append(")");
             }
         }
         if (!StringUtils.isEmpty(getBiblioData())) {
             if (q.length()>0) q.append(" ");
-            q.append("_text_:(").append(getBiblioData()).append(")");
+            q.append("_text_:(").append(escape(getBiblioData())).append(")");
         }
         if (!StringUtils.isEmpty(getDevelopersContributors())) {
             if (q.length()>0) q.append(" ");
-            q.append("_names:(").append(getDevelopersContributors()).append(")");
+            q.append("_names:(").append(escape(getDevelopersContributors())).append(")");
         }
         if (!StringUtils.isEmpty(getIdentifiers())) {
             if (q.length()>0) q.append(" ");
-            q.append("_id_numbers:(").append(getIdentifiers()).append(")");
+            q.append("_id_numbers:(").append(escape(getIdentifiers())).append(")");
         }
         if (!StringUtils.isEmpty(getResearchOrganization())) {
             if (q.length()>0) q.append(" ");
-            q.append("researchOrganization.name:(").append(getResearchOrganization()).append(")");
+            q.append("researchOrganization.name:(").append(escape(getResearchOrganization())).append(")");
         }
         if (!StringUtils.isEmpty(getSponsoringOrganization())) {
             if (q.length()>0) q.append(" ");
-            q.append("sponsoringOrganization.name:(").append(getSponsoringOrganization()).append(")");
+            q.append("sponsoringOrganization.name:(").append(escape(getSponsoringOrganization())).append(")");
         }
         if (!StringUtils.isEmpty(getSoftwareTitle())) {
             if (q.length()>0) q.append(" ");
-            q.append("softwareTitle:(").append(getSoftwareTitle()).append(")");
+            q.append("softwareTitle:(").append(escape(getSoftwareTitle())).append(")");
         }
         if (null!=getDateEarliest()) {
             if (q.length()>0) q.append(" ");

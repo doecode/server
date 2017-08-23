@@ -90,11 +90,12 @@ API calls to manage user session state; log in and out of authenticated sessions
 
  `GET /login`
 
-Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and HTTP session management.   Requests may log in via password OR confirmation code (in case of forgotten passwords) for one time token use.
+Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
 
 | HTTP Response Code | Description |
 | --- | --- |
 | 200 | OK, JSON contains XSRF token, boolean value indicating contractor status, user email address, and first and last name |
+| 400 | Bad Request, required information is missing from request |
 | 401 | Authorized, account is not valid, login failure, or not active |
 | 403 | Forbidden, confirmation or password is not valid |
 | 500 | Internal service error |
