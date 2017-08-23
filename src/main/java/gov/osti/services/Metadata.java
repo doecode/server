@@ -221,11 +221,11 @@ public class Metadata {
 
     /**
      * Look up the METADATA if possible by its codeID value, and return the
-     * result in the desired format.  Only retrieves PUBLISHED records.
+     * result in the desired format.  Only retrieves APPROVED records.
      *
      * Response Codes:
      * 200 - OK, with the JSON of the metadata
-     * 403 - access to this record is forbidden (not PUBLISHED)
+     * 403 - access to this record is forbidden (not APPROVED)
      * 404 - record is not on file
      *
      * @param codeId the Metadata codeId to look for
@@ -247,8 +247,8 @@ public class Metadata {
                         .notFound("Code ID not on file.")
                         .build();
 
-            // non-Published workflow REQUIRES authentication, not for here; use /edit
-            if (!Status.Published.equals(md.getWorkflowStatus())) {
+            // non-Approved workflow REQUIRES authentication, not for here; use /edit
+            if (!Status.Approved.equals(md.getWorkflowStatus())) {
                 return ErrorResponse
                         .forbidden("Access to record denied.")
                         .build();
@@ -320,7 +320,7 @@ public class Metadata {
     @Path ("/projects")
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
-    public Response load() throws JsonProcessingException {
+    public Response listProjects() throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
         // get the security user in context

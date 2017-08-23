@@ -56,13 +56,13 @@ public class DOECodeCrypt {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.MINUTE, 30);
 		
-		Cookie cookie = new Cookie("accessToken", accessToken, "/", "");
+		Cookie cookie = new Cookie("accessToken", accessToken, "/", null);
 
 		return new NewCookie(cookie, "", 60*30, c.getTime(),false,true);
 	}
         
         public static NewCookie invalidateCookie() {
-            Cookie cookie = new Cookie("accessToken", "", "/", "");
+            Cookie cookie = new Cookie("accessToken", "", "/", null);
             
             return new NewCookie(cookie, "", 0, new Date(), false, true);
             

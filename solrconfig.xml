@@ -816,9 +816,9 @@
       <str name="indent">true</str>
       <str name="q.op">AND</str>
     </lst>
-    <!-- return only PUBLISHED records -->
+    <!-- return only APPROVED records -->
     <lst name="appends">
-      <str name="fq">workflowStatus:Published</str>
+      <str name="fq">workflowStatus:Approved</str>
     </lst>
   </requestHandler>
 

@@ -28,13 +28,13 @@ Service Endpoints
 Information retrieval API for obtaining records already posted to DOECode or
 general repository information.
 
-### read published record
+### read approved record
 
 `GET /{codeId}`
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
 Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Only retrieves
-PUBLISHED records.
+APPROVED records.
 
 > Request:
 > ```html
@@ -55,7 +55,7 @@ PUBLISHED records.
 | Response Code | Information |
 | --- | --- |
 | 200 | OK, response includes JSON |
-| 403 | Access to unpublished metadata is not permitted |
+| 403 | Access to unapproved metadata is not permitted |
 
 ### /edit/{codeId}
 
@@ -294,6 +294,44 @@ be submitted to DOE.  Additional validations are required for final submission:
 | 400 | One or more validation errors occurred during publication, error information in the response. |
 | 401 | Authentication is required to POST |
 | 403 | User is not permitted to alter this record |
+| 500 | Persistence layer error or unable to process JSON submission information. |
+
+### approve
+
+`GET /services/metadata/approve?code_id={code_id}`
+
+Requires authentication and administrative user access.  Marks a currently Published record as Approved for dissemination and search.  Provide the
+code ID value of the Published record in order to approve access.  Approved records are available for searching from the Search Services endpoints.
+
+> Request:
+> ```html
+> GET /services/metadata/approve?code_id=234
+> Content-Type: application/json
+> Authorization: Basic user-api-key
+> ```
+> Response:
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "metadata" : { "code_id" : 234, "software_title" : "Sample Approved Record", ... } }
+> ```
+> Error Response:
+> ```html
+> HTTP/1.1 400 BAD REQUEST
+> Content-Type: application/json
+> ```
+> ```json
+> { "status" : 400, "errors":[ "Metadata is not in the Published workflow state." ] }
+> ```
+
+| HTTP Response Code | Information |
+| --- | --- |
+| 200 | Metadata approved for dissemination and search. |
+| 400 | One or more validation errors occurred during approval, or metadata is not in the Published state |
+| 401 | Authentication is required |
+| 403 | User is not permitted to approve this record |
 | 500 | Persistence layer error or unable to process JSON submission information. |
 
 DOECode Metadata
