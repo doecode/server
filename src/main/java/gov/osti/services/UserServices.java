@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 
 import javax.persistence.TypedQuery;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.PathParam;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.subject.Subject;
@@ -129,6 +130,47 @@ public class UserServices {
                 .status(Response.Status.OK)
                 .entity(mapper.createObjectNode().put("status", "success").toString())
                 .build();
+    }
+    
+    /**
+     * Endpoint to determine if logged-in User exists and has the indicated
+     * ROLE.
+     * 
+     * Response Codes:
+     * 200 - OK, logged in User has this ROLE
+     * 400 - Bad Request, role is missing
+     * 401 - User is not logged in
+     * 403 - User DOES NOT have the indicated ROLE
+     * 
+     * @param role the ROLE CODE to check
+     * @return OK Response only if session User is logged in and an administrative role
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.TEXT_HTML})
+    @Path("/hasrole/{role}")
+    @RequiresAuthentication
+    public Response hasRole(@PathParam("role") String role) {
+        // see if the logged-in User has the indicated ROLE
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+        
+        // no role indicated?
+        if (null==role)
+            return ErrorResponse
+                    .badRequest("Missing required attribute.")
+                    .build();
+        
+        // user has no roles?
+        if (null==user.getRoles())
+            return ErrorResponse
+                    .forbidden("Role not found.")
+                    .build();
+        
+        // return OK if the user has this role, or FORBIDDEN if they do not
+        return (user.getRoles().contains(role)) ?
+                Response.ok().entity(mapper.createObjectNode().put("status", "success").toString()).build() :
+                ErrorResponse.forbidden("Invalid role.").build();
     }
 
     /**
@@ -282,6 +324,7 @@ public class UserServices {
 	String accessToken = DOECodeCrypt.generateLoginJWT(user.getApiKey(), xsrfToken);
 	NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
 	
+        try {
         return Response
                 .status(Response.Status.OK)
                 .entity(mapper
@@ -291,9 +334,16 @@ public class UserServices {
                         .put("email", user.getEmail())
                         .put("first_name", user.getFirstName())
                         .put("last_name", user.getLastName())
+                        .put("roles", mapper.writeValueAsString(user.getRoles()))
                         .toString())
                 .cookie(cookie)
                 .build();
+        } catch ( JsonProcessingException e ) {
+            log.warn("JSON Error logging in " + request.getEmail(), e);
+            return ErrorResponse
+                    .internalServerError("Unable to process login information.")
+                    .build();
+        }
     }
     
     /**

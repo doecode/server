@@ -421,14 +421,17 @@ public class DataCite {
     }
     
     /**
-     * Determine whether or not this DOI belongs to this CODE ID value.  If not
-     * already on file, attempt to register to this CODE ID.  If found, ensure
-     * CODE ID values match before allowing registration.
+     * Determine whether or not the indicated METADATA record is registered to
+     * that DOI.
      * 
-     * @param m the DOECodeMetadata to check
-     * @return true if registration should proceed, false if not
+     * If there's no DOI registered, consider this OPEN and available to be taken
+     * by this CODE ID.  If a DOI IS registered, it MUST be the same CODE ID
+     * in order to be accepted.
+     * 
+     * @param m the METADATA record
+     * @return true if DOI is available OR owned by this METADATA, false if not
      */
-    private static boolean verifyOrRegisterDoi(DOECodeMetadata m) {
+    public static final boolean verifyDoiOwnership(DOECodeMetadata m) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
@@ -436,36 +439,51 @@ public class DataCite {
                     .setParameter("doi", m.getDoi());
             List<DoiStatus> results = query.getResultList();
             
-            if (results.isEmpty()) {
-                // register this one now
-                DoiStatus status = new DoiStatus();
-                status.setDoi(m.getDoi());
-                status.setCodeId(m.getCodeId());
-                
-                // persist this value to the database
-                em.getTransaction().begin();
-                em.persist(status);
-                em.getTransaction().commit();
-                
-            } else {
-                // get the first one
-                DoiStatus status = results.get(0);
-                
-                // if this DOI doesn't belong here, return false
-                if (!status.getCodeId().equals(m.getCodeId())) {
-                    log.warn("DOI " + m.getDoi() + " registered to another project.");
-                    return false;
-                }
-            }
+            // DOI is NOT currently registered to anyone, OPEN
+            if (results.isEmpty())
+                return true;
             
-        } catch ( Exception e ) {
-            log.warn("Unable to check DOI owner: ",e);
-            return false;
+            // get to whom it IS registered
+            DoiStatus status = results.get(0);
+            
+            // if this CODE ID belongs to the REGISTRATION, we are OK
+            // otherwise, return FALSE
+            return (status.getCodeId().equals(m.getCodeId()));
         } finally {
             em.close();
         }
-        // should be OK to proceed, DOI status is registered to this metadata
-        return true;
+    }
+    
+    /**
+     * Attempt to associate the DOI with the CODE ID in this Metadata.  If record
+     * is NOT available, or belongs to another CODE ID, abort and error.
+     * 
+     * Will be up to the caller to roll back any transactions.
+     * 
+     * @param em the EntityManager context in which to persist (for transactions)
+     * @param m the DOECodeMetadata to register
+     * @return true if registration was successful, false if not
+     */
+    protected static boolean registerDoiStatus(EntityManager em, DOECodeMetadata m) {
+        
+        try {
+            if (verifyDoiOwnership(m)) {
+                // we should be able to MERGE or PERSIST
+                DoiStatus status = new DoiStatus();
+                status.setDoi(m.getDoi());
+                status.setCodeId(m.getCodeId());
+
+                em.merge(status);
+            }
+            // we succeeded
+            return true;
+        } catch ( Exception e ) {
+            log.warn("JPA Error registering " + m.getDoi() + " for " + m.getCodeId(),e);
+        }
+        // warn and abort
+        log.warn("DOI " + m.getDoi() + " not available for registration.");
+
+        return false;
     }
     
     /**
@@ -474,11 +492,12 @@ public class DataCite {
      * If DataCite information is not configured, or the register contains no
      * DOI value, this call is skipped.
      * 
+     * @param em the EntityManager containing the transaction to use
      * @param m the DOECodeMetadata object to register
      * @return true if successful, false if not
      * @throws IOException on HTTP transmission errors
      */
-    public static boolean register(DOECodeMetadata m) throws IOException {
+    public static boolean register(EntityManager em, DOECodeMetadata m) throws IOException {
         // if not configured, ignore this call
         if ("".equals(DATACITE_LOGIN))
             return true;
@@ -490,11 +509,18 @@ public class DataCite {
         // do we know this prefix?
         if (!m.getDoi().startsWith(DATACITE_PREFIX))
             return true;
-        // if we've registered this prefix before, does it belong to this record?
-        if (!verifyOrRegisterDoi(m))
+        
+        // check to make sure we can proceed ( SHOULD NOT BE REGISTERED ELSEWHERE )
+        if (!verifyDoiOwnership(m))
             return false;
         
         // try the registration, returning success or failure
-        return (registerMetadata(m) && registerDoi(m));
+        if (registerMetadata(m) && registerDoi(m)) {
+            // register DOI ownership
+            return registerDoiStatus(em, m);
+        } else {
+            // registration processing failed
+            return false;
+        }
     }
 }

@@ -54,6 +54,34 @@ Date: Mon, 14 Aug 2017 14:55:04 GMT
 {"email":"useremail@domain.com"}
 ```
 
+### hasrole
+
+`GET /role/{role}`
+
+Authenticated end point, determines whether or not the currently logged-in User has
+the specified role code.
+
+| Response Code | Description |
+| --- | --- |
+| 200 | OK, User does have the indicated ROLE |
+| 401 | User is not currently logged in |
+| 403 | User DOES NOT have the indicated ROLE |
+
+> Request:
+> ```html
+> GET /doecodeapi/services/user/hasrole/ROLE
+> Content-Type: application/json
+> Authorization: Basic myapikey
+> ```
+> Response:
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "status":"success" }
+> ```
+
 ### getsitecode
 
 `POST /getsitecode`
@@ -122,6 +150,7 @@ Content-Type: application/json
 {"email":"myaccount@domain.com",
  "xsrfToken":"some-token-value",
  "hasSite":false,
+ "roles":["role1", "role2"],
  "first_name":"User",
  "last_name":"Name"}
 ```
