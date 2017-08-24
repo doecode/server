@@ -30,6 +30,7 @@ should be sent to the back-end.  The "value" attribute may be assumed to be
 unique within each list.
 
 | Response Code | Description |
+| --- | --- |
 | 200 | OK, JSON containing value lists is returned |
 
 ### contributortypes
