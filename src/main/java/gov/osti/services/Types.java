@@ -25,6 +25,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +59,12 @@ public class Types {
      * Creates a new instance of TypeService
      */
     public Types() {
+    }
+    
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public Viewable getDocumentation() {
+        return new Viewable("/types");
     }
     
     @GET

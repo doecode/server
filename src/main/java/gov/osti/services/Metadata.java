@@ -1218,18 +1218,18 @@ public class Metadata {
      * @param m the Metadata information to validate
      * @return a List of error messages if any validation errors, empty if none
      */
-    private static List<String> validatePublished(DOECodeMetadata m) {
+    protected static List<String> validatePublished(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
         if (null==m.getAccessibility())
             reasons.add("Missing Source Accessibility.");
-        if (StringUtils.isBlank(m.getRepositoryLink()) && StringUtils.isBlank(m.getLandingPage()))
-            reasons.add("Either a repository link or landing page is required.");
         if (StringUtils.isBlank(m.getSoftwareTitle()))
             reasons.add("Software title is required.");
         if (StringUtils.isBlank(m.getDescription()))
             reasons.add("Description is required.");
         if (null==m.getLicenses())
             reasons.add("A License is required.");
+        else if (m.getLicenses().contains(DOECodeMetadata.License.Other.value()) && StringUtils.isBlank(m.getProprietaryUrl()))
+            reasons.add("Proprietary License URL is required.");
         if (null==m.getDevelopers() || m.getDevelopers().isEmpty())
             reasons.add("At least one developer is required.");
         else {
@@ -1267,7 +1267,7 @@ public class Metadata {
      * @param m the Metadata to check
      * @return a List of submission validation errors, empty if none
      */
-    private static List<String> validateSubmit(DOECodeMetadata m) {
+    protected static List<String> validateSubmit(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
         // get all the PUBLISHED reasons, if any
         reasons.addAll(validatePublished(m));

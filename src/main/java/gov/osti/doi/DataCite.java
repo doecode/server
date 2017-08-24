@@ -217,8 +217,8 @@ public class DataCite {
         
         for ( RelatedIdentifier identifier : identifiers ) {
             sw.writeStartElement("relatedIdentifier");
-            sw.writeAttribute("relatedIdentifierType", identifier.getIdentifierType().getName());
-            sw.writeAttribute("relationType", identifier.getRelationType().getName());
+            sw.writeAttribute("relatedIdentifierType", identifier.getIdentifierType().name());
+            sw.writeAttribute("relationType", identifier.getRelationType().name());
             sw.writeCharacters(identifier.getIdentifierValue());
             sw.writeEndElement();
         }
