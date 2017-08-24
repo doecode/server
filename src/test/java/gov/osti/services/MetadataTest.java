@@ -40,7 +40,7 @@ public class MetadataTest {
     @After
     public void tearDown() {
     }
-
+    
     /**
      * Test that PUBLISHED VALIDATIONS work.
      */

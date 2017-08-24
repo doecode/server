@@ -23,6 +23,8 @@ import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.Developer;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.ResearchOrganization;
+import gov.osti.entity.SearchDocument;
+import gov.osti.entity.SearchResult;
 import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
@@ -32,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -65,7 +68,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -112,6 +117,7 @@ public class Metadata {
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
 
+    private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
@@ -142,7 +148,7 @@ public class Metadata {
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     // ObjectMapper specifically for indexing purposes
-    private static final ObjectMapper index_mapper = new ObjectMapper()
+    protected static final ObjectMapper index_mapper = new ObjectMapper()
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     static {
         // customized serializer module for Agent names consolidation
@@ -218,65 +224,83 @@ public class Metadata {
                 .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                 .build();
     }
-
+    
     /**
-     * Look up the METADATA if possible by its codeID value, and return the
-     * result in the desired format.  Only retrieves APPROVED records.
-     *
+     * Acquire information from the searching index if possible.  This endpoint
+     * should ONLY return Approved records that have been indexed for searching.
+     * Requires that searching be configured.
+     * 
      * Response Codes:
-     * 200 - OK, with the JSON of the metadata
-     * 403 - access to this record is forbidden (not APPROVED)
-     * 404 - record is not on file
-     *
-     * @param codeId the Metadata codeId to look for
-     * @param format optionally specify the requested output format (JSON is the
-     * default, or "text/yaml" if YAML desired)
-     * @return the Metadata information in the desired format
+     * 200 - OK, record found, and returned in desired format
+     * 206 - No content, searching is not configured/unavailable
+     * 404 - Record was not found
+     * 500 - IO error or search malformed
+     * 
+     * @param codeId the CODE ID to find
+     * @param format the desired FORMAT (json or yaml; json is the default)
+     * @return the record in the desired format, if found
      */
     @GET
-    @Path ("{codeId}")
+    @Path("{codeId}")
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
-    public Response load(@PathParam ("codeId") Long codeId, @QueryParam ("format") String format) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-
+    public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
+        // no search configured, you get nothing
+        if ("".equals(SEARCH_URL))
+            return Response
+                    .status(Response.Status.NO_CONTENT)
+                    .build();
+        CloseableHttpClient hc = HttpClientBuilder
+                .create()
+                .build();
+        
         try {
-            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+            // construct a Search for a single CODEID value
+            URIBuilder builder = new URIBuilder(SEARCH_URL)
+                .addParameter("q", "codeId:" + codeId)
+                .addParameter("fl", "json")
+                .addParameter("rows", "1");
+        
+            HttpGet get = new HttpGet(builder.build());
 
-            if ( null==md )
-                return ErrorResponse
-                        .notFound("Code ID not on file.")
+            HttpResponse response = hc.execute(get);
+
+            if (HttpStatus.SC_OK==response.getStatusLine().getStatusCode()) {
+                SearchResult result = mapper.readValue(EntityUtils.toString(response.getEntity()), SearchResult.class);
+
+                if (result.getSearchResponse().isEmpty())
+                    return ErrorResponse
+                            .notFound("No records found.")
+                            .build();
+                // get the first result
+                SearchDocument doc = result.getSearchResponse().getDocuments()[0];
+                // convert it to a POJO
+                DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(doc.getJson()));
+
+                // if YAML is requested, return that; otherwise, default to JSON
+                if ("yaml".equals(format)) {
+                    // return the YAML
+                    return
+                        Response
+                        .status(Response.Status.OK)
+                        .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
+                        .entity(HttpUtil.writeMetadataYaml(md))
                         .build();
-
-            // non-Approved workflow REQUIRES authentication, not for here; use /edit
-            if (!Status.Approved.equals(md.getWorkflowStatus())) {
-                return ErrorResponse
-                        .forbidden("Access to record denied.")
+                } else {
+                    // send back the JSON
+                    return Response
+                        .status(Response.Status.OK)
+                        .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                         .build();
-            }
-
-            // if YAML is requested, return that; otherwise, default to JSON
-            if ("yaml".equals(format)) {
-                // return the YAML
-                return
-                    Response
-                    .status(Response.Status.OK)
-                    .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                    .entity(HttpUtil.writeMetadataYaml(md))
-                    .build();
+                }
             } else {
-                // send back the JSON
                 return Response
-                    .status(Response.Status.OK)
-                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
-                    .build();
+                        .status(response.getStatusLine().getStatusCode())
+                        .entity("Search Error: " + EntityUtils.toString(response.getEntity()))
+                        .build();
             }
-        } catch ( IOException e ) {
-            log.warn("YAML exception: " + e.getMessage());
-            return ErrorResponse
-                    .internalServerError("Output conversion error.")
-                    .build();
-        } finally {
-            em.close();
+        } catch ( IOException | URISyntaxException e ) {
+            log.warn("Searching Error.", e);
+            return ErrorResponse.internalServerError("Search error encountered.").build();
         }
     }
 
@@ -669,7 +693,10 @@ public class Metadata {
             HttpPost post = new HttpPost(INDEX_URL);
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
-            post.setEntity(new StringEntity(index_mapper.writeValueAsString(md)));
+            // add JSON String to index for later display/search
+            ObjectNode node = (ObjectNode)index_mapper.valueToTree(md);
+            node.put("json", md.toJson().toString());
+            post.setEntity(new StringEntity(node.toString()));
             
             HttpResponse response = hc.execute(post);
 

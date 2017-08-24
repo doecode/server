@@ -507,4 +507,7 @@
   <!-- developer and contributor names accumulation -->
   <copyField source="developers.name" dest="_names"/>
   <copyField source="contributors.name" dest="_names"/>
+  
+  <!-- persistence object reference -->
+  <field name="json" indexed="false" stored="true" type="string"/>
 </schema>
