@@ -55,6 +55,42 @@ public class DOECodeMetadata implements Serializable {
         CS
     }
     
+    /**
+     * Enumerate known or accepted license values.
+     */
+    public enum License {
+        Other("Other", "Other"),
+        Apache("Apache License 2.0", "Apache License 2.0"),
+        GNU3("GNU General Public License v3.0","GNU General Public License v3.0"),
+        MIT("MIT License", "MIT License"),
+        BSD2("BSD 2-clause \"Simplified\" License", "BSD 2-clause \"Simplified\" License"),
+        BSD3("BSD 3-clause \"New\" or \"Revised\" License","BSD 3-clause \"New\" or \"Revised\" License"),
+        Eclipse1("Eclipse Public License 1.0","Eclipse Public License 1.0"),
+        GNUAffero3("GNU Affero General Public License v3.0","GNU Affero General Public License v3.0"),
+        GNUpublic2("GNU General Public License v2.0","GNU General Public License v2.0"),
+        GNUpublic21("GNU General Public License v2.1","GNU General Public License v2.1"),
+        GNUlesser21("GNU Lesser General Public License v2.1","GNU Lesser General Public License v2.1"),
+        GNUlesser3("GNU Lesser General Public License v3.0","GNU Lesser General Public License v3.0"),
+        MOZ2("Mozilla Public License 2.0","Mozilla Public License 2.0"),
+        Unlicense("The Unlicense", "The Unlicense");
+        
+        private final String label;
+        private final String value;
+        
+        private License(String label, String value) {
+            this.label =label;
+            this.value =value;
+        }
+        
+        public String value() {
+            return this.value;
+        }
+        
+        public String label() {
+            return this.label;
+        }
+    }
+    
     // Attributes
     private Long codeId;
     private String siteOwnershipCode = null;

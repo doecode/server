@@ -25,27 +25,37 @@ public class Contributor extends Agent {
      * Static Type of Contributor.  Based on DataCite accepted mapping values.
      */
     public enum Type {
-        ContactPerson,
-        DataCollector, 
-        DataCurator,  
-        DataManager,  
-        Distributor, 
-        Editor, 
-        HostingInstitution,
-        Producer,
-        ProjectLeader,
-        ProjectManager, 
-        ProjectMember,
-        RegistrationAgency,
-        RegistrationAuthority,
-        RelatedPerson,
-        Researcher,
-        ResearchGroup,
-        RightsHolder,
-        Sponsor,
-        Supervisor,
-        WorkPackageLeader,
-        Other 
+        ContactPerson("Contact Person"),
+        DataCollector("Data Collector"), 
+        DataCurator("Data Curator"),  
+        DataManager("Data Manager"),  
+        Distributor("Distributor"), 
+        Editor("Editor"), 
+        HostingInstitution("Hosting Institution"),
+        Producer("Producer"),
+        ProjectLeader("Project Leader"),
+        ProjectManager("Project Manager"), 
+        ProjectMember("Project Member"),
+        RegistrationAgency("Registration Agency"),
+        RegistrationAuthority("Registration Authority"),
+        RelatedPerson("Related Person"),
+        Researcher("Researcher"),
+        ResearchGroup("Research Group"),
+        RightsHolder("Rights Holder"),
+        Sponsor("Sponsor"),
+        Supervisor("Supervisor"),
+        WorkPackageLeader("Work Package Leader"),
+        Other("Other");
+        
+        private final String label;
+        
+        private Type(String label) {
+            this.label = label;
+        }
+        
+        public String label() {
+            return this.label;
+        }
     }
     private Type contributorType;
     private List<String> affiliations;

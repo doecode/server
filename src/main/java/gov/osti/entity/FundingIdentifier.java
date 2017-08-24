@@ -17,12 +17,18 @@ import javax.persistence.Enumerated;
 @JsonIgnoreProperties ( ignoreUnknown = true )
 public class FundingIdentifier implements Serializable {
     public enum Type {
-        AwardNumber,
-        BRCode,
-        FWPNumber;
+        AwardNumber("Award Number"),
+        BRCode("BR Code"),
+        FWPNumber("FWP Number");
         
-        public String getName() {
-            return this.name();
+        private final String label;
+        
+        private Type(String label) {
+            this.label = label;
+        }
+        
+        public String label() {
+            return this.label;
         }
     }
     // attributes

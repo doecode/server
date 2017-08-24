@@ -21,45 +21,57 @@ public class RelatedIdentifier implements Serializable {
      * Enumeration of valid Types for an Identifier.
      */
     public enum Type implements Serializable {
-        DOI,
-        URL;
+        DOI("DOI"),
+        URL("URL");
         
-        public String getName() {
-            return this.name();
+        private final String label;
+        
+        private Type(String label) {
+            this.label =label;
+        }
+        
+        public String label() {
+            return this.label;
         }
     }
     /**
      * Enumeration of valid Relationship Types for Identifier.
      */
     public enum RelationType implements Serializable {
-        IsCitedBy,
-        Cites, 
-        IsSupplementTo,
-        IsSupplementedBy,
-        IsContinuedBy, 
-        Continues, 
-        HasMetadata, 
-        IsMetadataFor, 
-        IsNewVersionOf, 
-        IsPreviousVersionOf, 
-        IsPartOf, 
-        HasPart, 
-        IsReferencedBy,
-        References, 
-        IsDocumentedBy, 
-        Documents, 
-        IsCompiledBy, 
-        Compiles, 
-        IsVariantFormOf, 
-        IsOriginalFormOf, 
-        IsIdenticalTo, 
-        IsReviewedBy, 
-        Reviews, 
-        IsDerivedFrom, 
-        IsSourceOf;
+        IsCitedBy("Is Cited By"),
+        Cites("Cites"), 
+        IsSupplementTo("Is Supplement To"),
+        IsSupplementedBy("Is Supplemented By"),
+        IsContinuedBy("Is Continued By"), 
+        Continues("Continues"), 
+        HasMetadata("Has Metadata"), 
+        IsMetadataFor("Is Metadata For"), 
+        IsNewVersionOf("Is New Version Of"), 
+        IsPreviousVersionOf("Is Previous Version Of"), 
+        IsPartOf("Is Part Of"), 
+        HasPart("Has Part"), 
+        IsReferencedBy("Is Referenced By"),
+        References("References"), 
+        IsDocumentedBy("Is Documented By"), 
+        Documents("Documents"), 
+        IsCompiledBy("Is Compiled By"), 
+        Compiles("Compiles"), 
+        IsVariantFormOf("Is Variant Form Of"), 
+        IsOriginalFormOf("Is Original Form Of"), 
+        IsIdenticalTo("Is Identical To"), 
+        IsReviewedBy("Is Reviewed By"), 
+        Reviews("Reviews"), 
+        IsDerivedFrom("Is Derived From"), 
+        IsSourceOf("Is Source Of");
         
-        public String getName() {
-            return this.name();
+        private String label;
+        
+        private RelationType(String label) {
+            this.label = label;
+        }
+        
+        public String label() {
+            return this.label;
         }
     }
 

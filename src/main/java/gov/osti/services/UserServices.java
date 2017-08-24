@@ -1373,6 +1373,7 @@ public class UserServices {
             currentUser.setVerified(true);
             currentUser.setActive(true);
             currentUser.setConfirmationCode("");
+            currentUser.setDatePasswordChanged(); // NOT expired!
 
             em.getTransaction().begin();
 
