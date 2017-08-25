@@ -846,7 +846,7 @@ public class Metadata {
 
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
-                if ( !DataCite.register(em, md) ) {
+                if ( !DataCite.register(md) ) {
                     log.warn("DataCite registration failed for " + md.getDoi());
                     throw new IOException ("DOI registration failed.");
                 }
@@ -967,7 +967,7 @@ public class Metadata {
                     }
                     // if appropriate, register or update the DOI with DataCite
                     if ( null!=md.getDoi() ) {
-                        if ( !DataCite.register(em, md) ) {
+                        if ( !DataCite.register(md) ) {
                             log.warn("DataCite DOI registration failed.");
                             throw new IOException ("DOI registration failed.");
                         }

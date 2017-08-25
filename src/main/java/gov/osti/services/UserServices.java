@@ -380,6 +380,11 @@ public class UserServices {
                     .build();
         
         try {
+            // not a valid email?
+            if (!Validation.isValidEmail(request.getEmail()))
+                return ErrorResponse
+                        .badRequest("Not a valid email address.")
+                        .build();
             // assign as SITE if possible based on the EMAIL, or default to CONTRACTOR
             String domain = request.getEmail().substring(request.getEmail().indexOf("@"));
             TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);

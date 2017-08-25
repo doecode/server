@@ -26,6 +26,8 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.Temporal;
 import org.slf4j.Logger;
@@ -34,6 +36,9 @@ import org.slf4j.LoggerFactory;
 @Entity
 @Table(name="metadata")
 @JsonIgnoreProperties (ignoreUnknown = true)
+@NamedQueries ({
+    @NamedQuery (name = "DOECodeMetadata.findByDoi", query = "SELECT m FROM DOECodeMetadata m WHERE m.doi = :doi")
+})
 public class DOECodeMetadata implements Serializable {
     /**
 	 * 
