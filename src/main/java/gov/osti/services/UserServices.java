@@ -268,7 +268,7 @@ public class UserServices {
             if (user.isPasswordExpired()) {
                 sendPasswordExpiredEmail(request.getEmail());
                 return ErrorResponse
-                        .unauthorized()
+                        .unauthorized("Password is expired.")
                         .build();
             }
 
@@ -597,18 +597,23 @@ public class UserServices {
                         .badRequest("Invalid account in request.")
                         .build();
             
-            // create a new CONFIRMATION CODE
-            String confirmationCode = DOECodeCrypt.nextUniqueString();
-            
-            // store it
-            em.getTransaction().begin();
-            
-            user.setConfirmationCode(confirmationCode);
-            
-            em.getTransaction().commit();
-            
-            // send an EMAIL
-            sendForgotPassword(user.getConfirmationCode(), user.getEmail());
+            // if account is locked out, send that message instead
+            if (!user.isActive()) {
+                sendLockedAccountEmail(request.getEmail());
+            } else {
+                // create a new CONFIRMATION CODE
+                String confirmationCode = DOECodeCrypt.nextUniqueString();
+
+                // store it
+                em.getTransaction().begin();
+
+                user.setConfirmationCode(confirmationCode);
+
+                em.getTransaction().commit();
+
+                // send an EMAIL
+                sendForgotPassword(user.getConfirmationCode(), user.getEmail());
+            }
             // return OK
             return Response
                     .ok()
