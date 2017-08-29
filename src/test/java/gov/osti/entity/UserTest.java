@@ -4,14 +4,7 @@ package gov.osti.entity;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Month;
-import java.time.ZoneId;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalUnit;
 import java.util.Date;
-import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,16 +35,6 @@ public class UserTest {
     
     @After
     public void tearDown() {
-    }
-    
-    @Test
-    public void testDefaults() {
-        User user = new User();
-        
-        assertFalse ("Blank user should not be verified", user.isVerified());
-        assertFalse ("Blank user should not be active", user.isActive());
-        assertTrue  ("Empty user should be expired", user.isPasswordExpired());
-        assertEquals("Should be no strikes", 0, user.getFailedCount());
     }
     
     /**

@@ -84,7 +84,7 @@ the specified role code.
 
 ### getsitecode
 
-`POST /getsitecode`
+`GET /getsitecode/{email}`
 
 Determine the site code associated with a given email address, or whether or not it will be considered a "Contractor" ("CONTR") account.
 
@@ -94,13 +94,8 @@ Determine the site code associated with a given email address, or whether or not
 
 > Request:
 ```html
-POST /doecodeapi/services/user/getsitecode
-Content-Type: application/json
+GET /doecodeapi/services/user/getsitecode/myaddress@domain.com
 ```
-```json
-{ "email":"myaddress@domain.com" }
-```
-
 > Response:
 ```
 HTTP/1.1 200 OK
@@ -116,7 +111,7 @@ API calls to manage user session state; log in and out of authenticated sessions
 
 ### login
 
- `GET /login`
+ `POST /login`
 
 Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
 Repeated login attempts via password authentication WILL result in the account being locked. 
@@ -300,13 +295,21 @@ Modify current user login first and last name attributes.  Requires authenticati
 | 500 | Internal service error |
 
 > Request:
-```
-POST /doecodeapi/services/user/update
-Content-Type: application/json
-```
-```json
-{ "first_name":"Some", "last_name":"User" }
-```
+> ```
+> POST /doecodeapi/services/user/update
+> Content-Type: application/json
+> ```
+> ```json
+> { "first_name":"Some", "last_name":"User" }
+> ```
+> Response:
+> ```
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "email":"youremail@domain.com","first_name":"Some","last_name":"User" }
+> ```
 
 ### changepassword
 
@@ -364,87 +367,56 @@ Content-Type: application/json
 {"requests":[{"user":"useraccount", "roles":["one", "two"]}, {"user":"usertwo", "roles":["role"]}]}
 ```
 
-### admin
+### get user information
 
-`POST /admin`
+`GET /{email}`
 
-Requires authentication, and administrative role user.  Activate or deactivate an indicated user account by email address, preventing or allowing login or API access.
+Requires administrative access.  Retrieve User information based on email address
+in JSON.
+
+### get all users
+
+`GET /users`
+
+Requires administrative access.  Returns array of all User account information.
+
+### update (admin)
+
+`POST /update/{email}`
+
+Modify another user's account information.  Requires administrative access.  JSON
+sent should contain only the attributes you wish to change.  Anything not specified
+will remain the same.  Requests to change password must also contain a "confirm_password"
+attribute matching the requested password, which must also conform to any password
+validation rules to be accepted.
+
+On success, JSON containing the updated User account information is returned.
 
 | HTTP Response Code | Description |
 | --- | --- |
-| 200 | OK, state processed, JSON containing email address and current state returned |
-| 401 | User account not logged in |
-| 403 | Access is forbidden |
-| 404 | User email not on file |
+| 200 | OK, account attributes updated |
+| 400 | Unable to process JSON request, or password failure |
+| 401 | User is not logged in |
+| 403 | Logged in user does not have administrative access |
+| 404 | User account is not on file |
 | 500 | Internal service error |
 
 > Request:
-```
-POST /doecodeapi/services/user/admin
-Content-Type: application/json
-```
-```json
-{ "email":"user@account.com", "activate":false }
-```
-
+> ```html
+> POST /doecodeapi/services/user/update/myaccount@domain.com
+> Content-Type: application/json
+> ```
+> ```json
+> { "first_name":"Testing", "last_name":"Person", "active":false }
+> ```
 > Response:
-```
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
-```json
-{ "email":"user@account.com", "active":false }
-```
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "email":"myaccount@domain.com", "first_name":"Testing", "last_name":"Person", "active":false, 
+> "verified":true, "date_record_added":"2017-08-02", "date_record_updated":"2017-08-03",
+> "date_password_changed":"2017-08-03","failed_count":0 }
+> ```
 
-### approve
-
-`POST /approve`
-
-Requires authentication, and administrative roles.  Approve pending user request for roles to be added to a user account.
-
-| HTTP Response Code | Description |
-| --- | --- |
-| 200 | OK, JSON contains "success":"success" response |
-| 401 | Unauthorized, user is not logged in |
-| 403 | Forbidden, insufficient privileges to access function |
-| 500 | Unexpected or system error occurred |
-
-> Request:
-```
-POST /doecodeapi/services/user/approveroles
-Content-Type: application/json
-```
-```json
-{"email":"address@approved.com"}
-```
-
-> Response:
-```
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
-```json
-{"success":"success"}
-```
-
-### disapprove
-
-`POST /disapprove`
-
-Requires authentication and administrative roles to access.  Denies requested user roles pending approval.  Pass in user email for account information to deny role requests.
-
-| HTTP Response Code | Description |
-| --- | --- |
-| 200 | OK, JSON contains "success":"success" response |
-| 401 | Unauthorized, user is not logged in |
-| 403 | Forbidden, insufficient privileges to access function |
-| 500 | Unknown or internal server error occurred |
-
-> Request:
-```
-POST /doecodeapi/services/user/disapprove
-Content-Type: application/json
-```
-```json
-{"email":"disapprove@domain.com"}
-```

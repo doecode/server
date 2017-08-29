@@ -197,8 +197,8 @@ this operation will be returned.
 Validation rules are:
 
 * source accessibility is required:
-  * "OS" (Open Source), also requires a valid accessible repository link
-  * "ON" (Open Source, Not Publically Available), requires a landing page
+  * "OS" (Open Source, publicly available repository), also requires a valid accessible repository link
+  * "ON" (Open Source, No publicly available repository), requires a landing page
   * "CS" (Closed Source), also requires a landing page
 * software title
 * description

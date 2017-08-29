@@ -8,10 +8,15 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
 @Table(name="sites")
+@NamedQueries ({
+    @NamedQuery (name = "Site.findByDomain", query = "SELECT s FROM Site s JOIN s.emailDomains d WHERE d = :domain")
+})
 public class Site implements Serializable {
 
 	

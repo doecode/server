@@ -1,14 +1,8 @@
 package gov.osti.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
@@ -18,6 +12,8 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
@@ -26,6 +22,10 @@ import javax.persistence.TemporalType;
 
 @Entity
 @Table(name="users")
+@NamedQueries ({
+    @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u"),
+    @NamedQuery (name = "User.findUser", query = "SELECT u FROM User u WHERE u.email=:email")
+})
 public class User implements Serializable {
     
     // number of days before password is considered to be expired
@@ -40,6 +40,10 @@ public class User implements Serializable {
             this.apiKey = apiKey;
             this.email = email;
             this.confirmationCode = confirmationCode;
+            // new users are blank slate
+            this.failedCount = 0;
+            this.active = false;
+            this.verified = false;
     }
     
     // email address is primary key for Users
@@ -51,9 +55,9 @@ public class User implements Serializable {
     private String siteId = null;
 
     // whether or not the account has been VERIFIED/CONFIRMED via email
-    private boolean verified = false;
+    private Boolean verified;
     // if the account has been administratively DISABLED or not
-    private boolean active = false;
+    private Boolean active;
 
     private String firstName;
     private String lastName;
@@ -65,17 +69,20 @@ public class User implements Serializable {
     @Basic(optional = false)
     @Column(name = "date_record_added")
     @Temporal(TemporalType.TIMESTAMP)
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
     private Date dateRecordAdded;
     @Basic(optional = false)
     @Column(name = "date_record_updated")
     @Temporal(TemporalType.TIMESTAMP)
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
     private Date dateRecordUpdated;
     @Column (name = "date_password_changed")
     @Temporal (TemporalType.TIMESTAMP)
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
     private Date datePasswordChanged;
 
     // count of failed logins
-    private int failedCount;
+    private Integer failedCount;
 
     @ElementCollection
     private Set<String> roles = null;
@@ -83,6 +90,10 @@ public class User implements Serializable {
     @ElementCollection 
     private Set<String> pendingRoles = null;
 
+    /**
+     * Do NOT output this on JSON Object requests.
+     * @return the Password
+     */
     @JsonIgnore
     public String getPassword() {
             return password;
@@ -125,19 +136,19 @@ public class User implements Serializable {
             this.siteId = siteId;
     }
 
-    public boolean isVerified() {
+    public Boolean isVerified() {
             return verified;
     }
 
-    public void setVerified(boolean verified) {
+    public void setVerified(Boolean verified) {
             this.verified = verified;
     }
 
-    public boolean isActive() {
+    public Boolean isActive() {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(Boolean active) {
         this.active = active;
     }
 
@@ -322,7 +333,7 @@ public class User implements Serializable {
      * 
      * @return the number of times password failed
      */
-    public int getFailedCount() {
+    public Integer getFailedCount() {
         return this.failedCount;
     }
     
@@ -331,7 +342,7 @@ public class User implements Serializable {
      * 
      * @param count the count to set
      */
-    public void setFailedCount(int count) {
+    public void setFailedCount(Integer count) {
         this.failedCount = count;
     }
 }

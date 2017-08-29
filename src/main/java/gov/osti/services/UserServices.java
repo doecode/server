@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
@@ -37,13 +38,18 @@ import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.persistence.TypedQuery;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.PathParam;
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.subject.Subject;
@@ -354,41 +360,32 @@ public class UserServices {
      * 400 - Bad Request, missing required EMAIL
      * 500 - Internal service error
      * 
-     * @param object JSON containing the "email" to query
+     * @param email the email address to test
      * @return a Response containing the JSON if found
      */
-    @POST
-    @Consumes (MediaType.APPLICATION_JSON)
+    @GET
+    @Consumes ({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
     @Produces (MediaType.APPLICATION_JSON)
-    @Path ("/getsitecode")
-    public Response getSiteCode(String object) {
+    @Path ("/getsitecode/{email}")
+    public Response getSiteCode(@PathParam("email") String email) {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        EmailRequest request;
-        
-        try {
-            request = mapper.readValue(object, EmailRequest.class);
-        } catch ( IOException e ) {
-            return ErrorResponse
-                    .internalServerError("Unable to process request.")
-                    .build();
-        }
         
         // no email?
-        if (StringUtils.isBlank(request.getEmail()))
+        if (StringUtils.isBlank(email))
             return ErrorResponse
                     .badRequest("Missing required email.")
                     .build();
         
         try {
             // not a valid email?
-            if (!Validation.isValidEmail(request.getEmail()))
+            if (!Validation.isValidEmail(email))
                 return ErrorResponse
                         .badRequest("Not a valid email address.")
                         .build();
             // assign as SITE if possible based on the EMAIL, or default to CONTRACTOR
-            String domain = request.getEmail().substring(request.getEmail().indexOf("@"));
-            TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
-            query.setParameter("domain", domain);
+            String domain = email.substring(email.indexOf("@"));
+            TypedQuery<Site> query = em.createNamedQuery("Site.findByDomain", Site.class)
+                    .setParameter("domain", domain);
 
             // look up the Site and set CODE, or CONTR if not found
             List<Site> sites = query.getResultList();
@@ -399,7 +396,7 @@ public class UserServices {
                     .ok()
                     .entity(mapper
                             .createObjectNode()
-                            .put("email", request.getEmail())
+                            .put("email", email)
                             .put("site_code", siteCode).toString())
                     .build();
         } catch ( Exception e ) {
@@ -455,6 +452,12 @@ public class UserServices {
                     .badRequest("Missing required email address for registration.")
                     .build();
         
+        // email must be a valid one
+        if (!Validation.isValidEmail(request.getEmail()))
+            return ErrorResponse
+                    .badRequest("Invalid email address.")
+                    .build();
+        
         try {
             User user = em.find(User.class, request.getEmail());
 
@@ -481,8 +484,8 @@ public class UserServices {
 
             // assign as SITE if possible based on the EMAIL, or default to CONTRACTOR
             String domain = request.getEmail().substring(request.getEmail().indexOf("@"));
-            TypedQuery<Site> query = em.createQuery("SELECT s FROM Site s join s.emailDomains d WHERE d = :domain", Site.class);
-            query.setParameter("domain", domain);
+            TypedQuery<Site> query = em.createNamedQuery("Site.findByDomain", Site.class)
+                    .setParameter("domain", domain);
 
             // look up the Site and set CODE, or CONTR if not found
             List<Site> sites = query.getResultList();
@@ -508,9 +511,7 @@ public class UserServices {
             
             String apiKey = DOECodeCrypt.nextUniqueString();
             String confirmationCode = DOECodeCrypt.nextUniqueString();
-
-            User newUser = new User(request.getEmail(),encryptedPassword,apiKey, confirmationCode);
-        	
+            
             em.getTransaction().begin();
             
             // if USER already exists in the persistence context, just update
@@ -535,7 +536,7 @@ public class UserServices {
             em.getTransaction().commit();
             
             // send email to user
-            sendRegistrationConfirmation(newUser.getConfirmationCode(), newUser.getEmail());
+            sendRegistrationConfirmation(user.getConfirmationCode(), user.getEmail());
             
             //  return an OK response
             return Response
@@ -753,11 +754,108 @@ public class UserServices {
             em.close();
         }
     }
+    
+    /**
+     * Return a JSON Array of ALL User account information.  
+     * 
+     * Requires authenticated administrative access.
+     * 
+     * Response Codes:
+     * 200 - OK, JSON array returned
+     * 401 - Unauthorized, user is not logged in
+     * 403 - Forbidden, user does not have permission to access this function
+     * 500 - a JSON processing error occurred
+     * 
+     * @return a JSON array of Users
+     */
+    @GET
+    @RequiresAuthentication
+    @Produces (MediaType.APPLICATION_JSON)
+    @Consumes ({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
+    @RequiresRoles("OSTI")
+    @Path("/users")
+    public Response getUsers() {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            TypedQuery<User> q = em.createNamedQuery("User.findAllUsers", User.class);
+            List<User> users = q.getResultList();
+            
+            return Response
+                    .ok()
+                    .entity(mapper.writeValueAsString(users))
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("JSON Error sending Users", e);
+            return ErrorResponse
+                    .internalServerError("JSON processing error, unable to complete request.")
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Retrieve a single User account information by email address.
+     * 
+     * Requires authenticated administrative access.
+     * 
+     * Response Codes:
+     * 
+     * 200 - OK, JSON of User returned
+     * 400 - No email address supplied
+     * 401 - User is not logged in
+     * 403 - User does not have permissions
+     * 404 - User email is not on file
+     * 500 - a JSON processing error occurred
+     * 
+     * @param email the email address to look up
+     * @return the JSON of the User, if found
+     */
+    @GET
+    @RequiresAuthentication
+    @Produces (MediaType.APPLICATION_JSON)
+    @Consumes ({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
+    @RequiresRoles("OSTI")
+    @Path("/{email}")
+    public Response getUser(@PathParam("email") String email) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            if (StringUtils.isBlank(email)) 
+                return ErrorResponse
+                        .badRequest("Missing required parameter.")
+                        .build();
+            
+            TypedQuery<User> q = em.createNamedQuery("User.findUser", User.class)
+                    .setParameter("email", email);
+            
+            // if no users, send back a 404 response
+            List<User> users = q.getResultList();
+            if (users.isEmpty())
+                return ErrorResponse
+                        .notFound("No users found.")
+                        .build();
+            
+            // should just be one
+            User u = users.get(0);
+            
+            return Response
+                    .ok()
+                    .entity(mapper.writeValueAsString(u))
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("User error output to JSON for " + email, e);
+            return ErrorResponse
+                    .internalServerError("JSON processing error on User.")
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
 
     /**
-     * Processes edits to a user.  Allows changing FIRST and LAST name.
-     * 
-     * Cannot change EMAIL or PASSWORD information from this endpoint.
+     * Processes edits to a user.  May only change FIRST and LAST names.
      * 
      * Response Codes:
      * 
@@ -808,9 +906,14 @@ public class UserServices {
             
             em.getTransaction().commit();
 
+            // return the changed information
             return Response
                     .ok()
-                    .entity(mapper.createObjectNode().put("status", "success").toString())
+                    .entity(mapper
+                            .createObjectNode()
+                            .put("email", user.getEmail())
+                            .put("first_name", user.getFirstName())
+                            .put("last_name", user.getLastName()).toString())
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
@@ -823,6 +926,120 @@ public class UserServices {
                     .build();
         } finally {
             em.close();  
+        }
+    }
+    
+    /**
+     * Modify a User account.
+     * 
+     * Requires authentication and administrative privileges.  Any attributes NOT
+     * sent will remain the same.
+     * 
+     * Response Codes:
+     * 200 - OK, JSON containing updated User values returned
+     * 400 - Missing required information, or unable to read JSON
+     * 401 - User is not authenticated
+     * 403 - User does not have permission to affect changes
+     * 404 - User account is not on file
+     * 500 - Persistence or other unexpected error occurred
+     * 
+     * @param email the Email address of the account to modify
+     * @param json JSON object containing values in the account to modify
+     * @return JSON of the updated User if successful
+     */
+    @POST
+    @RequiresAuthentication
+    @RequiresRoles("OSTI")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/update/{email}")
+    public Response editUser(@PathParam("email") String email, String json) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        UserRequest userRequest;
+        
+        try {
+            userRequest = mapper.readValue(json, UserRequest.class);
+        } catch ( IOException e ) {
+            log.error("Unable to read User JSON", e);
+            return ErrorResponse
+                    .internalServerError("Unable to process request.")
+                    .build();
+        }
+        // should have some value
+        if (null==userRequest)
+            return ErrorResponse
+                    .badRequest("Unable to read User information.")
+                    .build();
+        
+        try {
+            TypedQuery<User> query = em.createNamedQuery("User.findUser", User.class)
+                    .setParameter("email", email);
+            
+            List<User> results = query.getResultList();
+            
+            if (results.isEmpty())
+                return ErrorResponse
+                        .notFound("User is not on file.")
+                        .build();
+            
+            // obtain the BEFORE User
+            User source = results.get(0);
+            
+            // ensure the EMAILS match, if supplied
+            if ( !StringUtils.equalsIgnoreCase(email, source.getEmail()) )
+                return ErrorResponse
+                        .badRequest("User email mismatch error.")
+                        .build();
+            
+            // start a TRANSACTION to persist changes to SOURCE
+            em.getTransaction().begin();
+            
+            // found it, "merge" Bean attributes
+            BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
+            noNulls.copyProperties(source, userRequest);
+            
+            // if there was a PASSWORD change request, do it
+            if (null!=userRequest.getPassword()) {
+                // password rules apply
+                if (!validatePassword(email, userRequest.getPassword()))
+                    return ErrorResponse
+                            .badRequest("Password is not accceptable.")
+                            .build();
+                // confirmation must match
+                if (!StringUtils.equals(userRequest.getPassword(), userRequest.getConfirmPassword()))
+                    return ErrorResponse
+                            .badRequest("Passwords do not match.")
+                            .build();
+                // if successful, encrypt the password for storage
+                source.setPassword(PASSWORD_SERVICE.encryptPassword(userRequest.getPassword()));
+                // set the expiry date and failed count
+                source.setDatePasswordChanged();
+                source.setFailedCount(0);
+            }
+            // made it this far, persist the changes
+            em.merge(source);
+            em.getTransaction().commit();
+            
+            // send back an OK response
+            return Response
+                    .ok()
+                    .entity(mapper.writeValueAsString(source))
+                    .build();
+        } catch ( IllegalAccessException | InvocationTargetException e ) {
+            if ( em.getTransaction().isActive() ) 
+                em.getTransaction().rollback();
+            
+            log.warn("Persistence Error saving User: " + email, e);
+            return ErrorResponse
+                    .internalServerError("Unable to store User attributes.")
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("JSON output error", e);
+            return ErrorResponse
+                    .internalServerError("JSON processing error.")
+                    .build();
+        } finally {
+            em.close();
         }
     }
 
@@ -902,198 +1119,6 @@ public class UserServices {
     }
 
     /**
-     * Administer a user.  Allows ADMIN account to activate/deactivate a
-     * User account by EMAIL.
-     * 
-     * Response Codes:
-     * 200 - OK, user action performed. JSON includes email address and active state flag
-     * 400 - Bad request, email is missing or account is not verified
-     * 401 - Unauthorized, user is not logged in
-     * 403 - Forbidden, user has no permission to access this function
-     * 404 - Not found, user email is not on file
-     * 500 - Internal error occurred
-     * 
-     * @param object JSON containing the request
-     * @return a Response based on the action taken
-     */
-    @POST
-    @RequiresAuthentication
-    @RequiresRoles("OSTI")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("/admin")
-    public Response adminUser(String object) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        AdminRequest request;
-        try {
-            request = mapper.readValue(object, AdminRequest.class);
-        } catch ( IOException e ) {
-            log.error("Error in admin: ",e);
-                return ErrorResponse
-                        .internalServerError("Unable to process request.")
-                        .build();
-        }
-        
-        // required values
-        if (StringUtils.isBlank(request.getEmail()))
-            return ErrorResponse
-                    .badRequest("Missing required email address of user.")
-                    .build();
-        
-        try {
-            User user = em.find(User.class, request.getEmail());
-            
-            if (null==user)
-                return ErrorResponse
-                        .notFound("User not on file.")
-                        .build();
-            // user should be verified to administer
-            if (!user.isVerified())
-                return ErrorResponse
-                        .badRequest("User account is not verified.")
-                        .build();
-            
-            // modify the user according to the request
-            em.getTransaction().begin();
-            
-            user.setActive(request.isActivate());
-            
-            em.getTransaction().commit();
-            
-            // respond with success
-            return Response
-                    .ok()
-                    .entity(mapper.createObjectNode()
-                            .put("email", user.getEmail())
-                            .put("active", user.isActive()).toString())
-                    .build();
-        } catch ( Exception e ) {
-            log.error("Admin Error: ", e);
-            return ErrorResponse
-                    .internalServerError(e.getMessage())
-                    .build();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * Processes edits to a user.  Approves any PENDING ROLES on the indicated
-     * user account.
-     * 
-     * @param object the JSON containing the user information
-     * @return an OK Response if everything fine, or exception otherwise
-     */
-    @POST
-    @RequiresAuthentication
-    @RequiresRoles("OSTI")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes (MediaType.APPLICATION_JSON)
-    @Path ("/approve")
-    public Response approveRoles(String object) {
-	
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        
-        EmailRequest request;
-        try {
-            request = mapper.readValue(object, EmailRequest.class);
-        } catch (IOException e) {
-                log.error("Error in register: ",e);
-                return ErrorResponse
-                        .internalServerError("Unable to process request.")
-                        .build();
-        }
-
-        User user = em.find(User.class,request.getEmail());
-        
-        if (null==user)
-            return ErrorResponse
-                    .notFound("User is not on file.")
-                    .build();
-        	        	
-        try {
-            em.getTransaction().begin();
-
-            user.setRoles(user.getPendingRoles());
-            user.setPendingRoles(new HashSet<>());
-
-            em.getTransaction().commit();
-            
-            return Response
-                    .ok()
-                    .entity(mapper.createObjectNode().put("status", "success").toString())
-                    .build();
-        } catch ( Exception e ) {
-            if ( em.getTransaction().isActive())
-                em.getTransaction().rollback();
-            
-            
-            //we'll deal with duplicate user name here as well...
-            log.error("Persistence Error Registering User", e);
-            return ErrorResponse
-                    .internalServerError(e.getMessage())
-                    .build();
-        } finally {
-            em.close();  
-        }
-    }
-
-    /**
-     * Processes edits to a user.  Disapproves any PENDING ROLES on the indicated
-     * user account.
-     * 
-     * @param object the JSON containing the user information
-     * @return an OK Response if everything fine, or exception otherwise
-     */
-    @POST
-    @RequiresAuthentication
-    @RequiresRoles("OSTI")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes (MediaType.APPLICATION_JSON)
-    @Path ("/disapprove")
-    public Response disapproveRoles(String object) {
-	
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        EmailRequest request;
-        
-        try {
-                request = mapper.readValue(object, EmailRequest.class);
-        } catch (IOException e) {
-                log.error("Error in register: ",e);
-                return ErrorResponse
-                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to process request.")
-                        .build();
-        }
-
-        User user = em.find(User.class,request.getEmail());
-        
-        try {
-            em.getTransaction().begin();
-            
-            user.setPendingRoles(new HashSet<>());
-            
-            em.getTransaction().commit();
-            
-            return Response
-                    .ok()
-                    .entity(mapper.createObjectNode().put("status", "success").toString())
-                    .build();
-        } catch ( Exception e ) {
-            if ( em.getTransaction().isActive())
-                em.getTransaction().rollback();
-            
-            
-            //we'll deal with duplicate user name here as well...
-            log.error("Persistence Error Registering User", e);
-            return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
-                    .build();
-        } finally {
-            em.close();  
-        }
-    }
-
-    /**
      * Acquire a listing of all records by OWNER.
      * 
      * @return the Metadata information in the desired format
@@ -1150,27 +1175,17 @@ public class UserServices {
         }
     }
     
-    /**
-     * Administrative request, activate or deactivate Users based on EMAIL.
-     */
     @JsonIgnoreProperties (ignoreUnknown=true)
-    private static class AdminRequest extends EmailRequest {
-        private boolean activate;
-
-        /**
-         * @return the activate
-         */
-        public boolean isActivate() {
-            return activate;
-        }
-
-        /**
-         * @param activate the activate to set
-         */
-        public void setActivate(boolean activate) {
-            this.activate = activate;
+    private static class UserRequest extends User {
+        private String confirmPassword;
+        
+        public String getConfirmPassword() {
+            return confirmPassword;
         }
         
+        public void setConfirmPassword(String pw) {
+            confirmPassword = pw;
+        }
     }
     
     /**
@@ -1664,5 +1679,4 @@ public class UserServices {
             em.close();
         }
     }
-    
 }
