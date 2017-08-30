@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
@@ -39,16 +38,13 @@ import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.persistence.TypedQuery;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.PathParam;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -999,19 +995,19 @@ public class UserServices {
             noNulls.copyProperties(source, userRequest);
             
             // if there was a PASSWORD change request, do it
-            if (null!=userRequest.getPassword()) {
+            if (null!=userRequest.getNewPassword()) {
                 // password rules apply
-                if (!validatePassword(email, userRequest.getPassword()))
+                if (!validatePassword(email, userRequest.getNewPassword()))
                     return ErrorResponse
                             .badRequest("Password is not accceptable.")
                             .build();
                 // confirmation must match
-                if (!StringUtils.equals(userRequest.getPassword(), userRequest.getConfirmPassword()))
+                if (!StringUtils.equals(userRequest.getNewPassword(), userRequest.getConfirmPassword()))
                     return ErrorResponse
                             .badRequest("Passwords do not match.")
                             .build();
                 // if successful, encrypt the password for storage
-                source.setPassword(PASSWORD_SERVICE.encryptPassword(userRequest.getPassword()));
+                source.setPassword(PASSWORD_SERVICE.encryptPassword(userRequest.getNewPassword()));
                 // set the expiry date and failed count
                 source.setDatePasswordChanged();
                 source.setFailedCount(0);
@@ -1175,9 +1171,13 @@ public class UserServices {
         }
     }
     
+    /**
+     * Static class for modifying User properties.
+     */
     @JsonIgnoreProperties (ignoreUnknown=true)
     private static class UserRequest extends User {
         private String confirmPassword;
+        private String newPassword;
         
         public String getConfirmPassword() {
             return confirmPassword;
@@ -1185,6 +1185,14 @@ public class UserServices {
         
         public void setConfirmPassword(String pw) {
             confirmPassword = pw;
+        }
+        
+        public String getNewPassword() {
+            return newPassword;
+        }
+        
+        public void setNewPassword(String password) {
+            this.newPassword=password;
         }
     }
     

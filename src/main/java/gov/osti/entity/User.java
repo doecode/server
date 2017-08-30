@@ -139,12 +139,29 @@ public class User implements Serializable {
     public Boolean isVerified() {
             return verified;
     }
+    
+    /**
+     * Extra get method for Beans.
+     * @return the state of the VERIFIED; may be null
+     */
+    public Boolean getVerified() {
+        return verified;
+    }
 
     public void setVerified(Boolean verified) {
             this.verified = verified;
     }
 
     public Boolean isActive() {
+        return active;
+    }
+    
+    /**
+     * Extra get method for Beans.
+     * 
+     * @return the state of ACTIVE; may be null
+     */
+    public Boolean getActive() {
         return active;
     }
 
