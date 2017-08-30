@@ -994,6 +994,10 @@ public class UserServices {
             BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
             noNulls.copyProperties(source, userRequest);
             
+            // if the user is requested to set to active, also clear failure count
+            if (null!=userRequest.getActive() && userRequest.isActive())
+                source.setFailedCount(0);
+            
             // if there was a PASSWORD change request, do it
             if (null!=userRequest.getNewPassword()) {
                 // password rules apply

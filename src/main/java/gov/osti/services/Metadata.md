@@ -20,6 +20,21 @@ HTTP Request Methods
 | `PUT` | *Not currently used* |
 | `DELETE` | *Not currently used* |
 
+HTTP Response Codes
+-------------------
+
+Most relevant service endpoints share common HTTP response codes, with the most
+common ones with typical reasons included below.
+
+| Response Code | Description |
+| --- | --- |
+| 200 | OK, request was processed successfully |
+| 400 | Bad Request, such as validation error or bad JSON |
+| 401 | User is not authenticated |
+| 403 | User lacks sufficient privileges for the action |
+| 404 | Requested resource not found |
+| 500 | Internal error or database issue |
+
 Service Endpoints
 -----------------
 
@@ -30,7 +45,7 @@ general repository information.
 
 ### read approved record
 
-`GET /{codeId}`
+`GET /doecodeapi/services/metadata/{codeId}`
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
 Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Only retrieves
@@ -52,35 +67,17 @@ APPROVED records.
 > }
 >```
 
-| Response Code | Information |
-| --- | --- |
-| 200 | OK, response includes JSON |
-| 403 | Access to unapproved metadata is not permitted |
-
 ### /edit/{codeId}
 
-`GET /services/metadata/edit/{codeId}`
+`GET /doecodeapi/services/metadata/edit/{codeId}`
 
 Retrieve JSON for a given metadata.  User must be authenticated and be the owner of the given metadata, or a site administrator account for the site.
 
-| Response Code | Information |
-| --- | --- |
-| 200 | OK, JSON returned |
-| 400 | Bad request, no code ID specified |
-| 401 | Authentication is required for this service endpoint |
-| 403 | Logged-in user is not permitted to access this metadata |
-| 404 | Metadata CODE ID is not on file |
-
 ### /projects
 
-`GET /services/metadata/projects`
+`GET /doecodeapi/services/metadata/projects`
 
 Requires authenticated login.  Retrieve all metadata projects owned by the current logged-in user account in JSON format.
-
-| Response Code | Information |
-| --- | --- |
-| 200 | OK, JSON array returned |
-| 401 | Unauthorized, user login is required |
 
 > Request:
 > ```html
@@ -99,7 +96,7 @@ Requires authenticated login.  Retrieve all metadata projects owned by the curre
 
 ### /projects/pending
 
-`GET /services/metadata/projects/pending`
+`GET /doecodeapi/services/metadata/projects/pending`
 
 Requires authentication, and special administrative privileges. Retrieve all metadata projects currently pending 
 approval (that is, Published records), optionally from a given *site code*.  You may specify the optional URL
@@ -109,12 +106,6 @@ are returned.
 
 Responses will contain the requested number of rows (or total if unlimited), a total count, and the starting
 row number of the request.
-
-| Response Code | Information |
-| --- | --- |
-| 200 | OK, JSON array returned |
-| 401 | Unauthorized, user login is required |
-| 403 | Forbidden, insufficient user access |
 
 > Request:
 > ```html
@@ -135,7 +126,7 @@ row number of the request.
 
 ### autopopulate
 
-`GET /services/metadata/autopopulate?repo={url}`
+`GET /doecodeapi/services/metadata/autopopulate?repo={url}`
 
 Attempt to read information from the given *repository URL* value.  Supports github.com, bitbucket.org, and sourceforge.com. 
 Any relevant information from the repository API will be returned in JSON metadata format.
@@ -150,7 +141,7 @@ be read for more complete repository information.
 
 ### save
 
-`POST /services/metadata`
+`POST /doecodeapi/services/metadata`
 
 Send JSON metadata to be persisted in the back-end.  This service persists the data in the *Saved* work-flow state. Returns metadata information in JSON format, if successful, with
 *code_id* value for reference.
@@ -180,16 +171,9 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > { "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
 > ```
 
-| Response Code | Information |
-| --- | --- |
-| 200 | Metadata saved, JSON metadata information returned including code_id reference. |
-| 401 | Authentication is required to POST |
-| 403 | User is not permitted to alter this metadata |
-| 500 | Persistence error or unable to parse JSON information. |
-
 ### publish
 
-`POST /services/metadata/publish`
+`POST /doecodeapi/services/metadata/publish`
 
 Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing 
 this operation will be returned.  
@@ -233,14 +217,6 @@ Validation rules are:
 > ```json
 > { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 > ```
-
-| HTTP Response Code | Information |
-| --- | --- |
-| 200 | Metadata published successfully to DOECode.  JSON metadata information returned with code_id reference. |
-| 400 | One or more validation errors occurred during publication, error information in the response. |
-| 401 | Authentication is required to POST |
-| 403 | User is not permitted to alter this record |
-| 500 | Persistence layer error or unable to process JSON submission information. |
 
 ### submit
 
@@ -288,17 +264,9 @@ be submitted to DOE.  Additional validations are required for final submission:
 > { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 > ```
 
-| HTTP Response Code | Information |
-| --- | --- |
-| 200 | Metadata published successfully to DOECode.  JSON metadata information returned with code_id reference. |
-| 400 | One or more validation errors occurred during publication, error information in the response. |
-| 401 | Authentication is required to POST |
-| 403 | User is not permitted to alter this record |
-| 500 | Persistence layer error or unable to process JSON submission information. |
-
 ### approve
 
-`GET /services/metadata/approve?code_id={code_id}`
+`GET /doecodeapi/services/metadata/approve?code_id={code_id}`
 
 Requires authentication and administrative user access.  Marks a currently Published record as Approved for dissemination and search.  Provide the
 code ID value of the Published record in order to approve access.  Approved records are available for searching from the Search Services endpoints.
@@ -325,14 +293,6 @@ code ID value of the Published record in order to approve access.  Approved reco
 > ```json
 > { "status" : 400, "errors":[ "Metadata is not in the Published workflow state." ] }
 > ```
-
-| HTTP Response Code | Information |
-| --- | --- |
-| 200 | Metadata approved for dissemination and search. |
-| 400 | One or more validation errors occurred during approval, or metadata is not in the Published state |
-| 401 | Authentication is required |
-| 403 | User is not permitted to approve this record |
-| 500 | Persistence layer error or unable to process JSON submission information. |
 
 DOECode Metadata
 ===============
