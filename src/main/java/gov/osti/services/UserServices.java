@@ -1555,12 +1555,12 @@ public class UserServices {
         
         try {
             email.setFrom(EMAIL_FROM);
-            email.setSubject("DOECode User Account Locked Out");
+            email.setSubject("DOECode User Account Inactivated");
             email.addTo(userEmail);
             
             email.setHtmlMsg("<html>Your account has been automatically deactivated due to after 3 unsuccessful logon attempts.  "
                     + "<p>Please contact doecode@osti.gov as an administrator will need to reactivate your account before you "
-                    + "can sign-in to DOE CODE.</html>");
+                    + "can sign-in to DOE CODE or change your password.</html>");
             
             email.send();
         } catch ( EmailException e ) {
