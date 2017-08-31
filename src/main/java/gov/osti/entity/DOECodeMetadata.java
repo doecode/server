@@ -1,6 +1,7 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -119,7 +120,7 @@ public class DOECodeMetadata implements Serializable {
     // Child table -- identifiers
     private List<RelatedIdentifier> relatedIdentifiers;
 
-    private Date releaseDate = null;
+    private Date releaseDate;
     private String softwareTitle = null;
     private String acronym = null;
     private String doi = null;
@@ -139,6 +140,9 @@ public class DOECodeMetadata implements Serializable {
     private Status workflowStatus = null;
     
     private String fileName = null;
+    
+    // determine whether or not the RELEASE DATE was changed
+    private transient boolean setReleaseDate=false;
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -470,8 +474,15 @@ public class DOECodeMetadata implements Serializable {
         workflowStatus = status;
     }
     
+    /**
+     * Set the RELEASE DATE value.
+     * 
+     * @param date the date to set
+     */
     public void setReleaseDate(Date date) {
         this.releaseDate = date;
+        // set the fact we have called this method to se the date value
+        this.setReleaseDate=true;
     }
     
     @Column (name="release_date")
@@ -529,5 +540,17 @@ public class DOECodeMetadata implements Serializable {
         @JsonSerialize (using = FileNameSerializer.class)
         public String getFileName() {
             return this.fileName;
+        }
+        
+        /**
+         * Determine whether or not the RELEASE DATE was changed (possibly to null).
+         * Prevents Bean utilities from "losing" the changed release date if it gets
+         * "unset".
+         * 
+         * @return true if setReleaseDate() has been called, false if not
+         */
+        @JsonIgnore
+        public boolean hasSetReleaseDate() {
+            return setReleaseDate;
         }
 }

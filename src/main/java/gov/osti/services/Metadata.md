@@ -142,14 +142,14 @@ be read for more complete repository information.
 
 ### save
 
-`POST /doecodeapi/services/metadata`
+`POST /doecodeapi/services/metadata/save`
 
 Send JSON metadata to be persisted in the back-end.  This service persists the data in the *Saved* work-flow state. Returns metadata information in JSON format, if successful, with
 *code_id* value for reference.
 
 > Request:
 > ```html
-> POST /services/metadata
+> POST /services/metadata/save
 > Content-Type: application/json
 > ```
 > ```json

@@ -564,7 +564,12 @@ public class Metadata {
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
-
+                
+                // if the RELEASE DATE was set, it might have been "cleared" (set to null)
+                // and thus ignored by the Bean copy; this sets the value regardless if setReleaseDate() got called
+                if (md.hasSetReleaseDate())
+                    emd.setReleaseDate(md.getReleaseDate());
+                
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
 
@@ -757,7 +762,7 @@ public class Metadata {
             md.setSiteOwnershipCode(user.getSiteId());
 
             store(em, md, user);
-
+            
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
@@ -1134,6 +1139,7 @@ public class Metadata {
     @Consumes ( MediaType.APPLICATION_JSON )
     @Produces ( MediaType.APPLICATION_JSON )
     @RequiresAuthentication
+    @Path ("/save")
     public Response save(String object) {
         return doSave(object, null, null);
     }
@@ -1151,6 +1157,7 @@ public class Metadata {
     @Consumes (MediaType.MULTIPART_FORM_DATA)
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
+    @Path ("/save")
     public Response save(@FormDataParam("metadata") String metadata,
             @FormDataParam("file") InputStream file,
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
