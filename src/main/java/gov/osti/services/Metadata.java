@@ -183,13 +183,14 @@ public class Metadata {
      * 404 - requested metadata is not on file
      *
      * @param codeId the CODE ID to look up
+     * @param format optional; "yaml" if YAML output is desired
      * @return a Response containing JSON if successful
      */
     @GET
     @Path ("/edit/{codeId}")
-    @Produces (MediaType.APPLICATION_JSON)
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
     @RequiresAuthentication
-    public Response edit(@PathParam("codeId") Long codeId) {
+    public Response edit(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -218,11 +219,29 @@ public class Metadata {
                     .forbidden("Permission denied.")
                     .build();
 
-        // return the metadata
-        return Response
-                .status(Response.Status.OK)
-                .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
-                .build();
+        // if YAML is requested, return that; otherwise, default to JSON
+        try {
+            if ("yaml".equals(format)) {
+                // return the YAML
+                return
+                    Response
+                    .status(Response.Status.OK)
+                    .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
+                    .entity(HttpUtil.writeMetadataYaml(md))
+                    .build();
+            } else {
+                // send back the JSON
+                return Response
+                        .status(Response.Status.OK)
+                        .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                        .build();
+            }
+        } catch ( IOException e ) {
+            log.warn("JSON Output Error", e);
+            return ErrorResponse
+                    .internalServerError("Unable to process request.")
+                    .build();
+        }
     }
     
     /**

@@ -72,6 +72,7 @@ APPROVED records.
 `GET /doecodeapi/services/metadata/edit/{codeId}`
 
 Retrieve JSON for a given metadata.  User must be authenticated and be the owner of the given metadata, or a site administrator account for the site.
+Optionally, you may specify "format=yaml" to retrieve the record in YAML format.
 
 ### /projects
 
