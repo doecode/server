@@ -8,14 +8,14 @@ import org.apache.commons.beanutils.BeanUtilsBean;
 /**
  * Extend Apache's BeanUtilsBean to copy only non-null properties for merging
  * purposes.
- * 
+ *
  * @author ensornl
  */
 public class NoNullsBeanUtilsBean extends BeanUtilsBean {
-    
+
     /**
      * Copy Bean properties where they are NOT NULL.
-     * 
+     *
      * @param dest the DESTINATION bean
      * @param name the PROPERTY NAME
      * @param value the VALUE to copy
@@ -27,7 +27,11 @@ public class NoNullsBeanUtilsBean extends BeanUtilsBean {
             throws IllegalAccessException, InvocationTargetException {
         // skip any NULLs
         if (null!=value) {
-            super.copyProperty(dest, name, value);
+          if (value.getClass() == java.lang.String.class) {
+             String tmpStr = value.toString().trim();
+             value = tmpStr.equalsIgnoreCase("") ? null : tmpStr;
+          }
+          super.copyProperty(dest, name, value);
         }
     }
 }
