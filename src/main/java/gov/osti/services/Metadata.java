@@ -17,6 +17,7 @@ import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
+import gov.osti.entity.ApprovedMetadata;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.Status;
@@ -1209,6 +1210,13 @@ public class Metadata {
             // persist this to the database, as validations should already be complete at this stage.
             store(em, md, user);
 
+            // store the copy of Approved Metadata
+            ApprovedMetadata amd = new ApprovedMetadata();
+            amd.setCodeId(md.getCodeId());
+            amd.setJson(md.toJson().toString());
+            
+            em.persist(amd);
+            
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
 

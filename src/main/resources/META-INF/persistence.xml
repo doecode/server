@@ -15,6 +15,7 @@
     <class>gov.osti.entity.User</class>
     <class>gov.osti.entity.Site</class>
     <class>gov.osti.entity.DoiStatus</class>
+    <class>gov.osti.entity.ApprovedMetadata</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="${database.url}"/>
       <property name="javax.persistence.jdbc.user" value="${database.user}"/>
