@@ -1177,11 +1177,11 @@ public class Metadata {
      * @throws InternalServerErrorException on JSON parsing or other IO errors
      */
     @GET
-    @Path ("/approve")
+    @Path ("/approve/{codeId}")
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
     @RequiresRoles("OSTI")
-    public Response approve(@QueryParam("code_id") Long codeId) {
+    public Response approve(@PathParam("codeId") Long codeId) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();

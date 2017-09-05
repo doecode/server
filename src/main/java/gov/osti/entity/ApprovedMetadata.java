@@ -14,7 +14,7 @@ import javax.persistence.Table;
 /**
  * A storage cache Entity for Approved Metadata values.
  * 
- * @author nenso
+ * @author nensor@gmail.com
  */
 @Entity
 @Table (name = "approved_metadata")

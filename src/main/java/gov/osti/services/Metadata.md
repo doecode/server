@@ -267,14 +267,14 @@ be submitted to DOE.  Additional validations are required for final submission:
 
 ### approve
 
-`GET /doecodeapi/services/metadata/approve?code_id={code_id}`
+`GET /doecodeapi/services/metadata/approve/{codeId}`
 
 Requires authentication and administrative user access.  Marks a currently Published record as Approved for dissemination and search.  Provide the
 code ID value of the Published record in order to approve access.  Approved records are available for searching from the Search Services endpoints.
 
 > Request:
 > ```html
-> GET /services/metadata/approve?code_id=234
+> GET /services/metadata/approve/234
 > Content-Type: application/json
 > Authorization: Basic user-api-key
 > ```

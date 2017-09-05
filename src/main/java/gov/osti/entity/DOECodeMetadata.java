@@ -38,7 +38,8 @@ import org.slf4j.LoggerFactory;
 @Table(name="metadata")
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
-    @NamedQuery (name = "DOECodeMetadata.findByDoi", query = "SELECT m FROM DOECodeMetadata m WHERE m.doi = :doi")
+    @NamedQuery (name = "DOECodeMetadata.findByDoi", query = "SELECT m FROM DOECodeMetadata m WHERE m.doi = :doi"),
+    @NamedQuery (name = "DOECodeMetadata.findByStatus", query = "SELECT m FROM DOECodeMetadata m WHERE m.workflowStatus = :status")
 })
 public class DOECodeMetadata implements Serializable {
     /**
