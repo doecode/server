@@ -230,6 +230,29 @@ Content-Type: application/json
 {"apiKey":"sample-api-key-value"}
 ```
 
+### requestadmin
+
+`GET /doecodeapi/services/user/requestadmin`
+
+Request site administration privileges for your account.  Requests must be approved by
+administrative personnel prior to activation.  This request simply marks the account
+as desiring such privileges.  Returns 200-OK if permission has already been requested,
+or 201-CREATED response if request has been made.
+
+> Request:
+> ```
+> GET /doecodeapi/services/user/requestadmin
+> Authorization: Basic api-user-key
+> ```
+> Response:
+> ```
+> HTTP/1.1 201 CREATED
+> Content-Type: application/json
+> ```
+> ```json
+> { "status":"success" }
+> ```
+
 ### update
 
 `POST /doecodeapi/services/user/update`

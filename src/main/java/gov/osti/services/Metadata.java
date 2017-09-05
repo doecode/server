@@ -24,8 +24,6 @@ import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.Developer;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.ResearchOrganization;
-import gov.osti.entity.SearchDocument;
-import gov.osti.entity.SearchResult;
 import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
@@ -35,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -69,9 +66,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -118,7 +113,6 @@ public class Metadata {
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
 
-    private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
@@ -188,10 +182,10 @@ public class Metadata {
      * @return a Response containing JSON if successful
      */
     @GET
-    @Path ("/edit/{codeId}")
+    @Path ("{codeId}")
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
     @RequiresAuthentication
-    public Response edit(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
+    public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -210,12 +204,10 @@ public class Metadata {
                     .notFound("Code ID not on file.")
                     .build();
 
-        Set<String> roles = user.getRoles();
-        if (null==roles) roles = new HashSet<>(); // null protection
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) &&
-             !roles.contains("OSTI") &&
-             !roles.contains(md.getSiteOwnershipCode()))
+             !user.hasRole("OSTI") &&
+             !user.hasRole(md.getSiteOwnershipCode()))
             return ErrorResponse
                     .forbidden("Permission denied.")
                     .build();
@@ -244,112 +236,74 @@ public class Metadata {
                     .build();
         }
     }
-    
+
     /**
-     * Acquire information from the searching index if possible.  This endpoint
-     * should ONLY return Approved records that have been indexed for searching.
-     * Requires that searching be configured.
-     * 
-     * Response Codes:
-     * 200 - OK, record found, and returned in desired format
-     * 206 - No content, searching is not configured/unavailable
-     * 404 - Record was not found
-     * 500 - IO error or search malformed
-     * 
-     * @param codeId the CODE ID to find
-     * @param format the desired FORMAT (json or yaml; json is the default)
-     * @return the record in the desired format, if found
+     * Intended to be a List of retrieved Metadata records/projects.
      */
-    @GET
-    @Path("{codeId}")
-    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
-    public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
-        // no search configured, you get nothing
-        if ("".equals(SEARCH_URL))
-            return Response
-                    .status(Response.Status.NO_CONTENT)
-                    .build();
-        CloseableHttpClient hc = HttpClientBuilder
-                .create()
-                .build();
-        
-        try {
-            // construct a Search for a single CODEID value
-            URIBuilder builder = new URIBuilder(SEARCH_URL)
-                .addParameter("q", "codeId:" + codeId)
-                .addParameter("fl", "json")
-                .addParameter("rows", "1");
-        
-            HttpGet get = new HttpGet(builder.build());
-
-            HttpResponse response = hc.execute(get);
-
-            if (HttpStatus.SC_OK==response.getStatusLine().getStatusCode()) {
-                SearchResult result = mapper.readValue(EntityUtils.toString(response.getEntity()), SearchResult.class);
-
-                if (result.getSearchResponse().isEmpty())
-                    return ErrorResponse
-                            .notFound("No records found.")
-                            .build();
-                // get the first result
-                SearchDocument doc = result.getSearchResponse().getDocuments()[0];
-                // convert it to a POJO
-                DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(doc.getJson()));
-
-                // if YAML is requested, return that; otherwise, default to JSON
-                if ("yaml".equals(format)) {
-                    // return the YAML
-                    return
-                        Response
-                        .status(Response.Status.OK)
-                        .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                        .entity(HttpUtil.writeMetadataYaml(md))
-                        .build();
-                } else {
-                    // send back the JSON
-                    return Response
-                        .status(Response.Status.OK)
-                        .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
-                        .build();
-                }
-            } else {
-                return Response
-                        .status(response.getStatusLine().getStatusCode())
-                        .entity("Search Error: " + EntityUtils.toString(response.getEntity()))
-                        .build();
-            }
-        } catch ( IOException | URISyntaxException e ) {
-            log.warn("Searching Error.", e);
-            return ErrorResponse.internalServerError("Search error encountered.").build();
-        }
-    }
-
     private class RecordsList {
+        // the records
     	private List<DOECodeMetadata> records;
+        // a total count of a matched query
         private long total;
+        // the starting index (0-based)
         private int start;
 
     	RecordsList(List<DOECodeMetadata> records) {
     		this.records = records;
     	}
 
+        /**
+         * Acquire the list of records (a single page of results).
+         * 
+         * @return a List of DOECodeMetadata Objects
+         */
         public List<DOECodeMetadata> getRecords() {
                 return records;
         }
 
+        /**
+         * Set the current page of results.
+         * 
+         * @param records a List of DOECodeMetadata Objects for this page
+         */
         public void setRecords(List<DOECodeMetadata> records) {
                 this.records = records;
         }
 
+        /**
+         * Set a TOTAL count of matches for this search/list.
+         * 
+         * @param count the count to set
+         */
         public void setTotal(long count) { total = count; }
 
+        /**
+         * Get the TOTAL number of matching rows.
+         * 
+         * @return the total count matched
+         */
         public long getTotal() { return total; }
 
+        /**
+         * Set the starting index/offset number.
+         * 
+         * @param start the starting index or offset (0 based)
+         */
         public void setStart(int start) { this.start = start; }
 
+        /**
+         * Get the starting index number, based on 0.
+         * 
+         * @return the starting index number of the records
+         */
         public int getStart() { return this.start; }
 
-        public int getRows() {
+        /**
+         * Get the number of rows on the current "page" of results.
+         * 
+         * @return the number of rows in the current list/page of results.
+         */
+        public int size() {
             return (null==records) ? 0 : records.size();
         }
     }
@@ -548,14 +502,11 @@ public class Metadata {
         } else {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
 
-            Set<String> roles = user.getRoles();
-            if (null==roles) roles = new HashSet<>(); // null protection
-
             if ( null!=emd ) {
                 // must be the OWNER, SITE ADMIN, or OSTI in order to UPDATE
                 if (!user.getEmail().equals(emd.getOwner()) &&
-                     !roles.contains(emd.getSiteOwnershipCode()) &&
-                     !roles.contains("OSTI"))
+                     !user.hasRole(emd.getSiteOwnershipCode()) &&
+                     !user.hasRole("OSTI"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
                 // if already Published, but not being Approved, keep it that way (can't go back to Saved)

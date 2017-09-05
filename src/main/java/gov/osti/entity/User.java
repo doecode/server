@@ -362,4 +362,18 @@ public class User implements Serializable {
     public void setFailedCount(Integer count) {
         this.failedCount = count;
     }
+    
+    /**
+     * Determine whether or not this User has the indicated Role.
+     * 
+     * Null-safe method of checking for ROLE presence.
+     * 
+     * @param role the ROLE CODE to check
+     * @return true if the ROLE is present, false if not
+     */
+    public boolean hasRole(String role) {
+        return (null==roles) ? 
+                false :
+                roles.contains(role);
+    }
 }

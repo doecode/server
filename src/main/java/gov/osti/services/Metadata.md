@@ -43,13 +43,13 @@ Service Endpoints
 Information retrieval API for obtaining records already posted to DOECode or
 general repository information.
 
-### read approved record
+### retrieve single record
 
 `GET /doecodeapi/services/metadata/{codeId}`
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
-Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Only retrieves
-APPROVED records.
+Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Requesting
+user must be either the owner of the record or a site administrator.
 
 > Request:
 > ```html
@@ -66,13 +66,6 @@ APPROVED records.
 >   { "software_title" : "Sample Data", "code_id": 234 ... } 
 > }
 >```
-
-### /edit/{codeId}
-
-`GET /doecodeapi/services/metadata/edit/{codeId}`
-
-Retrieve JSON for a given metadata.  User must be authenticated and be the owner of the given metadata, or a site administrator account for the site.
-Optionally, you may specify "format=yaml" to retrieve the record in YAML format.
 
 ### /projects
 
@@ -467,7 +460,7 @@ metadata fields.
   {"organization_Name":"ORNL",
    "contributor_type":"DataManager"},
   {"organization_name":"DOE OSTI",
-   "contributor_type":"HostingService"}],
+   "contributor_type":"HostingInstitution"}],
 "research_organizations":[
   {"organization_name":"University of Washington, Computer Sciences Department"},
   {"organization_name":"Tester Services, Inc."}],
@@ -480,6 +473,8 @@ metadata fields.
 "acronym":"doecode",
 "doi":"10.5072/DOECode2017/7174",
 "description":"Main repository for managing the new DOE Code site from the DOE Office of Scientific and Technical Information (OSTI)",
-"workflow_status":"Published"
+"workflow_status":"Published",
+"license":["Apache License 2.0"],
+"release_date":"2017-08-23"
 }
 ```
