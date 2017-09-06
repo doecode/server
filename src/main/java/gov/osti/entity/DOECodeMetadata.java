@@ -21,6 +21,7 @@ import javax.persistence.Table;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
+import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -30,7 +31,10 @@ import javax.persistence.Enumerated;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,6 +145,12 @@ public class DOECodeMetadata implements Serializable {
     private Status workflowStatus = null;
     
     private String fileName = null;
+    
+    // administrative dates
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    private Date dateRecordAdded;
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    private Date dateRecordUpdated;
     
     // determine whether or not the RELEASE DATE was changed
     private transient boolean setReleaseDate=false;
@@ -541,6 +551,66 @@ public class DOECodeMetadata implements Serializable {
         @JsonSerialize (using = FileNameSerializer.class)
         public String getFileName() {
             return this.fileName;
+        }
+        
+        /**
+         * @return the dateRecordAdded
+         */
+        @Basic(optional = false)
+        @Column(name = "date_record_added", insertable = true, updatable = false)
+        @Temporal(TemporalType.TIMESTAMP)
+        public Date getDateRecordAdded() {
+            return dateRecordAdded;
+        }
+
+        /**
+         * @param dateRecordAdded the dateRecordAdded to set
+         */
+        public void setDateRecordAdded(Date dateRecordAdded) {
+            this.dateRecordAdded = dateRecordAdded;
+        }
+
+        public void setDateRecordAdded () {
+            setDateRecordAdded(new Date());
+        }
+
+        /**
+         * @return the dateRecordUpdated
+         */
+        @Basic(optional = false)
+        @Column(name = "date_record_updated", insertable = true, updatable = true)
+        @Temporal(TemporalType.TIMESTAMP)
+        public Date getDateRecordUpdated() {
+            return dateRecordUpdated;
+        }
+
+        /**
+         * @param dateRecordUpdated the dateRecordUpdated to set
+         */
+        public void setDateRecordUpdated(Date dateRecordUpdated) {
+            this.dateRecordUpdated = dateRecordUpdated;
+        }
+
+        public void setDateRecordUpdated() {
+            setDateRecordUpdated(new Date());
+        }
+
+        /**
+         * Method called when a record is first created.  Sets dates added and
+         * updated.
+         */
+        @PrePersist
+        void createdAt() {
+            setDateRecordAdded();
+            setDateRecordUpdated();
+        }
+
+        /**
+         * Method called when the record is updated.
+         */
+        @PreUpdate
+        void updatedAt() {
+            setDateRecordUpdated();
         }
         
         /**
