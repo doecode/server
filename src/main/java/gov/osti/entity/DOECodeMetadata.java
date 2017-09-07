@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import java.io.Reader;
 import java.util.List;
 
@@ -35,6 +37,7 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,7 @@ import org.slf4j.LoggerFactory;
     @NamedQuery (name = "DOECodeMetadata.findByDoi", query = "SELECT m FROM DOECodeMetadata m WHERE m.doi = :doi"),
     @NamedQuery (name = "DOECodeMetadata.findByStatus", query = "SELECT m FROM DOECodeMetadata m WHERE m.workflowStatus = :status")
 })
+@XmlRootElement (name = "metadata")
 public class DOECodeMetadata implements Serializable {
     /**
 	 * 
@@ -111,18 +115,32 @@ public class DOECodeMetadata implements Serializable {
     private Accessibility accessibility = null;
     
     // set of Access Limitations (Strings)
+    @JacksonXmlElementWrapper (localName = "accessLimitations")
+    @JacksonXmlProperty (localName = "accessLimitation")
     private List<String> accessLimitations;
     
     // Child tables -- persons
+    @JacksonXmlElementWrapper (localName = "developers")
+    @JacksonXmlProperty (localName = "developer")
     private List<Developer> developers;
+    @JacksonXmlElementWrapper (localName = "contributors")
+    @JacksonXmlProperty (localName = "contributor")
     private List<Contributor> contributors;
 
     //  Child tables -- organizations
+    @JacksonXmlElementWrapper (localName = "sponsoringOrganizations")
+    @JacksonXmlProperty (localName = "sponsoringOrganization")
     private List<SponsoringOrganization> sponsoringOrganizations;
+    @JacksonXmlElementWrapper (localName = "contributingOrganizations")
+    @JacksonXmlProperty (localName = "contributingOrganization")
     private List<ContributingOrganization> contributingOrganizations;
+    @JacksonXmlElementWrapper (localName = "researchOrganizations")
+    @JacksonXmlProperty (localName = "researchOrganization")
     private List<ResearchOrganization> researchOrganizations;
 
     // Child table -- identifiers
+    @JacksonXmlElementWrapper (localName = "relatedIdentifiers")
+    @JacksonXmlProperty (localName = "relatedIdentifier")
     private List<RelatedIdentifier> relatedIdentifiers;
 
     private Date releaseDate;
@@ -133,6 +151,8 @@ public class DOECodeMetadata implements Serializable {
     private String countryOfOrigin = null;
     private String keywords = null;
     private String disclaimers = null;
+    @JacksonXmlElementWrapper (localName = "licenses")
+    @JacksonXmlProperty (localName = "license")
     private List<String> licenses;
     private String proprietaryUrl = null;
     private String recipientName = null;

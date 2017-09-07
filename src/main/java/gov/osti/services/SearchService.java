@@ -79,12 +79,13 @@ public class SearchService {
      * 500 - IO error or search malformed
      * 
      * @param codeId the CODE ID to find
-     * @param format the desired FORMAT (json or yaml; json is the default)
+     * @param format the desired FORMAT; may be "yaml" or "xml".  Default is JSON
+     * unless specified
      * @return the record in the desired format, if found
      */
     @GET
     @Path("{codeId}")
-    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml", MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
     public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
         // no search configured, you get nothing
         if ("".equals(SEARCH_URL))
@@ -124,14 +125,23 @@ public class SearchService {
                     return
                         Response
                         .status(Response.Status.OK)
+                        .header("Content-Type", "text/yaml")
                         .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
                         .entity(HttpUtil.writeMetadataYaml(md))
                         .build();
+                } else if ("xml".equals(format)) {
+                    return Response
+                            .ok()
+                            .header("Content-Type", MediaType.APPLICATION_XML)
+                            .entity(HttpUtil.writeXml(md))
+                            .build();
                 } else {
                     // send back the JSON
                     return Response
                         .status(Response.Status.OK)
-                        .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                        .entity(mapper
+                                .createObjectNode()
+                                .putPOJO("metadata", md.toJson()).toString())
                         .build();
                 }
             } else {

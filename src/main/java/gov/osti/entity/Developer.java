@@ -1,5 +1,7 @@
 package gov.osti.entity;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import java.util.List;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -15,6 +17,8 @@ import javax.persistence.JoinColumn;
 @Entity (name = "DEVELOPERS")
 public class Developer extends Agent {
 
+    @JacksonXmlElementWrapper (localName = "affiliations")
+    @JacksonXmlProperty (localName = "affiliation")
     private List<String> affiliations;
     
     public Developer() {

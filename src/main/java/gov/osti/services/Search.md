@@ -40,7 +40,9 @@ unique within each list.
 
 `GET /doecodeapi/services/search/{codeId}`
 
-Retrieve a single record from the search index by its unique identifier.
+Retrieve a single record from the search index by its unique identifier.  Optionally,
+you may specify a query parameter of "format" to retrieve the record in either
+YAML ("yaml") or XML ("xml") formats.  JSON is the default is not specified.
 
 > Request:
 ```html

@@ -2,10 +2,13 @@
  */
 package gov.osti.connectors;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import gov.osti.entity.DOECodeMetadata;
 import java.io.IOException;
@@ -29,10 +32,16 @@ public class HttpUtil {
     // logger
     protected static final Logger log = LoggerFactory.getLogger(HttpUtil.class);
     
-    // jackson mapper
-    protected static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+    // jackson mappers
+    protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(Include.NON_NULL);
+    protected static final ObjectMapper XML_MAPPER = new XmlMapper()
+            .setSerializationInclusion(Include.NON_NULL)
+            .enable(SerializationFeature.INDENT_OUTPUT);
+    protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     /**
      * Retrieve just the String content from a given HttpGet request.
      * 
@@ -75,7 +84,7 @@ public class HttpUtil {
     protected static JsonNode readMetadataYaml(String url) throws IOException {
         try {
             // read the YAML in as a DOECodeMetadata record
-            DOECodeMetadata yaml = mapper.readValue(HttpUtil.fetch(new HttpGet(url)), DOECodeMetadata.class);
+            DOECodeMetadata yaml = YAML_MAPPER.readValue(HttpUtil.fetch(new HttpGet(url)), DOECodeMetadata.class);
             return (null==yaml) ? null : yaml.toJson();
         } catch ( IOException e ) {
             // no YAML or illegal format, skip it
@@ -83,11 +92,46 @@ public class HttpUtil {
         }
     }
     
+    /**
+     * Write the Metadata in YAML format.
+     * @param in the DOECodeMetadata to write
+     * @return YAML format for the metadata
+     * @throws IOException on write errors
+     */
     public static String writeMetadataYaml(DOECodeMetadata in) throws IOException {
-        return mapper.writeValueAsString(in);
+        return YAML_MAPPER.writeValueAsString(in);
     }
     
+    /**
+     * Write a JsonNode Object in YAML format.
+     * @param json the JsonNode to write
+     * @return YAML formatted output
+     * @throws IOException on write errors
+     */
     public static String writeMetadataYaml(JsonNode json) throws IOException {
-        return mapper.writeValueAsString(json);
+        return YAML_MAPPER.writeValueAsString(json);
+    }
+    
+    /**
+     * Write the DOECodeMetadata Object in XML format.
+     * @param in the DOECodeMetadata Object
+     * @return XML output
+     * @throws IOException on write errors
+     */
+    public static String writeXml(DOECodeMetadata in) throws IOException {
+        return XML_MAPPER
+                .writer()
+                .withRootName("metadata")
+                .writeValueAsString(in);
+    }
+    
+    /**
+     * Write the DOECodeMetadata Object in JSON format as a String.
+     * @param in the DOECodeMetadata Object to write
+     * @return a JSON String
+     * @throws IOException on write errors
+     */
+    public static String writeJson(DOECodeMetadata in) throws IOException {
+        return JSON_MAPPER.writeValueAsString(in);
     }
 }

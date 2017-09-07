@@ -48,8 +48,8 @@ general repository information.
 `GET /doecodeapi/services/metadata/{codeId}`
 
 Retrieve the metadata by its *{codeId}* value.  Values returned as single JSON Objects.  See [metadata example below](#json_example) for metadata JSON format.
-Optionally, you may specify the query path parameter "format=yaml" to retrieve this information in YAML format.  JSON is the default output format.  Requesting
-user must be either the owner of the record or a site administrator.
+Optionally, you may specify the query path parameter "format" to retrieve this information in either YAML ("yaml") or XML ("xml") format.  
+JSON is the default output format.  Authenticated user must be either the owner of the record or a site administrator.
 
 > Request:
 > ```html

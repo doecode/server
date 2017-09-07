@@ -176,12 +176,12 @@ public class Metadata {
      * 404 - requested metadata is not on file
      *
      * @param codeId the CODE ID to look up
-     * @param format optional; "yaml" if YAML output is desired
+     * @param format optional; "yaml" or "xml", default is JSON unless specified
      * @return a Response containing JSON if successful
      */
     @GET
     @Path ("{codeId}")
-    @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
+    @Produces ({MediaType.APPLICATION_JSON, "text/yaml", MediaType.APPLICATION_XML})
     @RequiresAuthentication
     public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
@@ -216,14 +216,21 @@ public class Metadata {
                 // return the YAML
                 return
                     Response
-                    .status(Response.Status.OK)
+                    .ok()
+                    .header("Content-Type", "text/yaml")
                     .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
                     .entity(HttpUtil.writeMetadataYaml(md))
                     .build();
+            } else if ("xml".equals(format)) {
+                return Response
+                        .ok()
+                        .header("Content-Type", MediaType.APPLICATION_XML)
+                        .entity(HttpUtil.writeXml(md))
+                        .build();
             } else {
                 // send back the JSON
                 return Response
-                        .status(Response.Status.OK)
+                        .ok()
                         .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                         .build();
             }

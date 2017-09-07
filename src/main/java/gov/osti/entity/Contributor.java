@@ -1,6 +1,8 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import java.util.List;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -58,6 +60,8 @@ public class Contributor extends Agent {
         }
     }
     private Type contributorType;
+    @JacksonXmlElementWrapper (localName = "affiliations")
+    @JacksonXmlProperty (localName = "affiliation")
     private List<String> affiliations;
 
     @Enumerated (EnumType.STRING)

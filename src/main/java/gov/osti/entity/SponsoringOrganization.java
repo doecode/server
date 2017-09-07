@@ -2,6 +2,8 @@
  */
 package gov.osti.entity;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.CollectionTable;
@@ -17,6 +19,8 @@ import javax.persistence.JoinColumn;
  */
 @Entity (name = "SPONSORING_ORGANIZATIONS")
 public class SponsoringOrganization extends Organization {
+    @JacksonXmlElementWrapper (localName = "fundingIdentifiers")
+    @JacksonXmlProperty (localName = "fundingIdentifier")
     private List<FundingIdentifier> fundingIdentifiers = new ArrayList<>();
     private String primaryAward;
     
