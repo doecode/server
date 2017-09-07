@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.neovisionaries.i18n.CountryCode;
+import gov.osti.entity.DOECodeMetadata.Accessibility;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Date;
@@ -138,7 +139,10 @@ public class OstiMetadata {
         setSponsoringOrganization(sponsororgs.toString());
         setDescription(md.getDescription());
         setMediaUrl(md.getRepositoryLink());
-        setOpenSourceFlag((md.getOpenSource()) ? "Y" : "N");
+        // set the OPEN SOURCE flag to "Y" if "ON" or "OS" accessibility status
+        setOpenSourceFlag(
+                Accessibility.ON.equals(md.getAccessibility()) ||
+                Accessibility.OS.equals(md.getAccessibility()) ? "Y" : "N");
         setContactEmail(md.getRecipientEmail());
         setContactOrg(md.getRecipientOrg());
         setContactPhone(md.getRecipientPhone());
