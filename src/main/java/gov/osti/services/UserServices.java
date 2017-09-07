@@ -332,7 +332,7 @@ public class UserServices {
                 .entity(mapper
                         .createObjectNode()
                         .put("xsrfToken", xsrfToken)
-                        .put("hasSite", !"CONTR".equals(user.getSiteId()))
+                        .put("site", user.getSiteId())
                         .put("email", user.getEmail())
                         .put("first_name", user.getFirstName())
                         .put("last_name", user.getLastName())

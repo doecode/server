@@ -20,7 +20,8 @@ import javax.persistence.Table;
 @Table (name = "approved_metadata")
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
-    @NamedQuery (name = "ApprovedMetadata.findByCodeId", query = "SELECT a FROM ApprovedMetadata a WHERE a.codeId=:codeId")
+    @NamedQuery (name = "ApprovedMetadata.findByCodeId", query = "SELECT a FROM ApprovedMetadata a WHERE a.codeId=:codeId"),
+    @NamedQuery (name = "ApprovedMetadata.findAll", query = "SELECT a FROM ApprovedMetadata a")
 })
 public class ApprovedMetadata implements Serializable {
     @Id

@@ -41,6 +41,7 @@ public class SearchData implements Serializable {
     private String[] licenses;
     private String researchOrganization = null;
     private String sponsoringOrganization = null;
+    private String orcid;
     private String sort = null;
     private Integer rows;
     private Integer start;
@@ -134,6 +135,14 @@ public class SearchData implements Serializable {
 	public void setSponsoringOrganization(String sponsoringOrganization) {
 		this.sponsoringOrganization = sponsoringOrganization;
 	}
+        
+        public void setOrcid(String orcid) {
+            this.orcid = orcid;
+        }
+        
+        public String getOrcid() {
+            return this.orcid;
+        }
 
 	public String getSort() {
             return (null==sort) ? "" : sort;
@@ -194,6 +203,10 @@ public class SearchData implements Serializable {
         if (!StringUtils.isEmpty(getBiblioData())) {
             if (q.length()>0) q.append(" ");
             q.append("_text_:(").append(escape(getBiblioData())).append(")");
+        }
+        if (!StringUtils.isEmpty(getOrcid())) {
+            if (q.length()>0) q.append(" ");
+            q.append("_orcids:(").append(escape(getOrcid())).append(")");
         }
         if (!StringUtils.isEmpty(getDevelopersContributors())) {
             if (q.length()>0) q.append(" ");

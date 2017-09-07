@@ -1120,6 +1120,35 @@ public class Metadata {
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
         return doSave(metadata, file, fileInfo);
     }
+    
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/reindex")
+    @RequiresAuthentication
+    @RequiresRoles ("OSTI")
+    public Response reindex() throws IOException {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            TypedQuery<ApprovedMetadata> query = em.createNamedQuery("ApprovedMetadata.findAll", ApprovedMetadata.class);
+            List<ApprovedMetadata> results = query.getResultList();
+            int records = 0;
+            
+            for ( ApprovedMetadata amd : results ) {
+                DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(amd.getJson()));
+                
+                sendToIndex(md);
+                ++records;
+            }
+            
+            return Response
+                    .ok()
+                    .entity(mapper.createObjectNode().put("indexed", String.valueOf(records)).toString())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
 
     /**
      * APPROVE endpoint; sends the Metadata of a targeted project to Index.

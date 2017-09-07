@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import gov.osti.entity.Agent;
 import gov.osti.entity.Contributor;
 import java.io.IOException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Special serialization for Agents for indexing purposes.
@@ -37,6 +38,8 @@ public class AgentSerializer extends StdSerializer<Agent> {
     public void serialize(Agent agent, JsonGenerator jg, SerializerProvider sp) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", agent.toString());
+        if (!StringUtils.isEmpty(agent.getOrcid()))
+            jg.writeStringField("orcid", agent.getOrcid());
         if (agent instanceof Contributor) {
             Contributor c = (Contributor) agent;
             if (null!=c.getContributorType())

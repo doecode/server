@@ -75,6 +75,7 @@ body.  The input JSON may contain any of the following:
 | date_latest | Ending date range for release date |
 | accessibility | An array of accessibility types; one or more of "OS", "ON", or "CS" |
 | licenses | An array of matching license values |
+| orcid | Search developer or contributor ORCID values |
 | sort | Specify a sorting field, e.g., "softwareTitle" or "releaseDate" (relevance is the default) |
 | rows | Desired number of rows to return (default 20) |
 | start | Offset row number to start for pagination (0 based) |

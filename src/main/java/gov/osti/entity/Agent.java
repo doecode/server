@@ -8,6 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,12 +86,15 @@ public class Agent implements Serializable {
     }
     	
     /**
-     * Generate a "full name" for indexing purposes
+     * Generate a "full name" for indexing purposes.  Should return
+     * "Last, First Middle" will null-safe protection.
      * 
      * @return the Agent full name as a String
      */
     @Override
     public String toString() {
-        return getLastName() + ", " + getFirstName() + " " + getMiddleName();
+        return ((StringUtils.isEmpty(getLastName())) ? "" : getLastName() + ", ") +
+               ((StringUtils.isEmpty(getFirstName()) ? " " : getFirstName() + " ")) +
+               ((StringUtils.isEmpty(getMiddleName()) ? "" : getMiddleName()));
     }
 }

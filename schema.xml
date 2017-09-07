@@ -442,6 +442,8 @@
    indexed="true" stored="false"/>
   <field name="_names" type="text_general" multiValued="true"
    indexed="true" stored="true"/>
+  <field name="_orcids" type="text_general" multiValued="true"
+   indexed="true" stored="true"/>
   <field name="_text_" type="text_general" multiValued="true" 
    indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
@@ -456,9 +458,11 @@
    multiValued="true" indexed="true" stored="true"/>
   <field name="contributors.contributorType" type="strings"/>
   <field name="contributors.name" type="text_en" multiValued="true" indexed="true" stored="true"/>
+  <field name="contributors.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="countryOfOrigin" type="text_en" indexed="true" stored="true"/>
   <field name="description" type="text_en" indexed="true" stored="true"/>
   <field name="developers.name" type="text_en" multiValued="true" indexed="true" stored="true"/>
+  <field name="developers.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="doi" type="string"/>
   <field name="doiStatus" type="string" indexed="true" stored="true"/>
   <field name="keywords" type="string"/>
@@ -503,10 +507,16 @@
   <copyField source="relatedIdentifiers.identifierValue" dest="_id_numbers"/>
   <copyField source="siteAccessionNumber" dest="_id_numbers"/>
   <copyField source="codeId" dest="_id_numbers"/>
+  <copyField source="developers.orcid" dest="_id_numbers"/>
+  <copyField source="contributors.orcid" dest="_id_numbers"/>
 
   <!-- developer and contributor names accumulation -->
   <copyField source="developers.name" dest="_names"/>
   <copyField source="contributors.name" dest="_names"/>
+  
+  <!-- developer and contributor ORCID accumulation -->
+  <copyField source="developers.orcid" dest="_orcids"/>
+  <copyField source="contributors.orcid" dest="_orcids"/>
   
   <!-- persistence object reference -->
   <field name="json" indexed="false" stored="true" type="string"/>

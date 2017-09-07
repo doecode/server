@@ -113,11 +113,18 @@ API calls to manage user session state; log in and out of authenticated sessions
 
  `POST /doecodeapi/services/user/login`
 
-Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
+Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and 
+HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
 Repeated login attempts via password authentication WILL result in the account being locked. 
 Locked accounts will receive an email message indicating administrative intervention is required to
 unlock the account.  Additionally, if the password expiration date is due, the login will fail, and
 a password change will be required to proceed.
+
+The returned JSON object will include the user's email address, first and last name,
+a site code (or "CONTR" if contractor), and an array of role codes, if any, along 
+with an "xsrfToken" value for protection against cross-site request forgery attempts.  This token
+value should be transmitted back with each subsequent API request when using DOECode services
+in conjunction with a web-based UI or user login methods.
 
 > Request:
 ```
@@ -136,7 +143,7 @@ Content-Type: application/json
 ```json
 {"email":"myaccount@domain.com",
  "xsrfToken":"some-token-value",
- "hasSite":false,
+ "site":"CONTR",
  "roles":["role1", "role2"],
  "first_name":"User",
  "last_name":"Name"}
