@@ -231,6 +231,7 @@ public class Metadata {
                 // send back the JSON
                 return Response
                         .ok()
+                        .header("Content-Type", MediaType.APPLICATION_JSON)
                         .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                         .build();
             }

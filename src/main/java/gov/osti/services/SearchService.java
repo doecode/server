@@ -138,7 +138,8 @@ public class SearchService {
                 } else {
                     // send back the JSON
                     return Response
-                        .status(Response.Status.OK)
+                        .ok()
+                        .header("Content-Type", MediaType.APPLICATION_JSON)
                         .entity(mapper
                                 .createObjectNode()
                                 .putPOJO("metadata", md.toJson()).toString())
