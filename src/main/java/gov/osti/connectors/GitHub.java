@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
@@ -153,26 +154,28 @@ public class GitHub implements ConnectorInterface {
             md.setAcronym(response.getName());
             md.setDescription(response.getDescription());
 
-            if (null!=response.getContributorsUrl()) {
+            if (StringUtils.isNotEmpty(response.getContributorsUrl())) {
                 HttpGet contributor_request = gitHubAPIGet(response.getContributorsUrl());
                 Contributor[] contributors = mapper.readValue(HttpUtil.fetch(contributor_request), Contributor[].class);
 
                 List<Developer> developers = new ArrayList<>();
                 for ( Contributor contributor : contributors ) {
                     Developer developer = new Developer();
-                    if (null!=contributor.getUrl()) {
+                    if (StringUtils.isNotEmpty(contributor.getUrl())) {
                         HttpGet user_request = gitHubAPIGet(contributor.getUrl());
                         User user = mapper.readValue(HttpUtil.fetch(user_request), User.class);
 
                         developer.setEmail(user.getEmail());
                         List<String> affiliations = new ArrayList<>();
-                        affiliations.add(user.getCompany());
-                        developer.setAffiliations(affiliations);
+                        if (StringUtils.isNotEmpty(user.getCompany())) {
+                            affiliations.add(user.getCompany());
+                            developer.setAffiliations(affiliations);
+                        }
 
                         /** if no User name is present, default to the login name;
                          * otherwise attempt to break into first/last name.
                          */
-                        if (null==user.getName()) {
+                        if (StringUtils.isEmpty(user.getName())) {
                             developer.setFirstName(user.getLogin());
                             developer.setLastName("(undefined)");
                         } else {

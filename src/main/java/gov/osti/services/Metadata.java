@@ -22,6 +22,7 @@ import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.Developer;
+import gov.osti.entity.DoiReservation;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.ResearchOrganization;
 import gov.osti.entity.SponsoringOrganization;
@@ -33,13 +34,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -159,6 +166,52 @@ public class Metadata {
     @Produces (MediaType.TEXT_HTML)
     public Viewable getDocumentation() {
         return new Viewable("/metadata");
+    }
+    
+    /**
+     * Acquire a unique DOI reservation value.  Requires authentication.
+     * 
+     * Response Code:
+     * 200 - JSON contains "doi" element with a new reserved DOI value
+     * 500 - a parser or other unexpected error occurred
+     * 
+     * @return JSON containing a new reserved DOI value.
+     */
+    @GET
+    @Path ("reservedoi")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    public Response reserveDoi() {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        // set a LOCK TIMEOUT
+        em.setProperty("javax.persistence.lock.timeout", 5000);
+        
+        try {
+            em.getTransaction().begin();
+            
+            DoiReservation reservation = em.find(DoiReservation.class, DoiReservation.TYPE, LockModeType.PESSIMISTIC_WRITE);
+            
+            if (null==reservation) 
+                reservation = new DoiReservation();
+            
+            reservation.reserve();
+            
+            em.merge(reservation);
+            
+            em.getTransaction().commit();
+            
+            return Response
+                    .ok()
+                    .entity(mapper.writeValueAsString(reservation))
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("DOI JSON Error: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("Unable to parse DOI reservation.")
+                    .build();
+        } finally {
+            em.close();
+        }
     }
 
     /**

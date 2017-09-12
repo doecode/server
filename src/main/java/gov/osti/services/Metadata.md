@@ -117,6 +117,26 @@ row number of the request.
 > "total":45, "start":20, "rows":10 }
 > ```
 
+### reserve a DOI
+
+`GET /doecodeapi/services/metadata/reservedoi`
+
+Obtain a new reserved DOI value, created to be a unique value to be used for record minting.  This value is only a reservation,
+not used to mint information until submitted or published with metadata successfully.
+
+> Request:
+> ```html
+> GET /doecodeapi/services/metadata/reservedoi
+> Authorization: Basic *user-api-key*
+> ```
+> Response:
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "doi":"10.5072/dc.2017.09.12.123" }
+> ```
 
 ### autopopulate
 

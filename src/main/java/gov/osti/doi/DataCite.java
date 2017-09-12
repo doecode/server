@@ -35,6 +35,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Interface for DataCite registration of software DOI values.
@@ -91,9 +92,11 @@ public class DataCite {
             List<String> affiliations = developer.getAffiliations();
             if ( null!=affiliations && !affiliations.isEmpty() ) {
                 for ( String affiliation : affiliations ) {
-                    sw.writeStartElement("affiliation");
-                    sw.writeCharacters(affiliation);
-                    sw.writeEndElement();
+                    if (!StringUtils.isEmpty(affiliation)) {
+                        sw.writeStartElement("affiliation");
+                        sw.writeCharacters(affiliation);
+                        sw.writeEndElement();
+                    }
                 }
             }
             
@@ -124,7 +127,7 @@ public class DataCite {
             sw.writeCharacters(contributor.getLastName() + ", " + contributor.getFirstName());
             sw.writeEndElement();
             
-            if (!"".equals(contributor.getOrcid())) {
+            if (!StringUtils.isEmpty(contributor.getOrcid())) {
                 sw.writeStartElement("nameIdentifier");
                 sw.writeAttribute("schemeURI", "http://orcid.org/");
                 sw.writeAttribute("nameIdentifierScheme", "ORCID");
@@ -134,9 +137,11 @@ public class DataCite {
             List<String> affiliations = contributor.getAffiliations();
             if ( null!=affiliations && !affiliations.isEmpty() ) {
                 for ( String affiliation : affiliations ) {
-                    sw.writeStartElement("affiliation");
-                    sw.writeCharacters(affiliation);
-                    sw.writeEndElement();
+                    if (!StringUtils.isEmpty(affiliation)) {
+                        sw.writeStartElement("affiliation");
+                        sw.writeCharacters(affiliation);
+                        sw.writeEndElement();
+                    }
                 }
             }
             
