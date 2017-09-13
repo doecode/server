@@ -167,14 +167,14 @@ public class Metadata {
     public Viewable getDocumentation() {
         return new Viewable("/metadata");
     }
-    
+
     /**
      * Acquire a unique DOI reservation value.  Requires authentication.
-     * 
+     *
      * Response Code:
      * 200 - JSON contains "doi" element with a new reserved DOI value
      * 500 - a parser or other unexpected error occurred
-     * 
+     *
      * @return JSON containing a new reserved DOI value.
      */
     @GET
@@ -185,21 +185,21 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
         // set a LOCK TIMEOUT
         em.setProperty("javax.persistence.lock.timeout", 5000);
-        
+
         try {
             em.getTransaction().begin();
-            
+
             DoiReservation reservation = em.find(DoiReservation.class, DoiReservation.TYPE, LockModeType.PESSIMISTIC_WRITE);
-            
-            if (null==reservation) 
+
+            if (null==reservation)
                 reservation = new DoiReservation();
-            
+
             reservation.reserve();
-            
+
             em.merge(reservation);
-            
+
             em.getTransaction().commit();
-            
+
             return Response
                     .ok()
                     .entity(mapper.writeValueAsString(reservation))
@@ -313,7 +313,7 @@ public class Metadata {
 
         /**
          * Acquire the list of records (a single page of results).
-         * 
+         *
          * @return a List of DOECodeMetadata Objects
          */
         public List<DOECodeMetadata> getRecords() {
@@ -322,7 +322,7 @@ public class Metadata {
 
         /**
          * Set the current page of results.
-         * 
+         *
          * @param records a List of DOECodeMetadata Objects for this page
          */
         public void setRecords(List<DOECodeMetadata> records) {
@@ -331,35 +331,35 @@ public class Metadata {
 
         /**
          * Set a TOTAL count of matches for this search/list.
-         * 
+         *
          * @param count the count to set
          */
         public void setTotal(long count) { total = count; }
 
         /**
          * Get the TOTAL number of matching rows.
-         * 
+         *
          * @return the total count matched
          */
         public long getTotal() { return total; }
 
         /**
          * Set the starting index/offset number.
-         * 
+         *
          * @param start the starting index or offset (0 based)
          */
         public void setStart(int start) { this.start = start; }
 
         /**
          * Get the starting index number, based on 0.
-         * 
+         *
          * @return the starting index number of the records
          */
         public int getStart() { return this.start; }
 
         /**
          * Get the number of rows on the current "page" of results.
-         * 
+         *
          * @return the number of rows in the current list/page of results.
          */
         public int size() {
@@ -385,8 +385,13 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-        	TypedQuery<DOECodeMetadata> query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class);
-        	RecordsList records = new RecordsList(query.setParameter("owner", user.getEmail()).getResultList());
+          TypedQuery<DOECodeMetadata> query;
+          if (user.hasRole("OSTI"))
+          	query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
+          else
+            query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class).setParameter("owner", user.getEmail());
+
+        	RecordsList records = new RecordsList(query.getResultList());
                     return Response
                             .status(Response.Status.OK)
                             .entity(mapper.valueToTree(records).toString())
@@ -575,12 +580,12 @@ public class Metadata {
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
-                
+
                 // if the RELEASE DATE was set, it might have been "cleared" (set to null)
                 // and thus ignored by the Bean copy; this sets the value regardless if setReleaseDate() got called
                 if (md.hasSetReleaseDate())
                     emd.setReleaseDate(md.getReleaseDate());
-                
+
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
 
@@ -732,7 +737,7 @@ public class Metadata {
             ObjectNode node = (ObjectNode)index_mapper.valueToTree(md);
             node.put("json", md.toJson().toString());
             post.setEntity(new StringEntity(node.toString()));
-            
+
             HttpResponse response = hc.execute(post);
 
             if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode() ) {
@@ -773,7 +778,7 @@ public class Metadata {
             md.setSiteOwnershipCode(user.getSiteId());
 
             store(em, md, user);
-            
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
@@ -1174,7 +1179,7 @@ public class Metadata {
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
         return doSave(metadata, file, fileInfo);
     }
-    
+
     @GET
     @Produces (MediaType.APPLICATION_JSON)
     @Path ("/reindex")
@@ -1182,19 +1187,19 @@ public class Metadata {
     @RequiresRoles ("OSTI")
     public Response reindex() throws IOException {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        
+
         try {
             TypedQuery<ApprovedMetadata> query = em.createNamedQuery("ApprovedMetadata.findAll", ApprovedMetadata.class);
             List<ApprovedMetadata> results = query.getResultList();
             int records = 0;
-            
+
             for ( ApprovedMetadata amd : results ) {
                 DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(amd.getJson()));
-                
+
                 sendToIndex(md);
                 ++records;
             }
-            
+
             return Response
                     .ok()
                     .entity(mapper.createObjectNode().put("indexed", String.valueOf(records)).toString())
@@ -1235,7 +1240,7 @@ public class Metadata {
                 return ErrorResponse
                         .notFound("Code ID not on file.")
                         .build();
-            
+
             // make sure this is Published
             if (!DOECodeMetadata.Status.Published.equals(md.getWorkflowStatus()))
                 return ErrorResponse
@@ -1253,9 +1258,9 @@ public class Metadata {
             ApprovedMetadata amd = new ApprovedMetadata();
             amd.setCodeId(md.getCodeId());
             amd.setJson(md.toJson().toString());
-            
+
             em.persist(amd);
-            
+
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
 
