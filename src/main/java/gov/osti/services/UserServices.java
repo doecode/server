@@ -163,16 +163,12 @@ public class UserServices {
                     .badRequest("Missing required attribute.")
                     .build();
         
-        // user has no roles?
-        if (null==user.getRoles())
-            return ErrorResponse
-                    .forbidden("Role not found.")
-                    .build();
-        
-        // return OK if the user has this role, or FORBIDDEN if they do not
-        return (user.getRoles().contains(role)) ?
-                Response.ok().entity(mapper.createObjectNode().put("status", "success").toString()).build() :
-                ErrorResponse.forbidden("Invalid role.").build();
+        // determine whether or not the User has the indicated Role code
+        return (user.hasRole(role)) ?
+                Response
+                .ok()
+                .entity(mapper.createObjectNode().put("status", "success").toString()).build() :
+                ErrorResponse.forbidden("Role not found.").build();
     }
 
     /**

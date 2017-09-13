@@ -23,7 +23,7 @@ import javax.persistence.TemporalType;
 @Entity
 @Table(name="users")
 @NamedQueries ({
-    @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u"),
+    @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u ORDER BY u.lastName"),
     @NamedQuery (name = "User.findUser", query = "SELECT u FROM User u WHERE u.email=:email")
 })
 public class User implements Serializable {
