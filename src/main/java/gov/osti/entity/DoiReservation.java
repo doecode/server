@@ -19,10 +19,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A single Entity containing a sequence of sorts for constructing DOI values.
- * 
- * Based on defined PREFIX value, "dc.yyyy.MM.dd.n" pattern.  n resets to 1 
+ *
+ * Based on defined PREFIX value, "dc.yyyyMMdd.n" pattern.  n resets to 1
  * each day.
- * 
+ *
  * @author ensornl
  */
 @Table (name = "DOI_RESERVATION")
@@ -73,7 +73,7 @@ public class DoiReservation implements Serializable {
     public void setDatePattern(String datePattern) {
         this.datePattern = datePattern;
     }
-    
+
     /**
      * @return the index
      */
@@ -88,19 +88,19 @@ public class DoiReservation implements Serializable {
     public void setIndex(Integer index) {
         this.index = index;
     }
-    
+
     /**
      * Obtain a new DOI Reservation value.
-     * If not set presently, take TODAY as a base date pattern, with 1 as the 
+     * If not set presently, take TODAY as a base date pattern, with 1 as the
      * index.  If set, and the date is NOT today's date, so the same. Otherwise,
      * increment the index value.
-     * 
+     *
      * Entity attributes are modified by this call, and should be persisted
      * outside this Bean context.
      */
     public synchronized void reserve() {
-        String now = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
-        
+        String now = DateTimeFormatter.ofPattern("yyyyMMdd").format(LocalDate.now());
+
         if (!StringUtils.startsWith(getDatePattern(), now)) {
             setDatePattern(now);
             setIndex(1);
@@ -110,7 +110,7 @@ public class DoiReservation implements Serializable {
             log.info("Increment to " + getIndex());
         }
     }
-    
+
     /**
      * Obtain the RESERVED DOI value.  Call reserve() first.
      * @return a DOI reservation value
