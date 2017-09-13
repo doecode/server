@@ -104,10 +104,8 @@ public class DoiReservation implements Serializable {
         if (!StringUtils.startsWith(getDatePattern(), now)) {
             setDatePattern(now);
             setIndex(1);
-            log.info("Setting to " + getDatePattern() + " and " + getIndex());
         } else {
             setIndex(++index);
-            log.info("Increment to " + getIndex());
         }
     }
 
