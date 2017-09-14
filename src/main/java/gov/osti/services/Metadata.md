@@ -71,7 +71,8 @@ JSON is the default output format.  Authenticated user must be either the owner 
 
 `GET /doecodeapi/services/metadata/projects`
 
-Requires authenticated login.  Retrieve all metadata projects owned by the current logged-in user account in JSON format.
+Requires authenticated login.  Retrieve all metadata projects owned by the current logged-in user account in JSON format. Administrative accounts
+will see ALL PROJECTS, while Site Administrator users will see all projects from their SITE.
 
 > Request:
 > ```html

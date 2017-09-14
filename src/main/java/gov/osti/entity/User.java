@@ -376,4 +376,8 @@ public class User implements Serializable {
                 false :
                 roles.contains(role);
     }
+    
+    public boolean hasRoles() {
+        return (null!=roles);
+    }
 }

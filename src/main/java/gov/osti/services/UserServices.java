@@ -333,6 +333,7 @@ public class UserServices {
                         .put("first_name", user.getFirstName())
                         .put("last_name", user.getLastName())
                         .put("roles", mapper.writeValueAsString(user.getRoles()))
+                        .put("pending_roles", mapper.writeValueAsString(user.getPendingRoles()))
                         .toString())
                 .cookie(cookie)
                 .build();

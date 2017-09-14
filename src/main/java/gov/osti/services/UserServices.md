@@ -145,6 +145,7 @@ Content-Type: application/json
  "xsrfToken":"some-token-value",
  "site":"CONTR",
  "roles":["role1", "role2"],
+ "pending_roles":["role3"],
  "first_name":"User",
  "last_name":"Name"}
 ```

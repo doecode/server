@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
@@ -380,17 +381,29 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-          TypedQuery<DOECodeMetadata> query;
-          if (user.hasRole("OSTI"))
-          	query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
-          else
-            query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class).setParameter("owner", user.getEmail());
-
-        	RecordsList records = new RecordsList(query.getResultList());
-                    return Response
-                            .status(Response.Status.OK)
-                            .entity(mapper.valueToTree(records).toString())
-                            .build();
+            Set<String> roles = user.getRoles();
+            
+            TypedQuery<DOECodeMetadata> query;
+            // admins see ALL PROJECTS
+            if (user.hasRole("OSTI")) {
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
+            } else if (null!=roles) {
+                // if you have another ROLE, it is assumed to be a SITE ADMIN; see all those records
+                String site = roles.iterator().next(); // get the FIRST one
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.siteOwnershipCode = :site", DOECodeMetadata.class)
+                        .setParameter("site", site);
+            } else {
+                // no roles, you see only YOUR OWN projects
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
+                        .setParameter("owner", user.getEmail());
+            }
+            
+            // get a List of records 
+            RecordsList records = new RecordsList(query.getResultList());
+                return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.valueToTree(records).toString())
+                    .build();
         } finally {
             em.close();
         }
