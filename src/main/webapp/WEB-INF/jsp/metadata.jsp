@@ -41,8 +41,9 @@
 
   <div class='header'>
     <div class='left'>
-      <h1>DOECode Metadata Services API</h1>
+      <h1>DOECode API</h1>
       <ul>
+          <li><a href='/doecodeapi/services'>API Services Documentation</a></li>
         <li><a href='https://github.com/doecode/server'>View on GitHub</a></li>
         <li><a href='https://github.com/doecode/server/issues'>Issues</a></li>
       </ul>

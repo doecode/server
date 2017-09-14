@@ -12,7 +12,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width">
 
-  <title>DOECode Search API Documentation</title>
+  <title>DOECode API Documentation</title>
 
   <!-- Flatdoc -->
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -24,23 +24,23 @@
   <script src="${pageContext.request.contextPath}/js/flatdoc-theme.js"></script>
 
   <!-- Meta -->
-  <meta content="DOECode Services API" property="og:title">
-  <meta content="Back-end services for DOECode application." name="description">
+  <meta content="DOECode API" property="og:title">
+  <meta content="Root API documentation listing for DOECode back-end services." name="description">
 
   <!-- Initializer -->
   <script>
-    Flatdoc.run({
-      fetcher: Flatdoc.github('doecode/server', 'src/main/java/gov/osti/services/Search.md' )
-    });
+      Flatdoc.run({
+          fetcher: Flatdoc.file('Services.md')
+      });
   </script>
 </head>
-<body role='flatdoc'>
+<body class='no-literate' role='flatdoc'>
 
   <div class='header'>
     <div class='left'>
       <h1>DOECode API</h1>
       <ul>
-          <li><a href='/doecodeapi/services'>API Services Documentation</a></li>
+        <li><a href="#">API Services Documentation</a></li>
         <li><a href='https://github.com/doecode/server'>View on GitHub</a></li>
         <li><a href='https://github.com/doecode/server/issues'>Issues</a></li>
       </ul>
