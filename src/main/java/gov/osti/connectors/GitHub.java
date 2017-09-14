@@ -177,12 +177,10 @@ public class GitHub implements ConnectorInterface {
                          */
                         if (StringUtils.isEmpty(user.getName())) {
                             developer.setFirstName(user.getLogin());
-                            developer.setLastName("(undefined)");
                         } else {
                             int lastSpace = user.getName().lastIndexOf(" ");
                             if ( -1==lastSpace ) {
                                 developer.setFirstName(user.getName());
-                                developer.setLastName("(undefined)");
                             } else {
                                 developer.setFirstName(user.getName().substring(0, lastSpace));
                                 developer.setLastName(user.getName().substring(lastSpace+1));
