@@ -114,7 +114,7 @@ public class DoiReservation implements Serializable {
      * @return a DOI reservation value
      */
     @JsonProperty (value = "doi")
-    public String getReservation() {
+    public String getReservedDoi() {
         return DATACITE_PREFIX + "/dc." + getDatePattern() + "." + getIndex();
     }
 }

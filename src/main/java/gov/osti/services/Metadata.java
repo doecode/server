@@ -43,6 +43,9 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
+import javax.persistence.LockTimeoutException;
+import javax.persistence.PersistenceException;
+import javax.persistence.PessimisticLockException;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -163,25 +166,17 @@ public class Metadata {
     public Viewable getDocumentation() {
         return new Viewable("/metadata");
     }
-
+    
     /**
-     * Acquire a unique DOI reservation value.  Requires authentication.
-     *
-     * Response Code:
-     * 200 - JSON contains "doi" element with a new reserved DOI value
-     * 500 - a parser or other unexpected error occurred
-     *
-     * @return JSON containing a new reserved DOI value.
+     * Obtain a reserved DOI value if possible.
+     * 
+     * @return a DoiReservation if successful, or null if not
      */
-    @GET
-    @Path ("reservedoi")
-    @Produces (MediaType.APPLICATION_JSON)
-    @RequiresAuthentication
-    public Response reserveDoi() {
+    private static DoiReservation getReservedDoi() {
         EntityManager em = DoeServletContextListener.createEntityManager();
-        // set a LOCK TIMEOUT
+        // set a LOCK TIMEOUT to prevent collision
         em.setProperty("javax.persistence.lock.timeout", 5000);
-
+        
         try {
             em.getTransaction().begin();
 
@@ -195,19 +190,39 @@ public class Metadata {
             em.merge(reservation);
 
             em.getTransaction().commit();
-
-            return Response
-                    .ok()
-                    .entity(mapper.writeValueAsString(reservation))
-                    .build();
-        } catch ( IOException e ) {
-            log.warn("DOI JSON Error: " + e.getMessage());
-            return ErrorResponse
-                    .internalServerError("Unable to parse DOI reservation.")
-                    .build();
+            
+            // send it back
+            return reservation;
+        } catch ( PessimisticLockException | LockTimeoutException e ) {
+            log.warn("DOI Reservation, unable to obtain lock.", e);
+            return null;
         } finally {
             em.close();
         }
+    }
+
+    /**
+     * Acquire a unique DOI reservation value.  Requires authentication.
+     *
+     * Response Code:
+     * 200 - JSON contains "doi" element with a new reserved DOI value
+     * 500 - a parser or other unexpected error occurred
+     *
+     * @throws IOException on JSON parsing errors
+     * @return JSON containing a new reserved DOI value.
+     */
+    @GET
+    @Path ("reservedoi")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    public Response reserveDoi() throws IOException {
+        // attempt to reserve a DOI
+        DoiReservation reservation = getReservedDoi();
+        
+        // if we got a reservation, send it back; otherwise, show a failure
+        return (null==reservation) ?
+                ErrorResponse.internalServerError("DOI reservation processing failed.").build() :
+                Response.ok().entity(mapper.writeValueAsString(reservation)).build();
     }
 
     /**
@@ -954,6 +969,14 @@ public class Metadata {
             md.setWorkflowStatus(Status.Published);
             // set the SITE
             md.setSiteOwnershipCode(user.getSiteId());
+            // if there is NO DOI set, get one
+            if (StringUtils.isEmpty(md.getDoi())) {
+                DoiReservation reservation = getReservedDoi();
+                if (null==reservation)
+                    throw new IOException ("DOI reservation failure.");
+                // set it
+                md.setDoi(reservation.getReservedDoi());
+            }
 
             // persist this to the database
             store(em, md, user);
