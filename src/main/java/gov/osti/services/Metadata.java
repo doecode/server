@@ -397,16 +397,17 @@ public class Metadata {
 
         try {
             Set<String> roles = user.getRoles();
+            String rolecode = (null==roles) ? "" : 
+               (roles.isEmpty()) ? "" : roles.iterator().next();
             
             TypedQuery<DOECodeMetadata> query;
             // admins see ALL PROJECTS
-            if (user.hasRole("OSTI")) {
+            if ("OSTI".equals(rolecode)) {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
-            } else if (null!=roles && !roles.isEmpty()) {
+            } else if (StringUtils.isNotEmpty(rolecode)) {
                 // if you have another ROLE, it is assumed to be a SITE ADMIN; see all those records
-                String site = roles.iterator().next(); // get the FIRST one
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.siteOwnershipCode = :site", DOECodeMetadata.class)
-                        .setParameter("site", site);
+                        .setParameter("site", rolecode);
             } else {
                 // no roles, you see only YOUR OWN projects
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
