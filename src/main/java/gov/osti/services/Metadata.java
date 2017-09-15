@@ -402,7 +402,7 @@ public class Metadata {
             // admins see ALL PROJECTS
             if (user.hasRole("OSTI")) {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
-            } else if (null!=roles) {
+            } else if (null!=roles && !roles.isEmpty()) {
                 // if you have another ROLE, it is assumed to be a SITE ADMIN; see all those records
                 String site = roles.iterator().next(); // get the FIRST one
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.siteOwnershipCode = :site", DOECodeMetadata.class)
