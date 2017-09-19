@@ -15,6 +15,7 @@ import java.io.Reader;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Implement an Entity class for exchanging information with OSTI's ELINK service.
@@ -116,16 +117,20 @@ public class OstiMetadata {
             sponsororgs.append(o.getOrganizationName());
             // separate DOE and non-DOE award numbers
             if (o.isDOE()) {
+                if (StringUtils.isNotEmpty(o.getPrimaryAward()))
+                    doenumber.append(o.getPrimaryAward());
                 for ( FundingIdentifier fid : o.getFundingIdentifiers() ) {
-                    if ( FundingIdentifier.Type.AwardNumber == fid.getIdentifierType() ) {
+                    if ( FundingIdentifier.Type.AwardNumber.equals(fid.getIdentifierType()) ) {
                         if (doenumber.length()>0)
                             doenumber.append("; ");
                         doenumber.append(fid.getIdentifierValue());
                     }
                 }
             } else {
+                if (StringUtils.isNotEmpty(o.getPrimaryAward()))
+                    nondoenumber.append(o.getPrimaryAward());
                 for ( FundingIdentifier fid : o.getFundingIdentifiers() ) {
-                    if (FundingIdentifier.Type.AwardNumber==fid.getIdentifierType()) {
+                    if (FundingIdentifier.Type.AwardNumber.equals(fid.getIdentifierType())) {
                         if (nondoenumber.length()>0) nondoenumber.append("; ");
                         nondoenumber.append(fid.getIdentifierValue());
                     }

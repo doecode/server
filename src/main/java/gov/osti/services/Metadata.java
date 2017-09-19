@@ -44,7 +44,6 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.LockTimeoutException;
-import javax.persistence.PersistenceException;
 import javax.persistence.PessimisticLockException;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
