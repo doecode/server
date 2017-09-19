@@ -165,17 +165,17 @@ public class Metadata {
     public Viewable getDocumentation() {
         return new Viewable("/metadata");
     }
-    
+
     /**
      * Obtain a reserved DOI value if possible.
-     * 
+     *
      * @return a DoiReservation if successful, or null if not
      */
     private static DoiReservation getReservedDoi() {
         EntityManager em = DoeServletContextListener.createEntityManager();
         // set a LOCK TIMEOUT to prevent collision
         em.setProperty("javax.persistence.lock.timeout", 5000);
-        
+
         try {
             em.getTransaction().begin();
 
@@ -189,7 +189,7 @@ public class Metadata {
             em.merge(reservation);
 
             em.getTransaction().commit();
-            
+
             // send it back
             return reservation;
         } catch ( PessimisticLockException | LockTimeoutException e ) {
@@ -217,7 +217,7 @@ public class Metadata {
     public Response reserveDoi() throws IOException {
         // attempt to reserve a DOI
         DoiReservation reservation = getReservedDoi();
-        
+
         // if we got a reservation, send it back; otherwise, show a failure
         return (null==reservation) ?
                 ErrorResponse.internalServerError("DOI reservation processing failed.").build() :
@@ -396,9 +396,9 @@ public class Metadata {
 
         try {
             Set<String> roles = user.getRoles();
-            String rolecode = (null==roles) ? "" : 
+            String rolecode = (null==roles) ? "" :
                (roles.isEmpty()) ? "" : roles.iterator().next();
-            
+
             TypedQuery<DOECodeMetadata> query;
             // admins see ALL PROJECTS
             if ("OSTI".equals(rolecode)) {
@@ -412,8 +412,8 @@ public class Metadata {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
-            
-            // get a List of records 
+
+            // get a List of records
             RecordsList records = new RecordsList(query.getResultList());
                 return Response
                     .status(Response.Status.OK)
@@ -1290,7 +1290,7 @@ public class Metadata {
             amd.setCodeId(md.getCodeId());
             amd.setJson(md.toJson().toString());
 
-            em.persist(amd);
+            em.merge(amd);
 
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
