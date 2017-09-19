@@ -5,12 +5,15 @@ package gov.osti.services;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import gov.osti.connectors.HttpUtil;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import gov.osti.entity.DOECodeMetadata;
-import gov.osti.entity.SearchData;
-import gov.osti.entity.SearchDocument;
-import gov.osti.entity.SearchResult;
+import gov.osti.search.SearchData;
+import gov.osti.search.SolrDocument;
+import gov.osti.search.SolrResult;
 import gov.osti.listeners.DoeServletContextListener;
+import gov.osti.search.SearchResponse;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URISyntaxException;
@@ -49,7 +52,13 @@ public class SearchService {
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
     
     // Jackson ObjectMapper instance
-    private static ObjectMapper mapper = new ObjectMapper()
+    protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    protected static final ObjectMapper XML_MAPPER = new XmlMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .enable(SerializationFeature.INDENT_OUTPUT);
+    protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     
@@ -108,14 +117,14 @@ public class SearchService {
             HttpResponse response = hc.execute(get);
 
             if (HttpStatus.SC_OK==response.getStatusLine().getStatusCode()) {
-                SearchResult result = mapper.readValue(EntityUtils.toString(response.getEntity()), SearchResult.class);
+                SolrResult result = JSON_MAPPER.readValue(EntityUtils.toString(response.getEntity()), SolrResult.class);
 
                 if (result.getSearchResponse().isEmpty())
                     return ErrorResponse
                             .notFound("No records found.")
                             .build();
                 // get the first result
-                SearchDocument doc = result.getSearchResponse().getDocuments()[0];
+                SolrDocument doc = result.getSearchResponse().getDocuments()[0];
                 // convert it to a POJO
                 DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(doc.getJson()));
 
@@ -127,28 +136,28 @@ public class SearchService {
                         .status(Response.Status.OK)
                         .header("Content-Type", "text/yaml")
                         .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                        .entity(HttpUtil.writeMetadataYaml(md))
+                        .entity(YAML_MAPPER.writeValueAsString(md))
                         .build();
                 } else if ("xml".equals(format)) {
                     return Response
                             .ok()
                             .header("Content-Type", MediaType.APPLICATION_XML)
-                            .entity(HttpUtil.writeXml(md))
+                            .entity(XML_MAPPER.writeValueAsString(md))
                             .build();
                 } else {
                     // send back the JSON
                     return Response
                         .ok()
                         .header("Content-Type", MediaType.APPLICATION_JSON)
-                        .entity(mapper
+                        .entity(JSON_MAPPER
                                 .createObjectNode()
                                 .putPOJO("metadata", md.toJson()).toString())
                         .build();
                 }
             } else {
-                return Response
+                return ErrorResponse
                         .status(response.getStatusLine().getStatusCode())
-                        .entity("Search Error: " + EntityUtils.toString(response.getEntity()))
+                        .message(EntityUtils.toString(response.getEntity()))
                         .build();
             }
         } catch ( IOException | URISyntaxException e ) {
@@ -161,14 +170,15 @@ public class SearchService {
      * Translate a SearchData parameter request to SOLR output search results.
      * 
      * @param parameters the JSON SearchData Object of search parameters
+     * @param format the optional output format (YAML/JSON/XML; JSON is default)
      * @return the output of the SOLR search results, if any
      * @throws IOException on unexpected IO errors
      * @throws URISyntaxException on URI search errors
      */
     @POST
-    @Produces (MediaType.APPLICATION_JSON)
+    @Produces ({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, "text/yaml"})
     @Consumes (MediaType.APPLICATION_JSON)
-    public Response search(String parameters) throws IOException, URISyntaxException {
+    public Response search(String parameters, @QueryParam("format") String format) throws IOException, URISyntaxException {
         // no search configured, you get nothing
         if ("".equals(SEARCH_URL))
             return Response
@@ -184,6 +194,7 @@ public class SearchService {
         
         URIBuilder builder = new URIBuilder(SEARCH_URL)
                 .addParameter("q", searchFor.toQ())
+                .addParameter("fl", "json")
                 .addParameter("sort", searchFor.getSort());
         // if values are specified for rows and start, supply those.
         if (null!=searchFor.getRows())
@@ -196,14 +207,43 @@ public class SearchService {
         HttpResponse response = hc.execute(get);
         
         if (HttpStatus.SC_OK==response.getStatusLine().getStatusCode()) {
-            return Response
-                    .status(Response.Status.OK)
-                    .entity(EntityUtils.toString(response.getEntity()))
-                    .build();
+            SolrResult result = JSON_MAPPER.readValue(EntityUtils.toString(response.getEntity()), SolrResult.class);
+            // construct a search response object
+            SearchResponse query = new SearchResponse();
+            query.setStart(result.getSearchResponse().getStart());
+            query.setNumFound(result.getSearchResponse().getNumFound());
+            
+            // if there are matched documents, load them in
+            if ( null!=result.getSearchResponse().getDocuments() ) {
+                for ( SolrDocument doc : result.getSearchResponse().getDocuments() ) {
+                    query.add(JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class));
+                }
+            }
+            // respond with the appropriate format based on the input parameter
+            if ("xml".equals(format)) {
+                return Response
+                        .ok()
+                        .header("Content-Type", MediaType.APPLICATION_XML)
+                        .entity(XML_MAPPER.writeValueAsString(query))
+                        .build();
+            } else if ("yaml".equals(format)) {
+                return Response
+                        .ok()
+                        .header("Content-Type", "text/yaml")
+                        .entity(YAML_MAPPER.writeValueAsString(query))
+                        .build();
+            } else {
+                return Response
+                        .ok()
+                        .header("Content-Type", MediaType.APPLICATION_JSON)
+                        .entity(JSON_MAPPER.writeValueAsString(query))
+                        .build();
+            }
         } else {
-            return Response
+            // let the user know something failed
+            return ErrorResponse
                     .status(response.getStatusLine().getStatusCode())
-                    .entity("Search Error: " + EntityUtils.toString(response.getEntity()))
+                    .message(EntityUtils.toString(response.getEntity()))
                     .build();
         }
     }

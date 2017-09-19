@@ -1,4 +1,4 @@
-package gov.osti.entity;
+package gov.osti.search;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.IOException;

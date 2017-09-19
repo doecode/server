@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import java.util.ArrayList;
 import java.util.List;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 
@@ -44,6 +45,10 @@ public class ErrorResponse {
 
     protected ErrorResponse() {
         
+    }
+    
+    protected ErrorResponse(int code) {
+        this.status = code;
     }
     
     protected ErrorResponse(Response.Status status) {
@@ -221,9 +226,8 @@ public class ErrorResponse {
      * @param code the HTTP status code to use for this ErrorResponse
      * @return the ErrorResponse
      */
-    public ErrorResponse status(int code) {
-        this.status = code;
-        return this;
+    public static ErrorResponse status(int code) {
+        return new ErrorResponse(code);
     }
     
     /**
@@ -233,8 +237,7 @@ public class ErrorResponse {
      * @return this ErrorResponse
      */
     public ErrorResponse status(Response.Status s) {
-        this.status = s.getStatusCode();
-        return this;
+        return new ErrorResponse(s);
     }
     
     /**
@@ -267,6 +270,7 @@ public class ErrorResponse {
         try {
         return Response
                 .status(this.status)
+                .header("Content-Type", MediaType.APPLICATION_JSON)
                 .entity(mapper.writeValueAsString(this))
                 .build();
         } catch ( JsonProcessingException e ) {

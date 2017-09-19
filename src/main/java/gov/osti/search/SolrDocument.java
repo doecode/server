@@ -1,6 +1,6 @@
 /*
  */
-package gov.osti.entity;
+package gov.osti.search;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author ensornl
  */
 @JsonIgnoreProperties (ignoreUnknown = true)
-public class SearchDocument implements Serializable {
+public class SolrDocument implements Serializable {
     private String json;
 
     /**

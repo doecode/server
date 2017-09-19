@@ -1,6 +1,6 @@
 /*
  */
-package gov.osti.entity;
+package gov.osti.search;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,10 +12,12 @@ import java.io.Serializable;
  * @author ensornl
  */
 @JsonIgnoreProperties (ignoreUnknown = true)
-public class SearchResponse implements Serializable {
+public class SolrResponse implements Serializable {
     @JsonProperty (value = "docs")
-    private SearchDocument[] documents;
+    private SolrDocument[] documents;
+    @JsonProperty (value = "numFound")
     private int numFound;
+    @JsonProperty (value = "start")
     private int start;
 
     /**
@@ -23,7 +25,7 @@ public class SearchResponse implements Serializable {
      * 
      * @return the documents found
      */
-    public SearchDocument[] getDocuments() {
+    public SolrDocument[] getDocuments() {
         return documents;
     }
 
@@ -32,7 +34,7 @@ public class SearchResponse implements Serializable {
      * 
      * @param documents the documents to set
      */
-    public void setDocuments(SearchDocument[] documents) {
+    public void setDocuments(SolrDocument[] documents) {
         this.documents = documents;
     }
 

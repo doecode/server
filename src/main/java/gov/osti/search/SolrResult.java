@@ -1,6 +1,6 @@
 /*
  */
-package gov.osti.entity;
+package gov.osti.search;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,17 +11,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author ensornl
  */
 @JsonIgnoreProperties (ignoreUnknown = true)
-public class SearchResult {
+public class SolrResult {
     // only define the search response
     @JsonProperty (value = "response")
-    private SearchResponse response;
+    private SolrResponse response;
     
     /**
      * Get the SearchResponse from this search.
      * 
      * @return the SearchResponse found
      */
-    public SearchResponse getSearchResponse() {
+    public SolrResponse getSearchResponse() {
         return response;
     }
     
@@ -29,7 +29,7 @@ public class SearchResult {
      * Set the SearchResponse.
      * @param r the SearchResponse to set
      */
-    public void setSearchResponse(SearchResponse r) {
+    public void setSearchResponse(SolrResponse r) {
         response = r;
     }
 }

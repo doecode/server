@@ -46,7 +46,7 @@ public class DataCite {
     // logger
     private static Logger log = LoggerFactory.getLogger(DataCite.class);
     // DataCite API base request URL
-    private static final String DATACITE_URL = "https://mds.datacite.org/";
+    private static final String DATACITE_URL = "https://mds.test.datacite.org/";
     private static String DATACITE_LOGIN = DoeServletContextListener.getConfigurationProperty("datacite.user");
     private static String DATACITE_PASSWORD = DoeServletContextListener.getConfigurationProperty("datacite.password");
     private static String DATACITE_BASE_URL = DoeServletContextListener.getConfigurationProperty("datacite.baseurl");
@@ -68,21 +68,23 @@ public class DataCite {
         sw.writeStartElement("creators");
         
         for ( Developer developer : developers ) {
+            String given_name = (StringUtils.isEmpty(developer.getFirstName())) ? "" : developer.getFirstName(),
+                   family_name = (StringUtils.isEmpty(developer.getLastName())) ? "" : developer.getLastName();
             sw.writeStartElement("creator");
             
             sw.writeStartElement("creatorName");
-            sw.writeCharacters(developer.getLastName() + ", " + developer.getFirstName());
+            sw.writeCharacters(family_name + ", " + given_name);
             sw.writeEndElement();
             
             sw.writeStartElement("givenName");
-            sw.writeCharacters(developer.getFirstName());
+            sw.writeCharacters(given_name);
             sw.writeEndElement();
             
             sw.writeStartElement("familyName");
-            sw.writeCharacters(developer.getLastName());
+            sw.writeCharacters(family_name);
             sw.writeEndElement();
             
-            if (!"".equals(developer.getOrcid())) {
+            if (StringUtils.isNotEmpty(developer.getOrcid())) {
                 sw.writeStartElement("nameIdentifier");
                 sw.writeAttribute("schemeURI", "http://orcid.org/");
                 sw.writeAttribute("nameIdentifierScheme", "ORCID");
@@ -120,11 +122,13 @@ public class DataCite {
         sw.writeStartElement("contributors");
         
         for ( Contributor contributor : contributors ) {
+            String given_name = (StringUtils.isEmpty(contributor.getFirstName())) ? "" : contributor.getFirstName(),
+                   family_name = (StringUtils.isEmpty(contributor.getLastName())) ? "" : contributor.getLastName();
             sw.writeStartElement("contributor");
             sw.writeAttribute("contributorType", contributor.getContributorType().name());
             
             sw.writeStartElement("contributorName");
-            sw.writeCharacters(contributor.getLastName() + ", " + contributor.getFirstName());
+            sw.writeCharacters(family_name + ", " + given_name);
             sw.writeEndElement();
             
             if (!StringUtils.isEmpty(contributor.getOrcid())) {
@@ -158,7 +162,7 @@ public class DataCite {
      * @throws XMLStreamException on XML output errors
      */
     private static void writeKeywords(XMLStreamWriter sw, String keywords) throws XMLStreamException {
-        if (null==keywords)
+        if (StringUtils.isEmpty(keywords))
             return;
         
         sw.writeStartElement("subjects");
