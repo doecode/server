@@ -20,6 +20,7 @@ import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.search.SearchResponse;
 import java.io.IOException;
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -94,6 +95,11 @@ public class SearchService {
     protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .addMixIn(Object.class, PropertyFilterMixIn.class);
+    protected static final ObjectMapper BIBLIO_WRAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .configure(SerializationFeature.WRAP_ROOT_VALUE, true)
             .addMixIn(Object.class, PropertyFilterMixIn.class);
     
     // configured location of the search service endpoint
@@ -185,8 +191,7 @@ public class SearchService {
                     return Response
                         .ok()
                         .header("Content-Type", MediaType.APPLICATION_JSON)
-                        .entity(JSON_MAPPER
-                                .configure(SerializationFeature.WRAP_ROOT_VALUE, true)
+                        .entity(BIBLIO_WRAPPER
                                 .writer(filter)
                                 .writeValueAsString(md))
                         .build();
