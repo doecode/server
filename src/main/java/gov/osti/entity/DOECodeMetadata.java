@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
     @NamedQuery (name = "DOECodeMetadata.findByStatus", query = "SELECT m FROM DOECodeMetadata m WHERE m.workflowStatus = :status")
 })
 @XmlRootElement (name = "metadata")
+@JsonRootName (value = "metadata")
 public class DOECodeMetadata implements Serializable {
     /**
 	 * 

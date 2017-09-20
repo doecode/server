@@ -2,10 +2,14 @@
  */
 package gov.osti.services;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import gov.osti.entity.DOECodeMetadata;
@@ -51,16 +55,46 @@ public class SearchService {
     // Logger
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
     
+    /** 
+     * Implement a simple JSON filter to remove named properties.
+     */
+    @JsonFilter("filter properties by name")  
+    class PropertyFilterMixIn {}  
+    
+    // filter out certain attribute names
+    protected final static String[] ignoreProperties = {
+        "recipientName",
+        "recipient_name",
+        "recipientEmail",
+        "recipient_email",
+        "recipientPhone",
+        "recipient_phone",
+        "owner",
+        "workflowStatus",
+        "workflow_status",
+        "accessLimitations",
+        "access_limitations",
+        "disclaimers",
+        "siteOwnershipCode",
+        "site_ownership_code"
+    };
+    protected static FilterProvider filter = new SimpleFilterProvider()
+            .addFilter("filter properties by name", 
+                    SimpleBeanPropertyFilter.serializeAllExcept(ignoreProperties));
+    
     // Jackson ObjectMapper instance
     protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .addMixIn(Object.class, PropertyFilterMixIn.class);
     protected static final ObjectMapper XML_MAPPER = new XmlMapper()
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .enable(SerializationFeature.INDENT_OUTPUT);
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .addMixIn(Object.class, PropertyFilterMixIn.class);
     protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .addMixIn(Object.class, PropertyFilterMixIn.class);
     
     // configured location of the search service endpoint
     private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
@@ -136,22 +170,25 @@ public class SearchService {
                         .status(Response.Status.OK)
                         .header("Content-Type", "text/yaml")
                         .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                        .entity(YAML_MAPPER.writeValueAsString(md))
+                        .entity(YAML_MAPPER
+                                .writer(filter).writeValueAsString(md))
                         .build();
                 } else if ("xml".equals(format)) {
                     return Response
                             .ok()
                             .header("Content-Type", MediaType.APPLICATION_XML)
-                            .entity(XML_MAPPER.writeValueAsString(md))
+                            .entity(XML_MAPPER
+                                    .writer(filter).writeValueAsString(md))
                             .build();
                 } else {
-                    // send back the JSON
+                    // send back the JSON (named object "metadata")
                     return Response
                         .ok()
                         .header("Content-Type", MediaType.APPLICATION_JSON)
                         .entity(JSON_MAPPER
-                                .createObjectNode()
-                                .putPOJO("metadata", md.toJson()).toString())
+                                .configure(SerializationFeature.WRAP_ROOT_VALUE, true)
+                                .writer(filter)
+                                .writeValueAsString(md))
                         .build();
                 }
             } else {
@@ -224,19 +261,25 @@ public class SearchService {
                 return Response
                         .ok()
                         .header("Content-Type", MediaType.APPLICATION_XML)
-                        .entity(XML_MAPPER.writeValueAsString(query))
+                        .entity(XML_MAPPER
+                                .writer(filter)
+                                .writeValueAsString(query))
                         .build();
             } else if ("yaml".equals(format)) {
                 return Response
                         .ok()
                         .header("Content-Type", "text/yaml")
-                        .entity(YAML_MAPPER.writeValueAsString(query))
+                        .entity(YAML_MAPPER
+                                .writer(filter)
+                                .writeValueAsString(query))
                         .build();
             } else {
                 return Response
                         .ok()
                         .header("Content-Type", MediaType.APPLICATION_JSON)
-                        .entity(JSON_MAPPER.writeValueAsString(query))
+                        .entity(JSON_MAPPER
+                                .writer(filter)
+                                .writeValueAsString(query))
                         .build();
             }
         } else {
