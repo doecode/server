@@ -815,6 +815,10 @@
       <str name="wt">json</str>
       <str name="indent">true</str>
       <str name="q.op">AND</str>
+      <!-- defaults for boosting relevance -->
+      <str name="defType">edismax</str>
+      <str name="boost">recip(ms(NOW/HOUR,releaseDate),3.16e-11,1,1)</str>
+      <str name="bq">description</str>
     </lst>
     <!-- return only APPROVED records -->
     <lst name="appends">
