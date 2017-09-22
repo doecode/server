@@ -2,13 +2,20 @@
  */
 package gov.osti.services;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
@@ -141,6 +148,38 @@ public class Metadata {
     public Metadata() {
     }
 
+    /**
+     * Implement a simple JSON filter to remove named properties.
+     */
+    @JsonFilter("filter properties by name")
+    class PropertyFilterMixIn {}
+
+    // filter out certain attribute names
+    protected final static String[] ignoreProperties = {
+        "recipientName",
+        "recipient_name",
+        "recipientEmail",
+        "recipient_email",
+        "recipientPhone",
+        "recipient_phone",
+        "owner",
+        "workflowStatus",
+        "workflow_status",
+        "accessLimitations",
+        "access_limitations",
+        "disclaimers",
+        "siteOwnershipCode",
+        "site_ownership_code"
+    };
+    protected static FilterProvider filter = new SimpleFilterProvider()
+            .addFilter("filter properties by name",
+                    SimpleBeanPropertyFilter.serializeAllExcept(ignoreProperties));
+
+    // ObjectMapper instance for yaml response
+    protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .addMixIn(Object.class, PropertyFilterMixIn.class);
     // ObjectMapper instance for metadata interchange
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -276,13 +315,14 @@ public class Metadata {
         // if YAML is requested, return that; otherwise, default to JSON
         try {
             if ("yaml".equals(format)) {
-                // return the YAML
+                // return the YAML (excluding filtered data)
                 return
                     Response
                     .ok()
                     .header("Content-Type", "text/yaml")
                     .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
-                    .entity(HttpUtil.writeMetadataYaml(md))
+                    .entity(YAML_MAPPER
+                            .writer(filter).writeValueAsString(md))
                     .build();
             } else if ("xml".equals(format)) {
                 return Response
