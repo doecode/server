@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -17,11 +18,14 @@ import gov.osti.search.SearchData;
 import gov.osti.search.SolrDocument;
 import gov.osti.search.SolrResult;
 import gov.osti.listeners.DoeServletContextListener;
+import gov.osti.search.FacetDeserializer;
 import gov.osti.search.SearchResponse;
+import gov.osti.search.SolrFacet;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
+import java.util.LinkedHashMap;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -83,6 +87,10 @@ public class SearchService {
             .addFilter("filter properties by name", 
                     SimpleBeanPropertyFilter.serializeAllExcept(ignoreProperties));
     
+    // specialized handler for SOLR date faceting
+    protected static SimpleModule module = new SimpleModule()
+            .addDeserializer(SolrFacet.class, new FacetDeserializer());
+    
     // Jackson ObjectMapper instance
     protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -95,6 +103,7 @@ public class SearchService {
     protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .registerModule(module)
             .addMixIn(Object.class, PropertyFilterMixIn.class);
     protected static final ObjectMapper BIBLIO_WRAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -260,6 +269,8 @@ public class SearchService {
                 for ( SolrDocument doc : result.getSearchResponse().getDocuments() ) {
                     query.add(JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class));
                 }
+                // check out the FACETS
+                query.setFacets(result.getSolrFacet().getValues());
             }
             // respond with the appropriate format based on the input parameter
             if ("xml".equals(format)) {

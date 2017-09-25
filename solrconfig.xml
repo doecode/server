@@ -824,6 +824,19 @@
     <lst name="appends">
       <str name="fq">workflowStatus:Approved</str>
     </lst>
+    <!-- add JSON-format facet by YEAR -->
+    <lst name="invariants">
+      <str name="json.facet">
+{ dates:{
+  type:range,
+  field:releaseDate,
+  start:"1950-01-01T00:00:00Z",
+  end:NOW,
+  gap:"+1YEARS",
+  mincount:1}
+}
+      </str>
+   </lst>
   </requestHandler>
 
 

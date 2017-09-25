@@ -15,6 +15,8 @@ public class SolrResult {
     // only define the search response
     @JsonProperty (value = "response")
     private SolrResponse response;
+    @JsonProperty (value="facets")
+    private SolrFacet facet;
     
     /**
      * Get the SearchResponse from this search.
@@ -31,5 +33,13 @@ public class SolrResult {
      */
     public void setSearchResponse(SolrResponse r) {
         response = r;
+    }
+    
+    public void setSolrFacet(SolrFacet f) {
+        facet = f;
+    }
+    
+    public SolrFacet getSolrFacet() {
+        return facet;
     }
 }
