@@ -23,9 +23,7 @@ import gov.osti.search.SearchResponse;
 import gov.osti.search.SolrFacet;
 import java.io.IOException;
 import java.io.StringReader;
-import java.math.BigDecimal;
 import java.net.URISyntaxException;
-import java.util.LinkedHashMap;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -77,8 +75,9 @@ public class SearchService {
         "owner",
         "workflowStatus",
         "workflow_status",
-        "accessLimitations",
         "access_limitations",
+        "accessLimitation",
+        "access_limitation",
         "disclaimers",
         "siteOwnershipCode",
         "site_ownership_code"
