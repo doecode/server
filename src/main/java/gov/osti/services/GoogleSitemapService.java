@@ -12,6 +12,7 @@ import static gov.osti.services.SearchService.JSON_MAPPER;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import javax.servlet.ServletContext;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class GoogleSitemapService {
 
      protected static final int MAX_RECORDS_PER_SITEMAP_PAGE = 20000;
-     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
      private static final String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
      private static final String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
 
@@ -70,16 +71,18 @@ public class GoogleSitemapService {
           LocalDate firstOfMonth = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth());
           String moddedDate = firstOfMonth.format(DATE_FORMATTER);
 
-          //Get the opennet sitemap string we will be using
-          String sitemapURL = uri.getBaseUri().toString();
-
-          //Wirte out the xml
+          //Write out the xml
           StringBuilder xml_string = new StringBuilder();
           xml_string.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
           for (int i = 0; i < numOfPages; i++) {
                xml_string.append("<sitemap>");
-               xml_string.append("<loc>" + sitemapURL + (i + 1) + "</loc>");
-               xml_string.append("<lastmod>" + moddedDate + "</lastmod>");
+               xml_string.append("<loc>")
+                       .append(uri.getBaseUri())
+                       .append(uri.getPath())
+                       .append("/")
+                       .append(i + 1)
+                       .append("</loc>");
+               xml_string.append("<lastmod>").append(moddedDate).append("</lastmod>");
                xml_string.append("</sitemap>");
           }
           xml_string.append("</sitemapindex>");
@@ -87,6 +90,12 @@ public class GoogleSitemapService {
           return Response.ok(xml_string.toString(), MediaType.TEXT_XML).build();
      }
 
+     /**
+      * Get a single page of Site Map results.
+      * 
+      * @param pageNum the page number to retrieve
+      * @return XML response containing the page site map
+      */
      @GET
      @Produces(MediaType.TEXT_XML)
      @Path("xml/{pageNum}")
@@ -113,12 +122,11 @@ public class GoogleSitemapService {
                               query.add(JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class));
                          }
                     }
-                    String right_now_string = LocalDate.now().format(DATE_FORMATTER);
                     xml_string.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
                     query.getDocs().forEach((record) -> {
                          xml_string.append("<url>");
-                         xml_string.append("<loc>" + SITE_URL + "/biblio" + "/" + record.getCodeId() + "</loc>");
-                         xml_string.append("<lastmod>" + right_now_string + "</lastmod>");
+                         xml_string.append("<loc>").append(SITE_URL).append("/biblio" + "/").append(record.getCodeId()).append("</loc>");
+                         xml_string.append("<lastmod>").append(DATE_FORMATTER.format(record.getDateRecordUpdated().toInstant())).append("</lastmod>");
                          xml_string.append("<changefreq>monthly</changefreq>");
                          xml_string.append("<priority>0.5</priority>");
                          xml_string.append("</url>");
