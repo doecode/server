@@ -914,7 +914,7 @@ public class Metadata {
 
             // store it
             store(em, md, user);
-            // check validations for Published workflow
+            // check validations for Submitted workflow
             List<String> errors = validateSubmit(md);
             if ( !errors.isEmpty() ) {
                 // generate a JSONAPI errors object
@@ -1214,7 +1214,7 @@ public class Metadata {
 
     /**
      * POST a Metadata JSON object to the persistence layer.
-     * Saves the object to persistence layer; if the entity is already Published,
+     * Saves the object to persistence layer; if the entity is already Submitted,
      * this operation is invalid.
      *
      * @param object the JSON to post

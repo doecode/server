@@ -504,7 +504,7 @@ public class DOECodeMetadata implements Serializable {
 
     /**
      * Obtain the WORKFLOW STATUS on this record (initially New, then Saved; after
-     * a record is Published or Submitted, it may no longer be Saved.)
+     * a record is Announced or Submitted, it may no longer be Saved.)
      * 
      * @return the Status value for this record
      */

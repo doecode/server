@@ -94,7 +94,7 @@ will see ALL PROJECTS, while Site Administrator users will see all projects from
 `GET /doecodeapi/services/metadata/projects/pending`
 
 Requires authentication, and special administrative privileges. Retrieve all metadata projects currently pending 
-approval (that is, Published records), optionally from a given *site code*.  You may specify the optional URL
+approval (that is, Submitted records), optionally from a given *site code*.  You may specify the optional URL
 parameters of "start" (beginning row number to retrieve, from 0), "rows" (the number of rows desired at once, 0
 being all of them), and "site" (only records from a given site code).  If not specified, all rows from all sites
 are returned.
@@ -123,7 +123,7 @@ row number of the request.
 `GET /doecodeapi/services/metadata/reservedoi`
 
 Obtain a new reserved DOI value, created to be a unique value to be used for record minting.  This value is only a reservation,
-not used to mint information until submitted or published with metadata successfully.
+not used to mint information until submitted or announced with metadata successfully.
 
 > Request:
 > ```html
@@ -186,11 +186,11 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > { "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
 > ```
 
-### publish
+### submit
 
-`POST /doecodeapi/services/metadata/publish`
+`POST /doecodeapi/services/metadata/submit`
 
-Send JSON metadata to be persisted in the *Published* work-flow state.  Validation on required metadata fields is performed, and any errors preventing 
+Send JSON metadata to be persisted in the *Submitted* work-flow state.  Validation on required metadata fields is performed, and any errors preventing 
 this operation will be returned.  
 
 Validation rules are:
@@ -206,52 +206,6 @@ Validation rules are:
   * each developer must have a first and last name
   * if email is provided, it must be valid
 * if DOI is specified, release date is required
-
-> Request:
-> ```html
-> POST /services/metadata/publish
-> Content-Type: application/json
-> Authorization: Basic user-api-key
-> ```
-> ```json
-> { "code_id":123, "software_title":"Sample Data", ... }
-> ```
-> Response:
-> ```html
-> HTTP/1.1 200 OK
-> Content-Type: application/json
-> ```
-> ```json
-> { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
-> ```
-> Error Response:
-> ```html
-> HTTP/1.1 400 BAD REQUEST
-> Content-Type: application/json
-> ```
-> ```json
-> { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
-> ```
-
-### submit
-
-`POST /doecodeapi/services/metadata/submit`
-
-Send JSON formatted metadata to DOECode for a software project that is considered fully complete and ready to 
-be submitted to DOE.  Additional validations are required for final submission:
-
-* All above Publish validations apply
-* A release date is required
-* At least one sponsoring organization is required
-  * each organization must have a name
-  * if DOE, must also have a valid primary award number
-* At least one research organization is required
-  * each organization must have a name
-* Contact information is required
-  * email must be valid
-  * phone number must be valid
-  * organization name is required
-* If project is not Open Source ("OS") availability, a file upload is required
 
 > Request:
 > ```html
@@ -279,12 +233,58 @@ be submitted to DOE.  Additional validations are required for final submission:
 > { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 > ```
 
+### announce
+
+`POST /doecodeapi/services/metadata/announce`
+
+Send JSON formatted metadata to DOECode for a software project that is considered fully complete and ready to 
+be announced to DOE.  Workflow status remains *Submitted* for this operation. Additional validations are required for final submission:
+
+* All above Submitted validations apply
+* A release date is required
+* At least one sponsoring organization is required
+  * each organization must have a name
+  * if DOE, must also have a valid primary award number
+* At least one research organization is required
+  * each organization must have a name
+* Contact information is required
+  * email must be valid
+  * phone number must be valid
+  * organization name is required
+* If project is not Open Source ("OS") availability, a file upload is required
+
+> Request:
+> ```html
+> POST /services/metadata/announce
+> Content-Type: application/json
+> Authorization: Basic user-api-key
+> ```
+> ```json
+> { "code_id":123, "software_title":"Sample Data", ... }
+> ```
+> Response:
+> ```html
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> { "metadata" : { "code_id" : 123, "software_title" : "Sample Data", ... } }
+> ```
+> Error Response:
+> ```html
+> HTTP/1.1 400 BAD REQUEST
+> Content-Type: application/json
+> ```
+> ```json
+> { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
+> ```
+
 ### approve
 
 `GET /doecodeapi/services/metadata/approve/{codeId}`
 
-Requires authentication and administrative user access.  Marks a currently Published record as Approved for dissemination and search.  Provide the
-code ID value of the Published record in order to approve access.  Approved records are available for searching from the Search Services endpoints.
+Requires authentication and administrative user access.  Marks a currently Submitted record as Approved for dissemination and search.  Provide the
+code ID value of the Submitted record in order to approve access.  Approved records are available for searching from the Search Services endpoints.
 
 > Request:
 > ```html
@@ -306,7 +306,7 @@ code ID value of the Published record in order to approve access.  Approved reco
 > Content-Type: application/json
 > ```
 > ```json
-> { "status" : 400, "errors":[ "Metadata is not in the Published workflow state." ] }
+> { "status" : 400, "errors":[ "Metadata is not in the Submitted workflow state." ] }
 > ```
 
 DOECode Metadata
@@ -318,7 +318,7 @@ A full JSON example is [provided below.](#json_example)
 
 | Field Name | Description |
 | --- | --- |
-| code_id | The unique value given to a particular DOECode Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or published successfully. |
+| code_id | The unique value given to a particular DOECode Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
 | accessibility | Project source code accessibility value; must be one of "OS" (open source), "ON" (open source, not public) or "CS" (closed source) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public repository URL should be provided here. |
 | landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |
@@ -332,7 +332,7 @@ A full JSON example is [provided below.](#json_example)
 | licenses | Any software licenses or rights information about the software project, may have multiple values. |
 | doi | A [Digital Object Identifier](http://doi.org/) assigned to this software project. |
 | acronym | A short descriptive acronym or abbreviation for this software project. |
-| date_of_issuance | The date the software project was made available or published. |
+| date_of_issuance | The date the software project was made available or submitted. |
 | software_title | The software title. |
 
 ### <a name="persons_fields"></a>Developers and Contributors
@@ -439,7 +439,6 @@ metadata fields.
 ```json
 {
 "code_id":2651,
-"site_ownership_code":"OSTI",
 "accessibility":"OS",
 "repository_link":"https://github.com/doecode/doecode",
 "developers":[
@@ -494,7 +493,6 @@ metadata fields.
 "acronym":"doecode",
 "doi":"10.5072/DOECode2017/7174",
 "description":"Main repository for managing the new DOE Code site from the DOE Office of Scientific and Technical Information (OSTI)",
-"workflow_status":"Published",
 "license":["Apache License 2.0"],
 "release_date":"2017-08-23"
 }
