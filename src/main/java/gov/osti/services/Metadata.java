@@ -100,8 +100,7 @@ import org.glassfish.jersey.server.mvc.Viewable;
  * endpoints:
  *
  * GET
- * metadata/edit/{codeId} - retrieve JSON of metadata if permitted (requires authentication)
- * metadata/{codeId} - retrieve instance of JSON for codeId (PUBLISHED only), optionally in YAML format
+ * metadata/{codeId} - retrieve JSON for record if owner/administrator, optionally in various formats
  * metadata/autopopulate?repo={url} - attempt an auto-populate Connector call for
  * indicated URL, optionally in YAML format
  *
@@ -463,7 +462,7 @@ public class Metadata {
     }
 
     /**
-     * Acquire a List of records in pending ("Published") state, to be approved
+     * Acquire a List of records in pending ("Submitted") state, to be approved
      * for indexing and searching.
      *
      * JSON response is of the form:
@@ -519,7 +518,7 @@ public class Metadata {
             }
             // query for the COUNT
             TypedQuery<Long> cq = em.createQuery(countQuery);
-            cq.setParameter("status", DOECodeMetadata.Status.Published);
+            cq.setParameter("status", DOECodeMetadata.Status.Submitted);
             if (null!=siteCode)
                 cq.setParameter("site", siteCode);
 
@@ -540,7 +539,7 @@ public class Metadata {
             }
 
             TypedQuery<DOECodeMetadata> rq = em.createQuery(rowQuery);
-            rq.setParameter("status", DOECodeMetadata.Status.Published);
+            rq.setParameter("status", DOECodeMetadata.Status.Submitted);
             if (null!=siteCode)
                 rq.setParameter("site", siteCode);
             rq.setFirstResult(start);
@@ -582,6 +581,7 @@ public class Metadata {
             return Response
                     .status(Response.Status.OK)
                     .header("Content-Disposition", "attachment; filename = \"metadata.yml\"")
+                    .header("Content-Type", "text/yaml")
                     .entity(HttpUtil.writeMetadataYaml(result))
                     .build();
             } catch ( IOException e ) {
@@ -592,7 +592,11 @@ public class Metadata {
             }
         } else {
             // send back the default JSON response
-            return Response.status(Response.Status.OK).entity(mapper.createObjectNode().putPOJO("metadata", result).toString()).build();
+            return Response
+                    .ok()
+                    .header("Content-Type", MediaType.APPLICATION_JSON)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", result).toString())
+                    .build();
         }
     }
 
@@ -634,9 +638,10 @@ public class Metadata {
                      !user.hasRole("OSTI"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
-                // if already Published, but not being Approved, keep it that way (can't go back to Saved)
-                if ((Status.Published.equals(emd.getWorkflowStatus()) || Status.Approved.equals(emd.getWorkflowStatus())) && !Status.Approved.equals(md.getWorkflowStatus()))
-                    md.setWorkflowStatus(Status.Published);
+                // if already Submitted, but not being Approved, keep it that way (can't go back to Saved)
+                if ((Status.Submitted.equals(emd.getWorkflowStatus()) || Status.Approved.equals(emd.getWorkflowStatus())) 
+                 && !Status.Approved.equals(md.getWorkflowStatus()))
+                    md.setWorkflowStatus(Status.Submitted);
 
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
@@ -892,7 +897,7 @@ public class Metadata {
      * @param fileInfo (optional) the FILE disposition information, if any
      * @return an appropriate Response object to the caller
      */
-    private Response doPublish(String json, InputStream file, FormDataContentDisposition fileInfo) {
+    private Response doSubmit(String json, InputStream file, FormDataContentDisposition fileInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -904,13 +909,13 @@ public class Metadata {
 
             // set the ownership and workflow status
             md.setOwner(user.getEmail());
-            md.setWorkflowStatus(Status.Published);
+            md.setWorkflowStatus(Status.Submitted);
             md.setSiteOwnershipCode(user.getSiteId());
 
             // store it
             store(em, md, user);
             // check validations for Published workflow
-            List<String> errors = validatePublished(md);
+            List<String> errors = validateSubmit(md);
             if ( !errors.isEmpty() ) {
                 // generate a JSONAPI errors object
                 return ErrorResponse
@@ -972,9 +977,9 @@ public class Metadata {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
-            log.warn("Persistence Error Publishing: " + e.getMessage());
+            log.warn("Persistence Error Submitting: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error publishing record.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error submitting record.")
                     .build();
         } finally {
             em.close();
@@ -990,7 +995,7 @@ public class Metadata {
      * @return a Response containing the JSON of the submitted record if successful, or
      * error information if not
      */
-    private Response doSubmit(String json, InputStream file, FormDataContentDisposition fileInfo) {
+    private Response doAnnounce(String json, InputStream file, FormDataContentDisposition fileInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -1002,7 +1007,7 @@ public class Metadata {
             // set the OWNER
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Published);
+            md.setWorkflowStatus(Status.Submitted);
             // set the SITE
             md.setSiteOwnershipCode(user.getSiteId());
             // if there is NO DOI set, get one
@@ -1017,7 +1022,7 @@ public class Metadata {
             // persist this to the database
             store(em, md, user);
             // check validations
-            List<String> errors = validateSubmit(md);
+            List<String> errors = validateAnnounce(md);
             if ( !errors.isEmpty() ) {
                 return ErrorResponse
                         .status(Response.Status.BAD_REQUEST, errors)
@@ -1115,10 +1120,10 @@ public class Metadata {
     }
 
     /**
-     * Support multipart-file upload POSTs to PUBLISH.
+     * Support multipart-file upload POSTs to SUBMIT.
      *
      * Response Codes:
-     * 200 - OK, JSON returned of the metadata information published
+     * 200 - OK, JSON returned of the metadata information
      * 400 - validation error, errors returned in JSON
      * 401 - authentication is required to POST
      * 403 - access is forbidden to this record
@@ -1132,47 +1137,23 @@ public class Metadata {
     @POST
     @Consumes (MediaType.MULTIPART_FORM_DATA)
     @Produces (MediaType.APPLICATION_JSON)
-    @Path ("/publish")
+    @Path ("/submit")
     @RequiresAuthentication
-    public Response publishFile(@FormDataParam("metadata") String metadata,
+    public Response submitFile(@FormDataParam("metadata") String metadata,
             @FormDataParam("file") InputStream file,
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
-        return doPublish(metadata, file, fileInfo);
+        return doSubmit(metadata, file, fileInfo);
     }
 
 
     /**
-     * PUBLISH a Metadata Object; this operation signifies the project is
-     * ready to be posted to DOECode's output search services.  This endpoint
-     * DOES NOT transmit the project to OSTI's software services for publication
-     * there.
+     * SUBMIT a record to DOECODE.
      *
      * Will return a FORBIDDEN attempt should a User attempt to modify someone
      * else's record.
      *
-     * @param object JSON of the DOECodeMetadata object to PUBLISH
+     * @param object JSON of the DOECodeMetadata object to SUBMIT
      * @return a Response containing the persisted metadata entity in JSON
-     * @throws InternalServerErrorException on JSON parsing or other IO errors
-     */
-    @POST
-    @Consumes ( MediaType.APPLICATION_JSON )
-    @Produces ( MediaType.APPLICATION_JSON )
-    @Path ("/publish")
-    @RequiresAuthentication
-    public Response publish(String object) {
-        return doPublish(object, null, null);
-    }
-
-    /**
-     * SUBMIT endpoint; saves Software record to DOECode and sends results to
-     * OSTI in order to obtain a DOI registration and integrate with OSTI workflow.
-     *
-     * Will return a FORBIDDEN response if the OWNER logged in does not match
-     * the record's OWNER.
-     *
-     * @param object the JSON of the record to PUBLISH/SUBMIT.
-     * @return a Response containing the resulting JSON metadata sent to OSTI,
-     * including any DOI registered.
      * @throws InternalServerErrorException on JSON parsing or other IO errors
      */
     @POST
@@ -1185,7 +1166,28 @@ public class Metadata {
     }
 
     /**
-     * Perform SUBMIT workflow with associated file upload.
+     * ANNOUNCE endpoint; saves Software record to DOECode and sends results to
+     * OSTI ELINK and enters the OSTI workflow.
+     *
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * the record's OWNER.
+     *
+     * @param object the JSON of the record to ANNOUNCE.
+     * @return a Response containing the resulting JSON metadata sent to OSTI,
+     * including any DOI registered.
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @POST
+    @Consumes ( MediaType.APPLICATION_JSON )
+    @Produces ( MediaType.APPLICATION_JSON )
+    @Path ("/announce")
+    @RequiresAuthentication
+    public Response announce(String object) {
+        return doAnnounce(object, null, null);
+    }
+
+    /**
+     * Perform ANNOUNCE workflow with associated file upload.
      *
      * Response Codes:
      * 200 - OK, response includes metadata JSON
@@ -1194,7 +1196,7 @@ public class Metadata {
      * 403 - Access is forbidden to this record
      * 500 - JSON parsing error or other unhandled exception
      *
-     * @param metadata the METADATA to SUBMIT
+     * @param metadata the METADATA to ANNOUNCE (send to OSTI)
      * @param file a FILE to associate with this METADATA
      * @param fileInfo file disposition information for the FILE
      * @return a Response containing the metadata, or error information
@@ -1202,12 +1204,12 @@ public class Metadata {
     @POST
     @Consumes (MediaType.MULTIPART_FORM_DATA)
     @Produces (MediaType.APPLICATION_JSON)
-    @Path ("/submit")
+    @Path ("/announce")
     @RequiresAuthentication
-    public Response submitFile(@FormDataParam("metadata") String metadata,
+    public Response announceFile(@FormDataParam("metadata") String metadata,
             @FormDataParam("file") InputStream file,
             @FormDataParam("file") FormDataContentDisposition fileInfo) {
-        return doSubmit(metadata, file, fileInfo);
+        return doAnnounce(metadata, file, fileInfo);
     }
 
     /**
@@ -1298,9 +1300,6 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-            //DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(metadata));
-            //Long codeId = md.getCodeId();
-
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
 
             if ( null==md )
@@ -1308,10 +1307,10 @@ public class Metadata {
                         .notFound("Code ID not on file.")
                         .build();
 
-            // make sure this is Published
-            if (!DOECodeMetadata.Status.Published.equals(md.getWorkflowStatus()))
+            // make sure this is Submitted
+            if (!DOECodeMetadata.Status.Submitted.equals(md.getWorkflowStatus()))
                 return ErrorResponse
-                        .badRequest("Metadata is not in the Published workflow state.")
+                        .badRequest("Metadata is not in the Submitted workflow state.")
                         .build();
 
             em.getTransaction().begin();
@@ -1385,12 +1384,12 @@ public class Metadata {
     }
 
     /**
-     * Perform validations for PUBLISHED records.
+     * Perform validations for SUBMITTED records.
      *
      * @param m the Metadata information to validate
      * @return a List of error messages if any validation errors, empty if none
      */
-    protected static List<String> validatePublished(DOECodeMetadata m) {
+    protected static List<String> validateSubmit(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
         if (null==m.getAccessibility())
             reasons.add("Missing Source Accessibility.");
@@ -1434,15 +1433,15 @@ public class Metadata {
     }
 
     /**
-     * Perform SUBMIT validations on metadata.
+     * Perform ANNOUNCE validations on metadata.
      *
      * @param m the Metadata to check
      * @return a List of submission validation errors, empty if none
      */
-    protected static List<String> validateSubmit(DOECodeMetadata m) {
+    protected static List<String> validateAnnounce(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
-        // get all the PUBLISHED reasons, if any
-        reasons.addAll(validatePublished(m));
+        // get all the SUBMITTED reasons, if any
+        reasons.addAll(validateSubmit(m));
         // add SUBMIT-specific validations
         if (null==m.getReleaseDate())
             reasons.add("Release date is required.");

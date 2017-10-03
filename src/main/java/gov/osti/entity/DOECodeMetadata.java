@@ -53,23 +53,38 @@ import org.slf4j.LoggerFactory;
 @JsonRootName (value = "metadata")
 public class DOECodeMetadata implements Serializable {
     /**
-	 * 
-	 */
-	private static final long serialVersionUID = -909574677603914304L;
-	private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
+     * 
+     */
+    private static final long serialVersionUID = -909574677603914304L;
+    private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
 
-    // Status values
+    /**
+     * Record states/work flow:
+     * Saved - stored to the database without validation
+     * Submitted - validated to business logic rules, and/or sent to OSTI
+     * Approved - ready to be sent to SOLR/search services
+     */
     public enum Status {
         Saved,
-        Published,
+        Submitted,
         Approved
     }
     
     // Accessibility values
     public enum Accessibility {
-        OS,
-        ON,
-        CS
+        OS("Open Source"),
+        ON("Open Source, No Public Access"),
+        CS("Closed Source");
+        
+        private final String label;
+        
+        private Accessibility(String label) {
+            this.label = label;
+        }
+        
+        public String label() {
+            return this.label;
+        }
     }
     
     /**

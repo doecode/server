@@ -49,7 +49,7 @@ public class MetadataTest {
         DOECodeMetadata m = new DOECodeMetadata();
         
         // empty metadata should have numerous errors
-        List<String> reasons = Metadata.validatePublished(m);
+        List<String> reasons = Metadata.validateSubmit(m);
         
         assertFalse("Validation passed?", reasons.isEmpty());
         
@@ -71,7 +71,7 @@ public class MetadataTest {
         m.setAccessibility(DOECodeMetadata.Accessibility.OS);
         // removes software title validation, adds OS one
         
-        reasons = Metadata.validatePublished(m);
+        reasons = Metadata.validateSubmit(m);
         assertFalse("Still requiring title?", reasons.contains("Software title is required."));
         assertFalse("Still requiring accessibility", reasons.contains("Missing Source Accessibility."));
         assertTrue ("Missing OS validation", reasons.contains("Repository URL is required for open source submissions."));
@@ -83,7 +83,7 @@ public class MetadataTest {
         
         m.setDevelopers(developers);
         
-        reasons = Metadata.validatePublished(m);
+        reasons = Metadata.validateSubmit(m);
         assertFalse("Developer reason still there", reasons.contains("At least one developer is required."));
         assertTrue ("Missing validation on name", reasons.contains("Developer missing first name."));
         assertTrue ("Missing validation on name", reasons.contains("Developer missing last name."));
@@ -98,13 +98,13 @@ public class MetadataTest {
         
         m.setDevelopers(developers);
         
-        reasons = Metadata.validatePublished(m);
+        reasons = Metadata.validateSubmit(m);
         assertFalse("still missing name", reasons.contains("Developer missing first name."));
         assertFalse("still missing last name", reasons.contains("Developer missing last name."));
         assertTrue ("Missing email validation error", reasons.contains("Developer email \"testguy\" is not valid."));
         
         m.setRepositoryLink("nothing");
-        reasons = Metadata.validatePublished(m);
+        reasons = Metadata.validateSubmit(m);
         
         assertFalse("Still requiring repository link", reasons.contains("Repository URL is required for open source submissions."));
         assertTrue ("Repository link should be invalid", reasons.contains("Repository URL is not a valid repository."));
@@ -113,7 +113,7 @@ public class MetadataTest {
         List<String> licenses = Arrays.asList(new String[] { "Other" });
         m.setLicenses(licenses);
         
-        reasons = Metadata.validatePublished(m);
+        reasons = Metadata.validateSubmit(m);
         
         assertTrue ("Should require a proprietary URL", reasons.contains("Proprietary License URL is required."));
         
@@ -128,7 +128,7 @@ public class MetadataTest {
         m.setProprietaryUrl("http://mylicense.com/terms.html");
         m.setDescription("This is a testing description.");
         
-        reasons = Metadata.validatePublished(m);
+        reasons = Metadata.validateSubmit(m);
         
         assertTrue ("Should be no more errors: " + StringUtils.join(reasons, ", "), reasons.isEmpty());
         
@@ -143,7 +143,7 @@ public class MetadataTest {
         DOECodeMetadata m = new DOECodeMetadata();
         
         // empty metadata should have numerous errors
-        List<String> reasons = Metadata.validateSubmit(m);
+        List<String> reasons = Metadata.validateAnnounce(m);
         
         assertFalse("Validation passed?", reasons.isEmpty());
         
