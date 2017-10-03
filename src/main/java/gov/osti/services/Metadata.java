@@ -10,11 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import gov.osti.connectors.BitBucket;
@@ -728,8 +726,6 @@ public class Metadata {
             // attributes to send
             ObjectNode request = mapper.createObjectNode();
             request.put("code_id", md.getCodeId());
-            request.put("project_name", (null==md.getAcronym()) ? md.getSoftwareTitle() : md.getAcronym());
-            request.put("project_description", (null==md.getDescription()) ? "" : md.getDescription());
             request.put("repository_link", md.getRepositoryLink());
 
             // determine if there's a file to send or not
@@ -737,7 +733,7 @@ public class Metadata {
                 post.setHeader("Content-Type", "application/json");
                 post.setHeader("Accept", "application/json");
 
-                post.setEntity(new StringEntity(request.toString()));
+                post.setEntity(new StringEntity(request.toString(), "UTF-8"));
             } else {
                 post.setHeader("Content-Type", "multipart/form-data");
                 post.setHeader("Accept", "application/json");
@@ -799,7 +795,7 @@ public class Metadata {
             // add JSON String to index for later display/search
             ObjectNode node = (ObjectNode)index_mapper.valueToTree(md);
             node.put("json", md.toJson().toString());
-            post.setEntity(new StringEntity(node.toString()));
+            post.setEntity(new StringEntity(node.toString(), "UTF-8"));
 
             HttpResponse response = hc.execute(post);
 
