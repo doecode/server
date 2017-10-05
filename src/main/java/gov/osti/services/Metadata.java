@@ -1067,7 +1067,7 @@ public class Metadata {
                 HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
                 post.setHeader("Content-Type", "application/json");
                 post.setHeader("Accept", "application/json");
-                post.setEntity(new StringEntity(omd.toJsonString()));
+                post.setEntity(new StringEntity(omd.toJsonString(), "UTF-8"));
 
                 try {
                     HttpResponse response = hc.execute(post);
@@ -1110,9 +1110,9 @@ public class Metadata {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
-            log.warn("Persistence Error Publishing: " + e.getMessage());
+            log.warn("Persistence Error: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error announcing record.")
                     .build();
         } finally {
             em.close();
@@ -1352,9 +1352,9 @@ public class Metadata {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
-            log.warn("Persistence Error Publishing: " + e.getMessage());
+            log.warn("Persistence Error: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error submitting record.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error announcing record.")
                     .build();
         } finally {
             em.close();
