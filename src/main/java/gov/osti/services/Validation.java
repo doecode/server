@@ -465,7 +465,7 @@ public class Validation {
                 if (StringUtils.equalsIgnoreCase(req.getType(), "doi")) {
                     req.setError((isValidDoi(req.getValue()) ? "" : req.getValue() + " is not a valid DOI."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "repositorylink")) {
-                    req.setError((isValidRepositoryLink(req.getValue()) ? "Not a valid repository link."));
+                    req.setError((isValidRepositoryLink(req.getValue()) ? "" : "Not a valid repository link."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "phonenumber")) {
                     req.setError((isValidPhoneNumber(req.getValue()) ? "" : req.getValue() + " is not a valid phone number."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "url")) {
