@@ -824,7 +824,6 @@
     <lst name="appends">
       <str name="fq">workflowStatus:Approved</str>
     </lst>
-    <!-- add JSON-format facet by YEAR -->
     <lst name="invariants">
       <str name="json.facet">
 { dates:{
@@ -837,6 +836,7 @@
 }
       </str>
    </lst>
+
   </requestHandler>
 
 
