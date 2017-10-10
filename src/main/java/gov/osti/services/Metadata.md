@@ -1,14 +1,14 @@
-DOECode Metadata Services
+DOE CODE Metadata Services
 ==================
 
 Introduction
 ------------
 
-Description of services provided by the API back end of DOECode.  The HTTP `GET` verb is used to retrieve information in various desired formats, and the `POST` verb used to send new and updated metadata information to the persistence back end.
+Description of services provided by the API back end of DOE CODE.  The HTTP `GET` verb is used to retrieve information in various desired formats, and the `POST` verb used to send new and updated metadata information to the persistence back end.
 
-> The API is available via `/doecodeapi/services/metadata` on the DOECode server.
+> The API is available via `/doecodeapi/services/metadata` on the DOE CODE server.
 
-[DOECode on GitHub >](https://github.com/doecode/doecode)
+[DOE CODE on GitHub >](https://github.com/doecode/doecode)
 
 HTTP Request Methods
 --------------------
@@ -40,7 +40,7 @@ Service Endpoints
 
 ## Metadata Retrieval
 
-Information retrieval API for obtaining records already posted to DOECode or
+Information retrieval API for obtaining records already posted to DOE CODE or
 general repository information.
 
 ### retrieve single record
@@ -148,7 +148,7 @@ Any relevant information from the repository API will be returned in JSON metada
 Mapped repository information varies according to service API-supplied metadata.  Optionally, you may specify
 a query parameter of "format=yaml" to receive YAML file suitable for download.  
 
-If a DOECode YAML file is present
+If a DOE CODE YAML file is present
 in the source repository at the base URL (named either "metadata.yml" or "doecode.yml") that file will
 be read for more complete repository information.
 
@@ -237,7 +237,7 @@ Validation rules are:
 
 `POST /doecodeapi/services/metadata/announce`
 
-Send JSON formatted metadata to DOECode for a software project that is considered fully complete and ready to 
+Send JSON formatted metadata to DOE CODE for a software project that is considered fully complete and ready to 
 be announced to DOE.  Workflow status remains *Submitted* for this operation. Additional validations are required for final submission:
 
 * All above Submitted validations apply
@@ -309,9 +309,9 @@ code ID value of the Submitted record in order to approve access.  Approved reco
 > { "status" : 400, "errors":[ "Metadata is not in the Submitted workflow state." ] }
 > ```
 
-DOECode Metadata
+DOE CODE Metadata
 ===============
-A DOECode metadata Object is expressed as a JSON entity.  Each of the fields making up the entity are defined below, and an example record is provided in JSON format.
+A DOE CODE metadata Object is expressed as a JSON entity.  Each of the fields making up the entity are defined below, and an example record is provided in JSON format.
 A full JSON example is [provided below.](#json_example)
 
 ## Metadata Field Information
