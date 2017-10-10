@@ -3,12 +3,12 @@ DOECode Search API
 
 Introduction
 ------------
-Description of services provided by the API back end of DOECode.  Searching is based around
+Description of services provided by the API back end of DOE CODE.  Searching is based around
 the [Apache SOLR](http://lucene.apache.org/solr/) search product.  The HTTP
 verb `GET` is used to retrieve single records, while a `POST` request may be
 issued to perform a general search request.
 
-> The API is available based on `/doecodeapi/services/search` on the DOECode server.
+> The API is available based on `/doecodeapi/services/search` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------

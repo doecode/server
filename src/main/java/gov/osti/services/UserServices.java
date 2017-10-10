@@ -1529,7 +1529,7 @@ public class UserServices {
             email.setSubject("Forgotten Password");
             email.addTo(userEmail);
             
-            String msg = "<html> A request to reset the password associated with your account on DOECode was recently issued.  In order to change your password, please log in by<br> ";
+            String msg = "<html> A request to reset the password associated with your account on DOE CODE was recently issued.  In order to change your password, please log in by<br> ";
             msg += "logging in to the link below.<p>";
             msg += "<a href=\"" + loginEmail + "\">" + loginEmail + "</a></html>";
             email.setHtmlMsg(msg);
@@ -1552,7 +1552,7 @@ public class UserServices {
         
         try {
             email.setFrom(EMAIL_FROM);
-            email.setSubject("DOECode User Account Inactivated");
+            email.setSubject("DOE CODE User Account Inactivated");
             email.addTo(userEmail);
             
             email.setHtmlMsg("<html>Your account has been automatically deactivated due to after 3 unsuccessful logon attempts.  "
@@ -1575,10 +1575,10 @@ public class UserServices {
         
         try {
             email.setFrom(EMAIL_FROM);
-            email.setSubject("DOECode User Account Password Expired");
+            email.setSubject("DOE CODE User Account Password Expired");
             email.addTo(userEmail);
             
-            email.setHtmlMsg("<html>Your account password has expired.  Please submit a forgotten password request from DOECode in order to change it.  "
+            email.setHtmlMsg("<html>Your account password has expired.  Please submit a forgotten password request from DOE CODE in order to change it.  "
                     + "<p>Please contact doecode@osti.gov if you have any questions about this message or trouble processing any requests.</html>");
             email.send();
             

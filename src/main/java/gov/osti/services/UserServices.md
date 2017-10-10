@@ -3,10 +3,10 @@ DOECode User Services
 
 Introduction
 ------------
-Description of services provided by the API back end of DOECode.  The HTTP `GET` verb is used to retrieve information in various desired formats, 
+Description of services provided by the API back end of DOE CODE.  The HTTP `GET` verb is used to retrieve information in various desired formats, 
 and the `POST` verb used to send new and updated information to the persistence back end.
 
-> The API is available based on `/doecodeapi/services/user` on the DOECode server.
+> The API is available based on `/doecodeapi/services/user` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------
@@ -113,7 +113,7 @@ API calls to manage user session state; log in and out of authenticated sessions
 
  `POST /doecodeapi/services/user/login`
 
-Logs a user session into DOECode.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and 
+Logs a user session into DOE CODE.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and 
 HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
 Repeated login attempts via password authentication WILL result in the account being locked. 
 Locked accounts will receive an email message indicating administrative intervention is required to
@@ -123,7 +123,7 @@ a password change will be required to proceed.
 The returned JSON object will include the user's email address, first and last name,
 a site code (or "CONTR" if contractor), and an array of role codes, if any, along 
 with an "xsrfToken" value for protection against cross-site request forgery attempts.  This token
-value should be transmitted back with each subsequent API request when using DOECode services
+value should be transmitted back with each subsequent API request when using DOE CODE services
 in conjunction with a web-based UI or user login methods.
 
 > Request:
@@ -164,7 +164,7 @@ API calls to register, confirm, or otherwise manage specific user account attrib
 
 `POST /doecodeapi/services/user/register`
 
-Request new user registration for an account on DOECode.  JSON included in the POST body should contain the account email, a requested password, first and last name, and the confirmation of the same password.  If the account is for a contractor, a valid DOE contract number is also required for user registration.
+Request new user registration for an account on DOE CODE.  JSON included in the POST body should contain the account email, a requested password, first and last name, and the confirmation of the same password.  If the account is for a contractor, a valid DOE contract number is also required for user registration.
 
 > Request:
 ```
@@ -184,7 +184,7 @@ Content-Type: application/json
 
 `GET /doecodeapi/services/user/confirm?confirmation=account-token`
 
-Request confirmation of a DOECode user account.  Query parameter "confirmation" should contain the generated token in the account registration email.
+Request confirmation of a DOE CODE user account.  Query parameter "confirmation" should contain the generated token in the account registration email.
 
 > Request:
 ```

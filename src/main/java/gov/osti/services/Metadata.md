@@ -318,7 +318,7 @@ A full JSON example is [provided below.](#json_example)
 
 | Field Name | Description |
 | --- | --- |
-| code_id | The unique value given to a particular DOECode Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
+| code_id | The unique value given to a particular DOE CODE Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
 | accessibility | Project source code accessibility value; must be one of "OS" (open source), "ON" (open source, not public) or "CS" (closed source) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public repository URL should be provided here. |
 | landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |

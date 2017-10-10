@@ -3,10 +3,10 @@ DOECode Types API
 
 Introduction
 ------------
-Description of services provided by the API back end of DOECode.  The HTTP `GET` verb is used to retrieve information about various
+Description of services provided by the API back end of DOE CODE.  The HTTP `GET` verb is used to retrieve information about various
 types and lists of acceptable values.
 
-> The API is available based on `/doecodeapi/services/types` on the DOECode server.
+> The API is available based on `/doecodeapi/services/types` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------
@@ -78,7 +78,7 @@ Content-Type: application/json
 
 `GET /licenses`
 
-A set of valid, acceptable Licenses for DOECode.
+A set of valid, acceptable Licenses for DOE CODE.
 
 > Request:
 ```html
