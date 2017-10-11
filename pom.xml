@@ -14,6 +14,7 @@
                 <httpclient.version>4.5.2</httpclient.version>
                 <jackson.version>2.9.0</jackson.version>
                 <projectName>doecodeapi</projectName>
+                <datacite.url>https://mds.test.datacite.org/</datacite.url>
 	</properties>
 
 	<dependencies>

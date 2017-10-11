@@ -46,7 +46,7 @@ public class DataCite {
     // logger
     private static Logger log = LoggerFactory.getLogger(DataCite.class);
     // DataCite API base request URL
-    private static final String DATACITE_URL = "https://mds.test.datacite.org/";
+    private static final String DATACITE_URL = DoeServletContextListener.getConfigurationProperty("datacite.url");
     private static String DATACITE_LOGIN = DoeServletContextListener.getConfigurationProperty("datacite.user");
     private static String DATACITE_PASSWORD = DoeServletContextListener.getConfigurationProperty("datacite.password");
     private static String DATACITE_BASE_URL = DoeServletContextListener.getConfigurationProperty("datacite.baseurl");
