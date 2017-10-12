@@ -35,7 +35,7 @@ unique within each list.
 
 ### contributortypes
 
-`GET /contributortypes`
+`GET /doecodeapi/services/types/contributortypes`
 
 Set of valid contributor type values as a JSON listing.
 
@@ -76,7 +76,7 @@ Content-Type: application/json
 
 ### licenses
 
-`GET /licenses`
+`GET /doecodeapi/services/types/licenses`
 
 A set of valid, acceptable Licenses for DOE CODE.
 
@@ -110,7 +110,7 @@ Content-Type: application/json
 
 ### relationtypes
 
- `GET /relationtypes`
+ `GET /doecodeapi/services/types/relationtypes`
 
 Listing of accepted related identifier relation type values.
 
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 ### relatedidentifiertypes 
 
-`GET /relatedidentifiertypes`
+`GET /doecodeapi/services/types/relatedidentifiertypes`
 
 Listing of accepted related identifier type values.
 
@@ -177,7 +177,7 @@ Content-Type: application/json
 
 ### fundingidentifiertypes
 
-`GET /fundingidentifiertypes`
+`GET /doecodeapi/services/types/fundingidentifiertypes`
 
 A listing of accepted funding identifier types for sponsoring organizations.
 
@@ -197,4 +197,24 @@ Content-Type: application/json
 {"label":"BR Code","value":"BRCode"},
 {"label":"FWP Number","value":"FWPNumber"}]}
 ```
+### accessibility
 
+`GET /doecode/services/types/accessibility`
+
+A listing of valid accessibility codes and descriptions.
+
+> Request:
+> ```
+> GET /doecodeapi/services/types/accessibility
+> ```
+> Response:
+> ```
+> HTTP/1.1 200 OK
+> Content-Type: application/json
+> ```
+> ```json
+> {"accessibility":[
+> {"label":"Open Source","value":"OS"},
+> {"label":"Open Source, No Public Access","value":"ON"},
+> {"label":"Closed Source","value":"CS"}]}
+> ```

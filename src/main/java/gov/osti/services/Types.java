@@ -8,10 +8,12 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import gov.osti.entity.Contributor;
 import gov.osti.entity.Contributor.Type;
 import gov.osti.entity.DOECodeMetadata;
+import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.FundingIdentifier;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.RelatedIdentifier.RelationType;
+import gov.osti.indexer.AccessibilitySerializer;
 import gov.osti.indexer.ContributorTypeSerializer;
 import gov.osti.indexer.FundingIdentifierSerializer;
 import gov.osti.indexer.LicenseSerializer;
@@ -50,7 +52,8 @@ public class Types {
             .addSerializer(Type.class, new ContributorTypeSerializer())
             .addSerializer(RelationType.class, new RelationTypeSerializer())
             .addSerializer(RelatedIdentifier.Type.class, new RelatedIdentifierTypeSerializer())
-            .addSerializer(FundingIdentifier.Type.class, new FundingIdentifierSerializer());
+            .addSerializer(FundingIdentifier.Type.class, new FundingIdentifierSerializer())
+            .addSerializer(Accessibility.class, new AccessibilitySerializer());
         
         mapper.registerModule(module);
     }
@@ -67,6 +70,34 @@ public class Types {
         return new Viewable("/types");
     }
     
+    /**
+     * Acquire a listing of all valid ACCESSIBILITY values and descriptions
+     * @return JSON containing an array of ACCESSIBILITY values
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/accessibility")
+    public Response getAccessibility() {
+        try {
+            return Response
+                    .ok()
+                    .entity(mapper
+                            .createObjectNode()
+                            .putPOJO("accessibility", 
+                                    mapper.writeValueAsString(Arrays.asList(DOECodeMetadata.Accessibility.values()))).toString())
+                    .build();
+        } catch ( JsonProcessingException e ) {
+            log.warn("JSON Output Error", e);
+            return ErrorResponse
+                    .internalServerError("JSON Error")
+                    .build();
+        }
+    }
+    
+    /**
+     * Get a listing of all the valid LICENSES.
+     * @return a JSON Response containing an array of available LICENSES
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path ("/licenses")
@@ -88,8 +119,8 @@ public class Types {
     }
 
     /**
-     * Retrieves representation of an instance of gov.osti.services.TypeService
-     * @return an instance of java.lang.String
+     * Retrieve a listing of all CONTRIBUTOR TYPES
+     * @return a Response in JSON containing all the CONTRIBUTOR TYPES mappings
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)

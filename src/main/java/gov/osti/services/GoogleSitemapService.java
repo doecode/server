@@ -126,7 +126,10 @@ public class GoogleSitemapService {
                     query.getDocs().forEach((record) -> {
                          xml_string.append("<url>");
                          xml_string.append("<loc>").append(SITE_URL).append("/biblio" + "/").append(record.getCodeId()).append("</loc>");
-                         xml_string.append("<lastmod>").append(DATE_FORMATTER.format(record.getDateRecordUpdated().toInstant())).append("</lastmod>");
+                         xml_string.append("<lastmod>")
+                                 .append(DATE_FORMATTER
+                                         .format( (null==record.getDateRecordUpdated()) ? LocalDate.now() : record.getDateRecordUpdated().toInstant()) )
+                                                 .append("</lastmod>");
                          xml_string.append("<changefreq>monthly</changefreq>");
                          xml_string.append("<priority>0.5</priority>");
                          xml_string.append("</url>");
