@@ -22,14 +22,14 @@ public class SearchData implements Serializable {
 
 	private static final long serialVersionUID = 978828434590378134L;
 	private static final Logger log = LoggerFactory.getLogger(SearchData.class.getName());
-	
+
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(Include.NON_NULL);
-    
+
     // set of special characters to be escaped before sending to SOLR
     protected static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|\"]");
-    
+
     private String allFields = null;
     private String softwareTitle = null;
     private String developersContributors = null;
@@ -39,13 +39,13 @@ public class SearchData implements Serializable {
     private Date dateLatest = null;
     private String[] accessibility = null;
     private String[] licenses;
-    private String researchOrganization = null;
-    private String sponsoringOrganization = null;
+    private String[] researchOrganization = null;
+    private String[] sponsoringOrganization = null;
     private String orcid;
     private String sort = null;
     private Integer rows;
     private Integer start;
-    
+
     /**
      * Parses JSON in the request body of the reader into a SearchDaa object.
      * @param reader - A request reader containing JSON in the request body.
@@ -120,29 +120,29 @@ public class SearchData implements Serializable {
 		this.accessibility = accessibility;
 	}
 
-	public String getResearchOrganization() {
+	public String[] getResearchOrganization() {
 		return researchOrganization;
 	}
 
-	public void setResearchOrganization(String researchOrganization) {
+	public void setResearchOrganization(String[] researchOrganization) {
 		this.researchOrganization = researchOrganization;
 	}
 
-	public String getSponsoringOrganization() {
+	public String[] getSponsoringOrganization() {
 		return sponsoringOrganization;
 	}
 
-	public void setSponsoringOrganization(String sponsoringOrganization) {
+	public void setSponsoringOrganization(String[] sponsoringOrganization) {
 		this.sponsoringOrganization = sponsoringOrganization;
 	}
-        
-        public void setOrcid(String orcid) {
-            this.orcid = orcid;
-        }
-        
-        public String getOrcid() {
-            return this.orcid;
-        }
+
+  public void setOrcid(String orcid) {
+      this.orcid = orcid;
+  }
+
+  public String getOrcid() {
+      return this.orcid;
+  }
 
 	public String getSort() {
             return (null==sort) ? "" : sort;
@@ -151,29 +151,29 @@ public class SearchData implements Serializable {
 	public void setSort(String sort) {
 		this.sort = sort;
 	}
-        
+
         /**
          * Escape SOLR special characters in search expressions.
-         * 
+         *
          * @param in the input String
          * @return the String with any special characters escaped
          */
         protected static String escape(String in) {
-            return (null==in) ? 
+            return (null==in) ?
                     "" :
                     SPECIAL_REGEX_CHARS.matcher(in).replaceAll("\\\\$0");
         }
-        
+
     /**
      * Translate this Bean into a SOLR query parameter set.
-     * 
+     *
      * @return a SOLR query parameter "q" for these attributes; default to "*:*"
      * (everything) if nothing is set
      */
     public String toQ() {
         StringBuilder q = new StringBuilder();
         DateTimeFormatter SOLR_DATE_FORMAT = DateTimeFormatter.ISO_INSTANT;
-        
+
         if (!StringUtils.isEmpty(getAllFields())) {
             if (q.length()>0) q.append(" ");
             q.append("_text_:(").append(escape(getAllFields())).append(")");
@@ -216,14 +216,28 @@ public class SearchData implements Serializable {
             if (q.length()>0) q.append(" ");
             q.append("_id_numbers:(").append(escape(getIdentifiers())).append(")");
         }
-        if (!StringUtils.isEmpty(getResearchOrganization())) {
-            if (q.length()>0) q.append(" ");
-            q.append("researchOrganization.name:(").append(escape(getResearchOrganization())).append(")");
-        }
-        if (!StringUtils.isEmpty(getSponsoringOrganization())) {
-            if (q.length()>0) q.append(" ");
-            q.append("sponsoringOrganization.name:(").append(escape(getSponsoringOrganization())).append(")");
-        }
+				if (null!=getResearchOrganization()) {
+						StringBuilder values = new StringBuilder();
+						for ( String org : getResearchOrganization() ) {
+								if (values.length()>0) values.append(" OR ");
+								values.append("researchOrganizations.organizationName:\"").append(escape(org)).append("\"");
+						}
+						if (values.length()>0) {
+								if (q.length()>0) q.append(" ");
+								q.append("(").append(values.toString()).append(")");
+						}
+				}
+				if (null!=getSponsoringOrganization()) {
+						StringBuilder values = new StringBuilder();
+						for ( String org : getSponsoringOrganization() ) {
+								if (values.length()>0) values.append(" OR ");
+								values.append("sponsoringOrganizations.organizationName:\"").append(escape(org)).append("\"");
+						}
+						if (values.length()>0) {
+								if (q.length()>0) q.append(" ");
+								q.append("(").append(values.toString()).append(")");
+						}
+				}
         if (!StringUtils.isEmpty(getSoftwareTitle())) {
             if (q.length()>0) q.append(" ");
             q.append("softwareTitle:(").append(escape(getSoftwareTitle())).append(")");
@@ -252,7 +266,7 @@ public class SearchData implements Serializable {
                         .withSecond(59)))
                     .append("]");
         }
-        
+
         return (0==q.length()) ? "*:*" : q.toString();
     }
 
@@ -301,5 +315,5 @@ public class SearchData implements Serializable {
     public void setLicenses(String[] licenses) {
         this.licenses = licenses;
     }
-    
+
 }
