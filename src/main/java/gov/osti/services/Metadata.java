@@ -1018,17 +1018,10 @@ public class Metadata {
                 // set it
                 md.setDoi(reservation.getReservedDoi());
             }
-
+            
             // persist this to the database
             store(em, md, user);
-            // check validations
-            List<String> errors = validateAnnounce(md);
-            if ( !errors.isEmpty() ) {
-                return ErrorResponse
-                        .status(Response.Status.BAD_REQUEST, errors)
-                        .build();
-            }
-
+            
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
@@ -1044,7 +1037,14 @@ public class Metadata {
                             .build();
                 }
             }
-
+            
+            // check validations
+            List<String> errors = validateAnnounce(md);
+            if ( !errors.isEmpty() ) {
+                return ErrorResponse
+                        .status(Response.Status.BAD_REQUEST, errors)
+                        .build();
+            }
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
             omd.set(md);
@@ -1077,17 +1077,27 @@ public class Metadata {
                         log.warn("OSTI Error: " + text);
                         throw new IOException ("OSTI software publication error");
                     }
-                    // if appropriate, register or update the DOI with DataCite
-                    if ( null!=md.getDoi() ) {
-                        if ( !DataCite.register(md) ) {
-                            log.warn("DataCite DOI registration failed.");
-                            throw new IOException ("DOI registration failed.");
-                        }
-                    }
                 } finally {
                     hc.close();
                 }
             }
+            // send any updates to DataCite as well
+            if (StringUtils.isNotEmpty(md.getDoi())) {
+                if ( !DataCite.register(md) ) {
+                    log.warn("DataCite DOI registration failed for " + md.getDoi() + " ID=" + md.getCodeId());
+                    throw new IOException ("DOI registration failed.");
+                }
+            }
+            // send this file upload along to archiver if configured
+            try {
+                sendToArchiver(md);
+            } catch ( IOException e ) {
+                log.error("Archiver call failure: " + e.getMessage());
+                return ErrorResponse
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
+                        .build();
+            }
+            
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
 

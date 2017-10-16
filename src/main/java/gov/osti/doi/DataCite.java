@@ -360,7 +360,7 @@ public class DataCite {
             request.setHeader(HttpHeaders.ACCEPT, "application/xml");
             request.setHeader(HttpHeaders.CONTENT_TYPE, "application/xml; charset=UTF-8");
             
-            request.setEntity(new StringEntity(writeMetadata(m)));
+            request.setEntity(new StringEntity(writeMetadata(m), "UTF-8"));
             
             // 201 CREATED is the only successful API response
             HttpResponse response = hc.execute(request);
