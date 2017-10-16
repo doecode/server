@@ -163,7 +163,7 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 
 > Request:
 > ```html
-> POST /services/metadata/save
+> POST /doecodeapi/services/metadata/save
 > Content-Type: application/json
 > ```
 > ```json
@@ -209,7 +209,7 @@ Validation rules are:
 
 > Request:
 > ```html
-> POST /services/metadata/submit
+> POST /doecodeapi/services/metadata/submit
 > Content-Type: application/json
 > Authorization: Basic user-api-key
 > ```
@@ -255,7 +255,7 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
 
 > Request:
 > ```html
-> POST /services/metadata/announce
+> POST /doecodeapi/services/metadata/announce
 > Content-Type: application/json
 > Authorization: Basic user-api-key
 > ```
@@ -288,7 +288,7 @@ code ID value of the Submitted record in order to approve access.  Approved reco
 
 > Request:
 > ```html
-> GET /services/metadata/approve/234
+> GET /doecodeapi/services/metadata/approve/234
 > Content-Type: application/json
 > Authorization: Basic user-api-key
 > ```
@@ -329,7 +329,7 @@ A full JSON example is [provided below.](#json_example)
 | research_organizations | (Array) Information about organizations providing research information for the project. Fields are [specified below.](#organization_fields) |
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
 | description | An abstract about the software project. |
-| licenses | Any software licenses or rights information about the software project, may have multiple values. |
+| licenses | Any software licenses or rights information about the software project, may have multiple values, such as the ones at the following <a href='/doecodeapi/services/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
 | doi | A [Digital Object Identifier](http://doi.org/) assigned to this software project. |
 | acronym | A short descriptive acronym or abbreviation for this software project. |
 | date_of_issuance | The date the software project was made available or submitted. |
@@ -497,3 +497,4 @@ metadata fields.
 "release_date":"2017-08-23"
 }
 ```
+
