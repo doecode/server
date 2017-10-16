@@ -1541,7 +1541,7 @@ public class UserServices {
     }
     
     /**
-     * Send an email message to the User should their account become inactivated
+     * Send an email message to the User should their account become deactivated
      * due to repeated password failures.
      * 
      * @param userEmail the user email in question
@@ -1552,7 +1552,7 @@ public class UserServices {
         
         try {
             email.setFrom(EMAIL_FROM);
-            email.setSubject("DOE CODE User Account Inactivated");
+            email.setSubject("DOE CODE User Account Deactivated");
             email.addTo(userEmail);
             
             email.setHtmlMsg("<html>Your account has been automatically deactivated due to after 3 unsuccessful logon attempts.  "
