@@ -643,6 +643,10 @@ public class Metadata {
                  && !Status.Approved.equals(md.getWorkflowStatus()))
                     md.setWorkflowStatus(Status.Submitted);
 
+                // these fields WILL NOT CHANGE on edit/update
+                md.setOwner(emd.getOwner());
+                md.setSiteOwnershipCode(emd.getSiteOwnershipCode());
+                
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
