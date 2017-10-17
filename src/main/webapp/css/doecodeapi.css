@@ -5,3 +5,29 @@ table{
 #doecode-user-services-user-registration-and-account-maintenance{
     font-size: 17px;
 }
+
+#user-services-login-block{
+    margin-top:-170px;
+}
+#user-services-on-update-user-on-success{
+    margin-top:-170px;
+}
+
+#metadata-projects-pending-responses-contain{
+    margin-top:-130px;
+}
+
+#metadata-validation-rules-are{
+    margin-top:-350px;
+}
+#metadata-validation-rules-are + ul{
+    margin-top:-320px;
+}
+
+#metadata-services-announce {
+    margin-top: -350px;
+}
+
+#metadata-services-announce + ul{
+    margin-top: -325px;
+}

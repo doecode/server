@@ -67,7 +67,7 @@ JSON is the default output format.  Authenticated user must be either the owner 
 > }
 >```
 
-### /projects
+### projects
 
 `GET /doecodeapi/services/metadata/projects`
 
@@ -89,7 +89,7 @@ will see ALL PROJECTS, while Site Administrator users will see all projects from
 > { "records":[{"code_id":234,"software_title":"Test Project", ...}, ... ] }
 > ```
 
-### /projects/pending
+### projects pending
 
 `GET /doecodeapi/services/metadata/projects/pending`
 
@@ -98,9 +98,6 @@ approval (that is, Submitted records), optionally from a given *site code*.  You
 parameters of "start" (beginning row number to retrieve, from 0), "rows" (the number of rows desired at once, 0
 being all of them), and "site" (only records from a given site code).  If not specified, all rows from all sites
 are returned.
-
-Responses will contain the requested number of rows (or total if unlimited), a total count, and the starting
-row number of the request.
 
 > Request:
 > ```html
@@ -117,6 +114,12 @@ row number of the request.
 > { "records":[{"code_id":234,"software_title":"Test Project", ...}, ... ],
 > "total":45, "start":20, "rows":10 }
 > ```
+
+<p id='metadata-projects-pending-responses-contain'>
+Responses will contain the requested number of rows (or total if unlimited), a total count, and the starting
+row number of the request.
+</p>
+
 
 ### reserve a DOI
 
@@ -193,20 +196,6 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 Send JSON metadata to be persisted in the *Submitted* work-flow state.  Validation on required metadata fields is performed, and any errors preventing 
 this operation will be returned.  
 
-Validation rules are:
-
-* source accessibility is required:
-  * "OS" (Open Source, publicly available repository), also requires a valid accessible repository link
-  * "ON" (Open Source, No publicly available repository), requires a landing page
-  * "CS" (Closed Source), also requires a landing page
-* software title
-* description
-* at least one license
-* at least one developer
-  * each developer must have a first and last name
-  * if email is provided, it must be valid
-* if DOI is specified, release date is required
-
 > Request:
 > ```html
 > POST /doecodeapi/services/metadata/submit
@@ -233,25 +222,30 @@ Validation rules are:
 > { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 > ```
 
+<p id='metadata-validation-rules-are'>
+Validation rules are:
+</p>
+
+* source accessibility is required:
+  * "OS" (Open Source, publicly available repository), also requires a valid accessible repository link
+  * "ON" (Open Source, No publicly available repository), requires a landing page
+  * "CS" (Closed Source), also requires a landing page
+* software title
+* description
+* at least one license
+* at least one developer
+  * each developer must have a first and last name
+  * if email is provided, it must be valid
+* if DOI is specified, release date is required
+
+
+
 ### announce
 
 `POST /doecodeapi/services/metadata/announce`
 
 Send JSON formatted metadata to DOE CODE for a software project that is considered fully complete and ready to 
 be announced to DOE.  Workflow status remains *Submitted* for this operation. Additional validations are required for final submission:
-
-* All above Submitted validations apply
-* A release date is required
-* At least one sponsoring organization is required
-  * each organization must have a name
-  * if DOE, must also have a valid primary award number
-* At least one research organization is required
-  * each organization must have a name
-* Contact information is required
-  * email must be valid
-  * phone number must be valid
-  * organization name is required
-* If project is not Open Source ("OS") availability, a file upload is required
 
 > Request:
 > ```html
@@ -278,6 +272,23 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
 > ```json
 > { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 > ```
+
+<p id='metadata-services-announce'>&nbsp;</p>
+
+* All above Submitted validations apply
+* A release date is required
+* At least one sponsoring organization is required
+  * each organization must have a name
+  * if DOE, must also have a valid primary award number
+* At least one research organization is required
+  * each organization must have a name
+* Contact information is required
+  * email must be valid
+  * phone number must be valid
+  * organization name is required
+* If project is not Open Source ("OS") availability, a file upload is required
+
+
 
 ### approve
 

@@ -120,12 +120,6 @@ Locked accounts will receive an email message indicating administrative interven
 unlock the account.  Additionally, if the password expiration date is due, the login will fail, and
 a password change will be required to proceed.
 
-The returned JSON object will include the user's email address, first and last name,
-a site code (or "CONTR" if contractor), and an array of role codes, if any, along 
-with an "xsrfToken" value for protection against cross-site request forgery attempts.  This token
-value should be transmitted back with each subsequent API request when using DOE CODE services
-in conjunction with a web-based UI or user login methods.
-
 > Request:
 ```
 POST /doecodeapi/services/user/login
@@ -149,6 +143,15 @@ Content-Type: application/json
  "first_name":"User",
  "last_name":"Name"}
 ```
+
+<p id='user-services-login-block'>
+The returned JSON object will include the user's email address, first and last name,
+a site code (or "CONTR" if contractor), and an array of role codes, if any, along 
+with an "xsrfToken" value for protection against cross-site request forgery attempts.  This token
+value should be transmitted back with each subsequent API request when using DOE CODE services
+in conjunction with a web-based UI or user login methods.
+</p>
+
 
 ### logout 
 
@@ -349,8 +352,6 @@ will remain the same.  Requests to change password must also contain "new_passwo
 containing the new desired password and "confirm_password" attribute matching the 
 requested password, which must also conform to any password validation rules to be accepted.
 
-On success, JSON containing the updated User account information is returned.
-
 > Request:
 > ```html
 > POST /doecodeapi/services/user/update/myaccount@domain.com
@@ -370,3 +371,6 @@ On success, JSON containing the updated User account information is returned.
 > "date_password_changed":"2017-08-03","failed_count":0 }
 > ```
 
+<p id='user-services-on-update-user-on-success'>
+On success, JSON containing the updated User account information is returned.
+</p>
