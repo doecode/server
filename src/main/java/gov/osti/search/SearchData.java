@@ -28,7 +28,7 @@ public class SearchData implements Serializable {
             .setSerializationInclusion(Include.NON_NULL);
 
     // set of special characters to be escaped before sending to SOLR
-    protected static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|\"]");
+    protected static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
 
     private String allFields = null;
     private String softwareTitle = null;
