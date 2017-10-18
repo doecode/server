@@ -28,7 +28,9 @@ public class SearchData implements Serializable {
             .setSerializationInclusion(Include.NON_NULL);
 
     // set of special characters to be escaped before sending to SOLR
-    protected static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
+    protected static Pattern TEXT_REGEX_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
+    // set of special characters applying to TOKENS in SOLR
+    protected static Pattern TOKEN_REGEX_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|\"]");
 
     private String allFields = null;
     private String softwareTitle = null;
@@ -161,7 +163,19 @@ public class SearchData implements Serializable {
         protected static String escape(String in) {
             return (null==in) ?
                     "" :
-                    SPECIAL_REGEX_CHARS.matcher(in).replaceAll("\\\\$0");
+                    TEXT_REGEX_CHARACTERS.matcher(in).replaceAll("\\\\$0");
+        }
+        
+        /**
+         * Escape SOLR special characters in TOKEN expressions.
+         * 
+         * @param in the incoming search expression
+         * @return a String with special characters escaped
+         */
+        protected static String escapeToken(String in) {
+            return (null==in) ? 
+                    "" :
+                    TOKEN_REGEX_CHARACTERS.matcher(in).replaceAll("\\\\$0");
         }
 
     /**
@@ -193,7 +207,7 @@ public class SearchData implements Serializable {
             StringBuilder values = new StringBuilder();
             for ( String license : getLicenses() ) {
                 if (values.length()>0) values.append(" OR ");
-                values.append("licenses:\"").append(escape(license)).append("\"");
+                values.append("licenses:\"").append(escapeToken(license)).append("\"");
             }
             if (values.length()>0) {
                 if (q.length()>0) q.append(" ");
@@ -216,28 +230,28 @@ public class SearchData implements Serializable {
             if (q.length()>0) q.append(" ");
             q.append("_id_numbers:(").append(escape(getIdentifiers())).append(")");
         }
-				if (null!=getResearchOrganization()) {
-						StringBuilder values = new StringBuilder();
-						for ( String org : getResearchOrganization() ) {
-								if (values.length()>0) values.append(" OR ");
-								values.append("researchOrganizations.organizationName:\"").append(escape(org)).append("\"");
-						}
-						if (values.length()>0) {
-								if (q.length()>0) q.append(" ");
-								q.append("(").append(values.toString()).append(")");
-						}
-				}
-				if (null!=getSponsoringOrganization()) {
-						StringBuilder values = new StringBuilder();
-						for ( String org : getSponsoringOrganization() ) {
-								if (values.length()>0) values.append(" OR ");
-								values.append("sponsoringOrganizations.organizationName:\"").append(escape(org)).append("\"");
-						}
-						if (values.length()>0) {
-								if (q.length()>0) q.append(" ");
-								q.append("(").append(values.toString()).append(")");
-						}
-				}
+        if (null!=getResearchOrganization()) {
+                        StringBuilder values = new StringBuilder();
+                        for ( String org : getResearchOrganization() ) {
+                                        if (values.length()>0) values.append(" OR ");
+                                        values.append("researchOrganizations.organizationName:\"").append(escape(org)).append("\"");
+                        }
+                        if (values.length()>0) {
+                                        if (q.length()>0) q.append(" ");
+                                        q.append("(").append(values.toString()).append(")");
+                        }
+        }
+        if (null!=getSponsoringOrganization()) {
+                        StringBuilder values = new StringBuilder();
+                        for ( String org : getSponsoringOrganization() ) {
+                                        if (values.length()>0) values.append(" OR ");
+                                        values.append("sponsoringOrganizations.organizationName:\"").append(escape(org)).append("\"");
+                        }
+                        if (values.length()>0) {
+                                        if (q.length()>0) q.append(" ");
+                                        q.append("(").append(values.toString()).append(")");
+                        }
+        }
         if (!StringUtils.isEmpty(getSoftwareTitle())) {
             if (q.length()>0) q.append(" ");
             q.append("softwareTitle:(").append(escape(getSoftwareTitle())).append(")");
@@ -266,7 +280,7 @@ public class SearchData implements Serializable {
                         .withSecond(59)))
                     .append("]");
         }
-
+        
         return (0==q.length()) ? "*:*" : q.toString();
     }
 
