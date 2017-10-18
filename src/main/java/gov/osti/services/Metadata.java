@@ -744,8 +744,6 @@ public class Metadata {
 
                 post.setEntity(new StringEntity(request.toString(), "UTF-8"));
             } else {
-                post.setHeader("Content-Type", "multipart/form-data");
-                post.setHeader("Accept", "application/json");
                 post.setEntity(MultipartEntityBuilder
                         .create()
                         .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
