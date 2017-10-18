@@ -65,21 +65,6 @@ Content-Type: application/json
 Send a search request, defining parameters and search terms in the POST request
 body.  The input JSON may contain any of the following:
 
-| Name | Description |
-| --- | --- |
-| all_fields | Search for value in all the available search fields |
-| software_title | Search for value in the software title |
-| developers_contributors | Search for the value in developer or contributor names |
-| identifiers | Search within identifying numbers |
-| date_earliest | Starting date range for release date |
-| date_latest | Ending date range for release date |
-| accessibility | An array of accessibility types; one or more of "OS", "ON", or "CS" |
-| licenses | An array of matching license values, such as the ones at the following <a href='/doecodeapi/services/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
-| orcid | Search developer or contributor ORCID values |
-| sort | Specify a sorting field, e.g., "softwareTitle" or "releaseDate" (relevance is the default) |
-| rows | Desired number of rows to return (default 20) |
-| start | Offset row number to start for pagination (0 based) |
-
 > Request:
 ```html
 POST /doecodeapi/services/search
@@ -120,3 +105,20 @@ Content-Type: application/json
  ]
 }
 ```
+
+| Name | Description |
+| --- | --- |
+| all_fields | Search for value in all the available search fields |
+| software_title | Search for value in the software title |
+| developers_contributors | Search for the value in developer or contributor names |
+| identifiers | Search within identifying numbers |
+| date_earliest | Starting date range for release date |
+| date_latest | Ending date range for release date |
+| accessibility | An array of accessibility types; one or more of "OS", "ON", or "CS" |
+| licenses | An array of matching license values, such as the ones at the following <a href='/doecodeapi/services/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
+| orcid | Search developer or contributor ORCID values |
+| sort | Specify a sorting field, e.g., "softwareTitle" or "releaseDate" (relevance is the default) |
+| rows | Desired number of rows to return (default 20) |
+| start | Offset row number to start for pagination (0 based) |
+
+
