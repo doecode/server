@@ -698,26 +698,23 @@ public class Metadata {
     /**
      * Send this Metadata to the ARCHIVER external support process.
      *
-     * Archiver needs the CODE ID, a PROJECT NAME (taken from the acronym if
-     * present, or the title), an optional PROJECT DESCRIPTION, and either a
-     * REPOSITORY LINK value or FILE NAME if uploaded file exists.
-
-     *
+     * Needs a CODE ID and one of either an ARCHIVE FILE or REPOSITORY LINK.
+     * 
      * If nothing supplied to archive, do nothing.
      *
-     * @param md the DOECodeMetadata to archive
+     * @param codeId the CODE ID for this METADATA
+     * @param repositoryLink (optional) the REPOSITORY LINK value, or null if none
+     * @param archiveFile (optional) the File recently uploaded to ARCHIVE, or null if none
      * @throws IOException on IO transmission errors
      */
-    private static void sendToArchiver(DOECodeMetadata md) throws IOException {
+    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile) throws IOException {
         if ( "".equals(ARCHIVER_URL) )
             return;
 
-        // if NOTHING to archive (no FILE or REPOSITORY LINK) just leave
-        if (StringUtils.isBlank(md.getFileName()) &&
-            StringUtils.isBlank(md.getRepositoryLink()))
+        // Nothing sent?
+        if (StringUtils.isBlank(repositoryLink) && null==archiveFile)
             return;
-
-
+        
         // set up a connection
         CloseableHttpClient hc =
                 HttpClientBuilder
@@ -734,11 +731,11 @@ public class Metadata {
             HttpPost post = new HttpPost(ARCHIVER_URL);
             // attributes to send
             ObjectNode request = mapper.createObjectNode();
-            request.put("code_id", md.getCodeId());
-            request.put("repository_link", md.getRepositoryLink());
+            request.put("code_id", codeId);
+            request.put("repository_link", repositoryLink);
 
             // determine if there's a file to send or not
-            if (null==md.getFileName()) {
+            if (null==archiveFile) {
                 post.setHeader("Content-Type", "application/json");
                 post.setHeader("Accept", "application/json");
 
@@ -747,7 +744,7 @@ public class Metadata {
                 post.setEntity(MultipartEntityBuilder
                         .create()
                         .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
-                        .addPart("file", new FileBody(new File(md.getFileName()), ContentType.DEFAULT_BINARY))
+                        .addPart("file", new FileBody(archiveFile, ContentType.DEFAULT_BINARY))
                         .addPart("project", new StringBody(request.toString(), ContentType.APPLICATION_JSON))
                         .build());
             }
@@ -892,9 +889,9 @@ public class Metadata {
     }
 
     /**
-     * Handle PUBLISH workflow logic.
+     * Handle SUBMIT workflow logic.
      *
-     * @param json JSON String containing the METADATA object to PUBLISH
+     * @param json JSON String containing the METADATA object to SUBMIT
      * @param file (optional) a FILE associated with this METADATA
      * @param fileInfo (optional) the FILE disposition information, if any
      * @return an appropriate Response object to the caller
@@ -921,7 +918,7 @@ public class Metadata {
             if ( !errors.isEmpty() ) {
                 // generate a JSONAPI errors object
                 return ErrorResponse
-                        .status(Response.Status.BAD_REQUEST, errors)
+                        .badRequest(errors)
                         .build();
             }
 
@@ -936,44 +933,46 @@ public class Metadata {
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
-                            .status(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .internalServerError("File upload failed.")
                             .build();
                 }
             }
             // send this file upload along to archiver if configured
             try {
-                sendToArchiver(md);
+                // if a FILE was sent, create a File Object from it
+                File archiveFile = (null==file) ? null : new File(md.getFileName());
+                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
-                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
+                        .internalServerError("Unable to archive project.")
                         .build();
             }
-
             // send to DataCite if needed
             if ( null!=md.getDoi() ) {
-                if ( !DataCite.register(md) ) {
-                    log.warn("DataCite registration failed for " + md.getDoi());
-                    throw new IOException ("DOI registration failed.");
-                }
+                String doiResponse = DataCite.register(md);
+                if (!"OK".equals(doiResponse))
+                    return ErrorResponse
+                            .internalServerError(doiResponse)
+                            .build();
             }
             // commit it
             em.getTransaction().commit();
 
             // we are done here
             return Response
-                    .status(Response.Status.OK)
+                    .ok()
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
             return ErrorResponse
-                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .notFound(e.getMessage())
                     .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Unable to update record, invalid owner: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.FORBIDDEN, "Logged in User is not allowed to modify this record.")
+                    .forbidden("Logged in User is not allowed to modify this record.")
                     .build();
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
@@ -981,7 +980,7 @@ public class Metadata {
 
             log.warn("Persistence Error Submitting: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Persistence error submitting record.")
+                    .internalServerError("Persistence error submitting record.")
                     .build();
         } finally {
             em.close();
@@ -989,9 +988,9 @@ public class Metadata {
     }
 
     /**
-     * Perform SUBMIT workflow operation, optionally with associated file uploads.
+     * Perform ANNOUNCE workflow operation, optionally with associated file uploads.
      *
-     * @param json String containing JSON of the Metadata to SUBMIT
+     * @param json String containing JSON of the Metadata to ANNOUNCE
      * @param file the FILE (if any) to attach to this metadata
      * @param fileInfo file disposition information if FILE present
      * @return a Response containing the JSON of the submitted record if successful, or
@@ -1035,7 +1034,7 @@ public class Metadata {
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
-                            .status(Response.Status.INTERNAL_SERVER_ERROR, "File upload failed.")
+                            .internalServerError("File upload failed.")
                             .build();
                 }
             }
@@ -1044,7 +1043,7 @@ public class Metadata {
             List<String> errors = validateAnnounce(md);
             if ( !errors.isEmpty() ) {
                 return ErrorResponse
-                        .status(Response.Status.BAD_REQUEST, errors)
+                        .badRequest(errors)
                         .build();
             }
             // send this to OSTI
@@ -1083,40 +1082,42 @@ public class Metadata {
                     hc.close();
                 }
             }
-            // send any updates to DataCite as well
-            if (StringUtils.isNotEmpty(md.getDoi())) {
-                if ( !DataCite.register(md) ) {
-                    log.warn("DataCite DOI registration failed for " + md.getDoi() + " ID=" + md.getCodeId());
-                    throw new IOException ("DOI registration failed.");
-                }
-            }
             // send this file upload along to archiver if configured
             try {
-                sendToArchiver(md);
+                File archiveFile = (null==file) ? null : new File(md.getFileName());
+                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
-                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Unable to archive project.")
+                        .internalServerError("Unable to archive project.")
                         .build();
             }
-            
+            // send any updates to DataCite as well
+            if (StringUtils.isNotEmpty(md.getDoi())) {
+                String doiResponse = DataCite.register(md);
+                
+                if (!"OK".equals(doiResponse))
+                    return ErrorResponse
+                            .internalServerError(doiResponse)
+                            .build();
+            }
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
 
             // and we're happy
             return Response
-                    .status(Response.Status.OK)
+                    .ok()
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
         } catch ( NotFoundException e ) {
             return ErrorResponse
-                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .notFound(e.getMessage())
                     .build();
         } catch ( IllegalAccessException e ) {
             log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
             log.warn("Message: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit indicated record.")
+                    .forbidden("Invalid Access: Unable to edit indicated record.")
                     .build();
         } catch ( IOException |  InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
@@ -1124,7 +1125,7 @@ public class Metadata {
 
             log.warn("Persistence Error: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error announcing record.")
+                    .internalServerError("IO Error announcing record.")
                     .build();
         } finally {
             em.close();
