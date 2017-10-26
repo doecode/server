@@ -55,6 +55,7 @@ JSON is the default output format.  Authenticated user must be either the owner 
 > ```html
 > GET /doecodeapi/services/metadata/234
 > Content-Type: application/json
+> Authorization: Basic *user-api-key*
 > ```
 > Response:
 > ```html
