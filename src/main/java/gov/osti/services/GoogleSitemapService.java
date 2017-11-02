@@ -77,9 +77,8 @@ public class GoogleSitemapService {
           for (int i = 0; i < numOfPages; i++) {
                xml_string.append("<sitemap>");
                xml_string.append("<loc>")
-                       .append(uri.getBaseUri())
-                       .append(uri.getPath())
-                       .append("/")
+                       .append(SITE_URL)
+                       .append("/api/sitemap/xml/")
                        .append(i + 1)
                        .append("</loc>");
                xml_string.append("<lastmod>").append(moddedDate).append("</lastmod>");
@@ -125,7 +124,7 @@ public class GoogleSitemapService {
                     xml_string.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
                     query.getDocs().forEach((record) -> {
                          xml_string.append("<url>");
-                         xml_string.append("<loc>").append(SITE_URL).append("/biblio" + "/").append(record.getCodeId()).append("</loc>");
+                         xml_string.append("<loc>").append(SITE_URL).append("/biblio/").append(record.getCodeId()).append("</loc>");
                          xml_string.append("<lastmod>")
                                  .append(DATE_FORMATTER
                                          .format( (null==record.getDateRecordUpdated()) ? LocalDate.now() : record.getDateRecordUpdated().toInstant()) )
