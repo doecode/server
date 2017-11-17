@@ -759,6 +759,8 @@ public class UserServices {
      * 403 - Forbidden, user does not have permission to access this function
      * 500 - a JSON processing error occurred
      * 
+     * @param rows (optional) the number of ROWS desired
+     * @param start (optional) the starting index number, from 0
      * @return a JSON array of Users
      */
     @GET
@@ -767,11 +769,24 @@ public class UserServices {
     @Consumes ({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
     @RequiresRoles("OSTI")
     @Path("/users")
-    public Response getUsers() {
+    public Response getUsers(
+            @QueryParam("start") int start,
+            @QueryParam("rows") int rows) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
             TypedQuery<User> q = em.createNamedQuery("User.findAllUsers", User.class);
+            
+            // cap at 100 if over that
+            rows = (rows>100) ? 100 : rows;
+            
+            // set pagination limits, if requested
+            if (0!=rows)
+                q.setMaxResults(rows);
+            if (0!=start)
+                q.setFirstResult(start);
+            
+            // get the List of Users
             List<User> users = q.getResultList();
             
             return Response
@@ -1118,6 +1133,9 @@ public class UserServices {
     /**
      * Acquire a listing of all records by OWNER.
      * 
+     * @param start the starting row index, from 0
+     * @param rows the desired number of rows; if specified, capped at 100. If not
+     * specified, unlimited
      * @return the Metadata information in the desired format
      * @throws JsonProcessingException 
      */
@@ -1126,13 +1144,27 @@ public class UserServices {
     @RequiresRoles("OSTI")
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
-    public Response loadRequests() throws JsonProcessingException {
+    public Response loadRequests(
+            @QueryParam("start") int start,
+            @QueryParam("rows") int rows)
+            throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
         ArrayList<RequestNode> requests = new ArrayList<>();
 
         try {
             // acquire a list of Users with PENDING ROLES
             TypedQuery<User> query = em.createQuery("SELECT DISTINCT u FROM User u JOIN u.pendingRoles p", User.class);
+            
+            // set the cap if number is too high
+            rows = (rows>100) ? 100 : rows;
+            
+            // set the pagination limits, if present
+            if (0!=rows)
+                query.setMaxResults(rows);
+            if (0!=start)
+                query.setFirstResult(start);
+            
+            // get the List of matching Users
             List<User> users = query.getResultList();
 
             for (User u : users) {

@@ -312,6 +312,8 @@ Special role-based administrative tasks for managing user account information.
 `GET /doecodeapi/services/user/requests`
 
 Requires authentication, and administrative access roles.  Return a listing of user accounts containing pending, requested roles for administrative processing.
+Optionally, you may specify query parameters of the starting row number ("start") and desired number of rows returned ("rows").  If rows is set, it is capped
+at 100.  If not set, all records matching are returned.
 
 >  Request:
 ```
@@ -340,7 +342,10 @@ in JSON.
 
 `GET /doecodeapi/services/user/users`
 
-Requires administrative access.  Returns array of all User account information.
+Requires administrative access.  Returns array of all User account information. Optionally,
+you may specify a starting row number (from 0) as a query parameter ("start") and a desired
+number of rows ("rows").  If present, the number of rows is capped at 100; if not specified,
+there is no upper limit.
 
 ### update (admin)
 

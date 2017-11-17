@@ -75,6 +75,9 @@ JSON is the default output format.  Authenticated user must be either the owner 
 Requires authenticated login.  Retrieve all metadata projects owned by the current logged-in user account in JSON format. Administrative accounts
 will see ALL PROJECTS, while Site Administrator users will see all projects from their SITE.
 
+If pagination is desired, specify the starting row number as the query parameter "start", and the desired number of rows as "rows".  If rows is
+specified, it is capped at 100.
+
 > Request:
 > ```html
 > GET /doecodeapi/services/metadata/projects

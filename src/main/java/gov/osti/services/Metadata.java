@@ -417,6 +417,8 @@ public class Metadata {
     /**
      * Acquire a listing of all records by OWNER.
      *
+     * @param rows the number of rows desired (if present)
+     * @param start the starting row number (from 0)
      * @return the Metadata information in the desired format
      * @throws JsonProcessingException
      */
@@ -424,7 +426,10 @@ public class Metadata {
     @Path ("/projects")
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
-    public Response listProjects() throws JsonProcessingException {
+    public Response listProjects(
+            @QueryParam("rows") int rows, 
+            @QueryParam("start") int start) 
+            throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
         // get the security user in context
@@ -449,6 +454,15 @@ public class Metadata {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
+            
+            // if rows specified, and greater than 100, cap it there
+            rows = (rows>100) ? 100 : rows;
+            
+            // if pagination elements are present, set them on the query
+            if (0!=rows)
+                query.setMaxResults(rows);
+            if (0!=start)
+                query.setFirstResult(start);
 
             // get a List of records
             RecordsList records = new RecordsList(query.getResultList());
