@@ -660,6 +660,11 @@ public class Metadata {
                 // these fields WILL NOT CHANGE on edit/update
                 md.setOwner(emd.getOwner());
                 md.setSiteOwnershipCode(emd.getSiteOwnershipCode());
+                // if there's ALREADY a DOI, and we have been SUBMITTED/APPROVED, keep it
+                if (StringUtils.isNotEmpty(emd.getDoi()) &&
+                    (Status.Submitted.equals(emd.getWorkflowStatus()) || 
+                     Status.Approved.equals(emd.getWorkflowStatus())))
+                    md.setDoi(emd.getDoi());
                 
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
@@ -962,13 +967,16 @@ public class Metadata {
                         .internalServerError("Unable to archive project.")
                         .build();
             }
-            // send to DataCite if needed
-            if ( null!=md.getDoi() ) {
-                String doiResponse = DataCite.register(md);
-                if (!"OK".equals(doiResponse))
+            // send to DataCite if needed (and there is a RELEASE DATE set)
+            if ( null!=md.getDoi() && null!=md.getReleaseDate() ) {
+                try {
+                    DataCite.register(md);
+                } catch ( IOException e ) {
+                    // tell why the DataCite registration failed
                     return ErrorResponse
-                            .internalServerError(doiResponse)
+                            .internalServerError(e.getMessage())
                             .build();
+                }
             }
             // commit it
             em.getTransaction().commit();
@@ -1106,14 +1114,16 @@ public class Metadata {
                         .internalServerError("Unable to archive project.")
                         .build();
             }
-            // send any updates to DataCite as well
-            if (StringUtils.isNotEmpty(md.getDoi())) {
-                String doiResponse = DataCite.register(md);
-                
-                if (!"OK".equals(doiResponse))
+            // send any updates to DataCite as well (if RELEASE DATE is set)
+            if (StringUtils.isNotEmpty(md.getDoi()) && null!=md.getReleaseDate()) {
+                try {
+                    DataCite.register(md);
+                } catch ( IOException e ) {
+                    // if DataCite registration failed, say why
                     return ErrorResponse
-                            .internalServerError(doiResponse)
+                            .internalServerError(e.getMessage())
                             .build();
+                }
             }
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();

@@ -334,10 +334,9 @@ public class DataCite {
      * Send a request to DataCite to register DOI metadata information.
      * 
      * @param m the DOECodeMetadata object to register with DataCite
-     * @return "OK" on success, failure reason otherwise
-     * @throws IOException on HTTP transmissions errors
+     * @throws IOException on metadata registration errors
      */
-    private static String registerMetadata(DOECodeMetadata m) throws IOException {
+    private static void registerMetadata(DOECodeMetadata m) throws IOException {
         // set some reasonable default timeouts
         // create an HTTP client to request through
         CloseableHttpClient hc = 
@@ -365,16 +364,16 @@ public class DataCite {
             // 201 CREATED is the only successful API response
             HttpResponse response = hc.execute(request);
             int status_code = response.getStatusLine().getStatusCode();
-            if ( HttpStatus.SC_CREATED==status_code ) 
-                return "OK";
-            // otherwise, read the reason why
-            log.warn("DOI request failed, response code=" + status_code);
-            log.warn("Message: " + EntityUtils.toString(response.getEntity()));
-            
-            return "DOI Metadata for " + m.getDoi() + " failed to register.";
+            if ( HttpStatus.SC_CREATED!=status_code ) {
+                // otherwise, read the reason why
+                String text_response = EntityUtils.toString(response.getEntity());
+                log.warn("DOI request failed, response code=" + status_code);
+
+                throw new IOException ("Metadata failed: " + text_response);
+            }
         } catch ( XMLStreamException e ) {
             log.warn("XML metadata error: " + e.getMessage());
-            return "Metadata format error: " + e.getMessage();
+            throw new IOException ("XML parser error: " + e.getMessage());
         } finally {
             hc.close();
         }
@@ -384,10 +383,9 @@ public class DataCite {
      * Send a request to DataCite to translate a DOI value to a URL to resolve.
      * 
      * @param m the DOECodeMetadata Object to register with DataCite
-     * @return "OK" if successful, failure response otherwise
      * @throws IOException on HTTP transmission errors, or failed to register DOI
      */
-    private static String registerDoi(DOECodeMetadata m) throws IOException {
+    private static void registerDoi(DOECodeMetadata m) throws IOException {
         // set some reasonable default timeouts
         // create an HTTP client to request through
         CloseableHttpClient hc = 
@@ -415,15 +413,12 @@ public class DataCite {
             HttpResponse response = hc.execute(request);
             int status_code = response.getStatusLine().getStatusCode();
             
-            if ( HttpStatus.SC_CREATED==status_code )
-                return "OK";
-            
-            // if we failed, explain why
-            log.warn("DOI URL request failed, response code=" + status_code);
-            log.warn("Message: " + EntityUtils.toString(response.getEntity()));
-            
-            // do not send back too much information
-            return "DOI URL for " + m.getDoi() + " failed to register.";
+            // success if SC_CREATED (201) returned, otherwise throw error
+            if ( HttpStatus.SC_CREATED!=status_code ) {
+                String text_response = EntityUtils.toString(response.getEntity());
+                log.warn("DOI URL request failure, response code=" + status_code);
+                throw new IOException ("DOI registration failed: " + text_response);
+            }
         } finally {
             hc.close();
         }
@@ -469,48 +464,28 @@ public class DataCite {
      * If DataCite information is not configured, or the register contains no
      * DOI value, this call is skipped.
      * 
-     * Returns:
-     * "OK" on successful operation, or failure reason if not.
+     * Throws IOException on registration or DataCite errors, otherwise you
+     * may assume success.
      * 
      * @param m the DOECodeMetadata object to register
-     * @return "OK" if successful, or failure excuse if not
-     * @throws IOException on HTTP transmission errors
+     * @throws IOException on DOI registration errors
      */
-    public static String register(DOECodeMetadata m) throws IOException {
+    public static void register(DOECodeMetadata m) throws IOException {
         // if not configured, ignore this call
-        if ("".equals(DATACITE_LOGIN))
-            return "OK"; // this is still okay
-        // if no DOI is requested, skip this
-        if (null==m.getDoi())
-            return "OK"; // nothing to do
+        if ("".equals(DATACITE_LOGIN) || StringUtils.isEmpty(m.getDoi()))
+            return;
         
         // ensure the DOI to be registered is recognized and valid for this record
         // do we know this prefix?
         if (!m.getDoi().startsWith(DATACITE_PREFIX))
-            return "OK"; // somebody else's DOI
+            return;
         
         // check to make sure we can proceed ( SHOULD NOT BE REGISTERED ELSEWHERE )
         if (!verifyDoiOwnership(m))
-            return "DOI " + m.getDoi() + " is not exclusive to code ID " + m.getCodeId();
+            throw new IOException ("DOI " + m.getDoi() + " is not exclusive to code ID " + m.getCodeId());
         
-        // try the registration, returning success or failure
-        try {
-            // attempt to register METADATA
-            String metadataResponse = registerMetadata(m);
-            if (!"OK".equals(metadataResponse))
-                return metadataResponse;
-            
-            // attempt to register DOI
-            String doiResponse = registerDoi(m);
-            if (!"OK".equals(doiResponse))
-                return doiResponse;
-        } catch ( IOException e ) {
-            // some general transmission error occurred
-            log.warn("DOI registration failed: " + e);
-            return "DOI transmission failure.";
-        }
-        
-        // if we made it here, all is OK
-        return "OK";
+        // try the registration, throws IOException if failed
+        registerMetadata(m);
+        registerDoi(m);
     }
 }

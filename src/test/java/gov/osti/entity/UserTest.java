@@ -52,7 +52,7 @@ public class UserTest {
         assertFalse ("Now should not be expired", user.isPasswordExpired());
         
         // move the date back at least PASSWORD AGE
-        user.setDatePasswordChanged(Date.from(Instant.now().minus(Duration.ofDays(User.PASSWORD_DATE_EXPIRATION_IN_DAYS))));
+        user.setDatePasswordChanged(Date.from(Instant.now().minus(Duration.ofDays(User.PASSWORD_DATE_EXPIRATION_IN_DAYS+1))));
         assertTrue  ("Date of " + user.getDatePasswordChanged() + " not expired", user.isPasswordExpired());
         
     }
