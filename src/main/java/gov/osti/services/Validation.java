@@ -180,7 +180,8 @@ public class Validation {
     /**
      * Check to see if a VALUE appears to be a valid URL.
      *
-     * If no "http" prefix found, add one and try that value.
+     * No longer presumes to add protocol; it must be provided to be a proper
+     * URL value.
      *
      * @param value the VALUE to check
      * @return true if appears to be a URL, false if not
@@ -188,9 +189,7 @@ public class Validation {
     public static boolean isValidUrl(String value) {
         return ( null==value ) ?
                 false :
-                (value.toLowerCase().startsWith("http") || value.contains("://")) ?
-                URL_PATTERN.matcher(value).matches() :
-                URL_PATTERN.matcher("http://"+value).matches();
+                URL_PATTERN.matcher(value).matches();
     }
 
     /**
@@ -266,10 +265,6 @@ public class Validation {
     public static boolean isValidRepositoryLink(String value) {
         if ( StringUtils.isBlank(value))
             return false;
-
-        // if not starting with HTTP, make it so then test
-        if (!value.toLowerCase().startsWith("http"))
-            value = "https://" + value;
 
         try {
             Collection<Ref> references = Git

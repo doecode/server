@@ -53,11 +53,8 @@ public class SourceForge implements ConnectorInterface {
     protected static String getProjectNameFromUrl(String url) {
         try {
             String safeUrl = (null==url) ? "" : url.trim();
-            // err on the side of encryption, if no protocol provided
-            URI uri = new URI(
-                    !safeUrl.startsWith("http") ?
-                            "https://" + safeUrl : 
-                            safeUrl);
+            // do not assume protocol, must be provided
+            URI uri = new URI(safeUrl);
             
             // protection against bad URL input
             if (null!=uri.getHost()) {

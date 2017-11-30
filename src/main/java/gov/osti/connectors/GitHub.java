@@ -86,11 +86,8 @@ public class GitHub implements ConnectorInterface {
     private static String getProjectFromUrl(String url) {
         try {
             String safeUrl = (null==url) ? "" : url.trim();
-            // err on the side of encryption, if no protocol provided
-            URI uri = new URI(
-                    !safeUrl.startsWith("http") ?
-                            "https://" + safeUrl : 
-                            safeUrl);
+            // no longer assuming protocol, must be provided
+            URI uri = new URI(safeUrl);
             
             // protection against bad URL input
             if (null!=uri.getHost()) {

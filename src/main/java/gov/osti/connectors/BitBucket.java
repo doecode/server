@@ -57,11 +57,8 @@ public class BitBucket implements ConnectorInterface {
     private static String getProjectNameFromUrl(String url) {
         try {
             String safeUrl = (null==url) ? "" : url.trim();
-            // err on the side of encryption, if no protocol provided
-            URI uri = new URI(
-                    !safeUrl.startsWith("http") ?
-                            "https://" + safeUrl : 
-                            safeUrl);
+            // no longer assume protocol, must be provided, or fails
+            URI uri = new URI(safeUrl);
             
             // protection against bad URL input
             if (null!=uri.getHost()) {
