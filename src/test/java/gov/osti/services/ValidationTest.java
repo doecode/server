@@ -60,13 +60,13 @@ public class ValidationTest {
         String[] valid = {
             "http://google.com",
             "https://www.osti.gov/someplace/page.html",
-            "http://kumquat.org/",
-            "missing",
-            "something.org"
+            "http://kumquat.org/"
         };
         // only accepts http:// or https:// addresses by design
         String[] invalid = {
             "", 
+            "missing",
+            "something.org",
             "https://",
             "http://",
             "ftp://somesite.net/bogus.file"
