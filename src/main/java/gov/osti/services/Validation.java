@@ -398,7 +398,7 @@ public class Validation {
     public Response checkRepositoryLink(@QueryParam("value") String value) {
         return ( isValidRepositoryLink(value) ) ?
                 Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
-                ErrorResponse.badRequest("Not a valid repository link.").build();
+                ErrorResponse.badRequest(generateURLErrorMsg(value, "repositorylink")).build();
     }
 
     /**
@@ -417,7 +417,7 @@ public class Validation {
     public Response checkUrl(@QueryParam("value") String value) {
         return ( isValidUrl(value) ) ?
                 Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
-                ErrorResponse.badRequest("\"" + value + "\" is not a valid URL.").build();
+                ErrorResponse.badRequest(generateURLErrorMsg(value, "url")).build();
     }
 
     /**
@@ -460,11 +460,11 @@ public class Validation {
                 if (StringUtils.equalsIgnoreCase(req.getType(), "doi")) {
                     req.setError((isValidDoi(req.getValue()) ? "" : req.getValue() + " is not a valid DOI."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "repositorylink")) {
-                    req.setError((isValidRepositoryLink(req.getValue()) ? "" : "Not a valid repository link."));
+                     req.setError(isValidRepositoryLink(req.getValue()) ? "" : generateURLErrorMsg(req.getValue(), req.getType()));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "phonenumber")) {
                     req.setError((isValidPhoneNumber(req.getValue()) ? "" : req.getValue() + " is not a valid phone number."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "url")) {
-                    req.setError((isValidUrl(req.getValue()) ? "" : req.getValue() + " is not a valid URL."));
+                     req.setError(isValidUrl(req.getValue()) ? "" : generateURLErrorMsg(req.getValue(), req.getType()));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "email")) {
                     req.setError((isValidEmail(req.getValue()) ? "" : req.getValue() + " is not a valid email address."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "awardnumber")) {
@@ -489,5 +489,21 @@ public class Validation {
                     .status(Response.Status.BAD_REQUEST)
                     .build();
         }
+    }
+    
+    private String generateURLErrorMsg(String url, String type) {
+         String safeUrl = (null==url) ? "" : url.trim();
+         String msg = "";
+
+         if (!safeUrl.startsWith("http"))
+              msg = "This URL is missing a valid protocol.  Please prefix it with \"http://\" or \"https://\" as appropriate.";
+         else {
+              if (type.equalsIgnoreCase("repositorylink"))
+                   msg = "Not a valid repository link.";
+              else
+                   msg = safeUrl + " is not a valid URL.";
+         }
+         
+         return msg;
     }
 }
