@@ -496,7 +496,7 @@ public class Validation {
          String msg = "";
 
          if (!safeUrl.startsWith("http"))
-              msg = "This URL is missing a valid protocol.  Please prefix it with \"http://\" or \"https://\" as appropriate.";
+              msg = "Please include a correclty associated prefix with the URL (e.g., \"http://\" or \"https://\").";
          else {
               if (type.equalsIgnoreCase("repositorylink"))
                    msg = "Not a valid repository link.";
