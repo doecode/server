@@ -497,6 +497,8 @@ public class Metadata {
      * @param start the starting row number (from 0)
      * @param rows number of rows desired (0 is unlimited)
      * @param siteCode (optional) a SITE OWNERSHIP CODE to filter by site
+     * @param state the WORKFLOW STATE if desired (default Submitted). One of
+     * Approved, Saved, or Submitted, if supplied.
      * @return JSON of a records response
      */
     @GET
@@ -507,7 +509,8 @@ public class Metadata {
     @RequiresRoles("OSTI")
     public Response listProjectsPending(@QueryParam("start") int start,
                                         @QueryParam("rows") int rows,
-                                        @QueryParam("site") String siteCode) {
+                                        @QueryParam("site") String siteCode,
+                                        @QueryParam("state") String state) {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
         try {
@@ -523,6 +526,21 @@ public class Metadata {
             ParameterExpression<String> status = cb.parameter(String.class, "status");
             ParameterExpression<String> site = cb.parameter(String.class, "site");
 
+            // default requested STATE; take Submitted as the default value if not supplied
+            DOECodeMetadata.Status requestedState;
+            String queryState = (StringUtils.isEmpty(state)) ? "" : state.toLowerCase();
+            switch ( queryState ) {
+                case "approved":
+                    requestedState = DOECodeMetadata.Status.Approved;
+                    break;
+                case "saved":
+                    requestedState = DOECodeMetadata.Status.Saved;
+                    break;
+                default:
+                    requestedState = DOECodeMetadata.Status.Submitted;
+                    break;
+            }
+            
             if (null==siteCode) {
                 countQuery.where(cb.equal(workflowStatus, status));
             } else {
@@ -532,7 +550,7 @@ public class Metadata {
             }
             // query for the COUNT
             TypedQuery<Long> cq = em.createQuery(countQuery);
-            cq.setParameter("status", DOECodeMetadata.Status.Submitted);
+            cq.setParameter("status", requestedState);
             if (null!=siteCode)
                 cq.setParameter("site", siteCode);
 
@@ -553,7 +571,7 @@ public class Metadata {
             }
 
             TypedQuery<DOECodeMetadata> rq = em.createQuery(rowQuery);
-            rq.setParameter("status", DOECodeMetadata.Status.Submitted);
+            rq.setParameter("status", requestedState);
             if (null!=siteCode)
                 rq.setParameter("site", siteCode);
             rq.setFirstResult(start);
