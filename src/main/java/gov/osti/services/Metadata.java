@@ -1470,6 +1470,8 @@ public class Metadata {
                 }
             }
         }
+        if (StringUtils.isNotBlank(m.getDoi()) && null==m.getReleaseDate())
+            reasons.add("Release Date is required for DOI registration.");
         // if "OS" accessibility, a REPOSITORY LINK is REQUIRED
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))

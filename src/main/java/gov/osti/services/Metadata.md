@@ -240,6 +240,7 @@ Validation rules are:
 * at least one developer
   * each developer must have a first and last name
   * if email is provided, it must be valid
+* if DOI is specified, release date is required
 
 
 
