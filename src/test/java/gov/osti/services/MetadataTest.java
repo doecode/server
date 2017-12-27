@@ -4,7 +4,6 @@ package gov.osti.services;
 
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
-import gov.osti.entity.SponsoringOrganization;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,8 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test various METADATA related functionality.
- * 
+ *
  * @author ensornl
  */
 public class MetadataTest {
@@ -44,10 +42,10 @@ public class MetadataTest {
     }
     
     /**
-     * Test that SUBMIT VALIDATIONS work.
+     * Test that PUBLISHED VALIDATIONS work.
      */
     @Test
-    public void testValidateSubmit() {
+    public void testValidatePublished() {
         DOECodeMetadata m = new DOECodeMetadata();
         
         // empty metadata should have numerous errors
@@ -61,8 +59,7 @@ public class MetadataTest {
             "Description is required.",
             "A License is required.",
             "At least one developer is required.",
-            "A valid Landing Page URL is required for non-open source submissions.",
-            "Software type is required."
+            "A valid Landing Page URL is required for non-open source submissions."
         };
         
         for ( String message : validations ) {
@@ -78,7 +75,6 @@ public class MetadataTest {
         assertFalse("Still requiring title?", reasons.contains("Software title is required."));
         assertFalse("Still requiring accessibility", reasons.contains("Missing Source Accessibility."));
         assertTrue ("Missing OS validation", reasons.contains("Repository URL is required for open source submissions."));
-        assertTrue ("Missing software type validation", reasons.contains("Software type is required."));
         
         // test developer issues
         Developer d = new Developer();
@@ -131,37 +127,18 @@ public class MetadataTest {
         m.setDevelopers(developers);
         m.setProprietaryUrl("http://mylicense.com/terms.html");
         m.setDescription("This is a testing description.");
-        m.setSoftwareType(DOECodeMetadata.Type.S);
         
         reasons = Metadata.validateSubmit(m);
         
         assertTrue ("Should be no more errors: " + StringUtils.join(reasons, ", "), reasons.isEmpty());
         
-        // assert that the BUSINESS additional requirement is there
-        m.setSoftwareType(DOECodeMetadata.Type.B);
-        
-        reasons = Metadata.validateSubmit(m);
-        
-        assertFalse("Missing business validation", reasons.isEmpty());
-        assertTrue ("Reason is wrong", reasons.contains("A sponsor is required for Business software."));
-        
-        // fix it
-        SponsoringOrganization sponsor = new SponsoringOrganization();
-        sponsor.setPrimaryAward("AWARD");
-        sponsor.setOrganizationName("Testing Business Validation");
-        
-        m.setSponsoringOrganizations(Arrays.asList(sponsor));
-        
-        reasons = Metadata.validateSubmit(m);
-        
-        assertTrue ("Still have errors:" + StringUtils.join(reasons, ", "), reasons.isEmpty());
     }
     
     /**
-     * Test some ANNOUNCE validations.
+     * Test some SUBMIT validations.
      */
     @Test
-    public void testValidateAnnounce() {
+    public void testValidateSubmit() {
         // test that published ones also apply here
         DOECodeMetadata m = new DOECodeMetadata();
         
@@ -176,10 +153,9 @@ public class MetadataTest {
             "Description is required.",
             "A License is required.",
             "At least one developer is required.",
-            "A valid Landing Page URL is required for non-open source submissions.",
-            "Software type is required."
+            "A valid Landing Page URL is required for non-open source submissions."
         };
-        String[] announce_validations = {
+        String[] submit_validations = {
             "Release date is required.",
             "At least one sponsoring organization is required.",
             "At least one research organization is required.",
@@ -193,8 +169,8 @@ public class MetadataTest {
             assertTrue ("Missing: " + message, reasons.contains(message));
         }
         
-        // also check announce only validations
-        for ( String message : announce_validations ) {
+        // also check submit only validations
+        for ( String message : submit_validations ) {
             assertTrue ("Missing: " + message, reasons.contains(message));
         }
     }
