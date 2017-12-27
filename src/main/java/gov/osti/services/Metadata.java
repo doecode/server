@@ -1479,6 +1479,13 @@ public class Metadata {
             if (!Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
+        // SOFTWARE TYPE is REQUIRED; BUSINESS type requires SPONSORING ORGANIZATION
+        if (null==m.getSoftwareType())
+            reasons.add("Software type is required.");
+        else if (DOECodeMetadata.Type.B.equals(m.getSoftwareType()))
+            if (null==m.getSponsoringOrganizations() || m.getSponsoringOrganizations().isEmpty())
+                reasons.add("A sponsor is required for Business software.");
+                
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
