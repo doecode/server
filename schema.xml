@@ -493,6 +493,7 @@
   <field name="sponsoringOrganizations.primaryAward" type="text_en"
    multiValued="true" indexed="true" stored="true"/>
   <field name="workflowStatus" type="string" indexed="true" stored="true"/>
+  <field name="softwareType" type="string" indexed="true" stored="true"/>
  
   <!-- any incoming JSON field not defined above is dropped -->
   <dynamicField name="*" type="ignored"/>
