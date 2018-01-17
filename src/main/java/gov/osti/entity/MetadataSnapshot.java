@@ -2,14 +2,19 @@
 package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import gov.osti.entity.DOECodeMetadata.Status;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Lob;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 /**
  * A storage cache Entity for Approved Metadata values.
@@ -17,16 +22,25 @@ import javax.persistence.Table;
  * @author nensor@gmail.com
  */
 @Entity
-@Table (name = "approved_metadata")
+@IdClass (MetadataSnapshotKey.class)
+@Table (name = "metadata_snapshot",
+        uniqueConstraints = { 
+            @UniqueConstraint (columnNames = {"code_id", "snapshot_status"})
+        }
+        )
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
-    @NamedQuery (name = "ApprovedMetadata.findByCodeId", query = "SELECT a FROM ApprovedMetadata a WHERE a.codeId=:codeId"),
-    @NamedQuery (name = "ApprovedMetadata.findAll", query = "SELECT a FROM ApprovedMetadata a")
+    @NamedQuery (name = "MetadataSnapshot.findByCodeIdAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.codeId=:codeId AND s.snapshotStatus=:status"),
+    @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotStatus=:status")
 })
-public class ApprovedMetadata implements Serializable {
+public class MetadataSnapshot implements Serializable {
     @Id
     @Column (name = "code_id")
     private Long codeId;
+    @Id
+    @Enumerated (EnumType.STRING)
+    @Column (name = "snapshot_status")
+    private Status snapshotStatus;
     @Lob
     @Column (name = "json")
     private String json;
@@ -61,5 +75,19 @@ public class ApprovedMetadata implements Serializable {
      */
     public void setJson(String json) {
         this.json = json;
+    }
+
+    /**
+     * @return the snapshotStatus
+     */
+    public Status getSnapshotStatus() {
+        return snapshotStatus;
+    }
+
+    /**
+     * @param snapshotStatus the snapshotStatus to set
+     */
+    public void setSnapshotStatus(Status snapshotStatus) {
+        this.snapshotStatus = snapshotStatus;
     }
 }

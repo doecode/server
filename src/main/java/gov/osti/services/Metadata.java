@@ -22,7 +22,7 @@ import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
-import gov.osti.entity.ApprovedMetadata;
+import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.Status;
@@ -57,6 +57,10 @@ import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 import javax.servlet.ServletContext;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -655,10 +659,23 @@ public class Metadata {
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
         md.setOpenSource( !Accessibility.CS.equals(md.getAccessibility()) );
-
+        
+        ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
+        Validator validator = validators.getValidator();
+        
         // if there's a CODE ID, attempt to look up the record first and
         // copy attributes into it
         if ( null==md.getCodeId() || 0==md.getCodeId()) {
+            // perform length validations on Bean
+            Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
+            if (!violations.isEmpty()) {
+                List<String> reasons = new ArrayList<>();
+                
+                violations.stream().forEach(violation->{
+                    reasons.add(violation.getMessage());
+                });
+                throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
+            }
             em.persist(md);
         } else {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
@@ -683,6 +700,17 @@ public class Metadata {
                     (Status.Submitted.equals(emd.getWorkflowStatus()) || 
                      Status.Approved.equals(emd.getWorkflowStatus())))
                     md.setDoi(emd.getDoi());
+                
+                // perform length validations on Bean
+                Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
+                if (!violations.isEmpty()) {
+                    List<String> reasons = new ArrayList<>();
+
+                    violations.stream().forEach(violation->{
+                        reasons.add(violation.getMessage());
+                    });
+                    throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
+                }
                 
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
@@ -902,6 +930,8 @@ public class Metadata {
                     .status(200)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
         } catch ( NotFoundException e ) {
             return ErrorResponse
                     .notFound(e.getMessage())
@@ -996,6 +1026,14 @@ public class Metadata {
                             .build();
                 }
             }
+            // store the snapshot copy of Metadata
+            MetadataSnapshot snapshot = new MetadataSnapshot();
+            snapshot.setCodeId(md.getCodeId());
+            snapshot.setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.setJson(md.toJson().toString());
+
+            em.merge(snapshot);
+            
             // commit it
             em.getTransaction().commit();
 
@@ -1004,6 +1042,8 @@ public class Metadata {
                     .ok()
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
         } catch ( NotFoundException e ) {
             return ErrorResponse
                     .notFound(e.getMessage())
@@ -1143,6 +1183,14 @@ public class Metadata {
                             .build();
                 }
             }
+            // store the snapshot copy of Metadata in SPECIAL STATUS
+            MetadataSnapshot snapshot = new MetadataSnapshot();
+            snapshot.setCodeId(md.getCodeId());
+            snapshot.setSnapshotStatus(Status.Announced);
+            snapshot.setJson(md.toJson().toString());
+
+            em.merge(snapshot);
+            
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
 
@@ -1151,6 +1199,8 @@ public class Metadata {
                     .ok()
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
         } catch ( NotFoundException e ) {
             return ErrorResponse
                     .notFound(e.getMessage())
@@ -1313,11 +1363,12 @@ public class Metadata {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
         try {
-            TypedQuery<ApprovedMetadata> query = em.createNamedQuery("ApprovedMetadata.findAll", ApprovedMetadata.class);
-            List<ApprovedMetadata> results = query.getResultList();
+            TypedQuery<MetadataSnapshot> query = em.createNamedQuery("MetadataSnapshot.findAllByStatus", MetadataSnapshot.class)
+                    .setParameter("status", DOECodeMetadata.Status.Approved);
+            List<MetadataSnapshot> results = query.getResultList();
             int records = 0;
 
-            for ( ApprovedMetadata amd : results ) {
+            for ( MetadataSnapshot amd : results ) {
                 DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(amd.getJson()));
 
                 sendToIndex(md);
@@ -1375,12 +1426,13 @@ public class Metadata {
             // persist this to the database, as validations should already be complete at this stage.
             store(em, md, user);
 
-            // store the copy of Approved Metadata
-            ApprovedMetadata amd = new ApprovedMetadata();
-            amd.setCodeId(md.getCodeId());
-            amd.setJson(md.toJson().toString());
+            // store the snapshot copy of Metadata
+            MetadataSnapshot snapshot = new MetadataSnapshot();
+            snapshot.setCodeId(md.getCodeId());
+            snapshot.setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.setJson(md.toJson().toString());
 
-            em.merge(amd);
+            em.merge(snapshot);
 
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
@@ -1393,6 +1445,8 @@ public class Metadata {
                     .status(Response.Status.OK)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
                     .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
         } catch ( NotFoundException e ) {
             return ErrorResponse
                     .status(Response.Status.NOT_FOUND, e.getMessage())

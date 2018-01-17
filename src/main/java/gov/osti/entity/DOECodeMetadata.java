@@ -38,6 +38,8 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.Valid;
+import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,10 +65,12 @@ public class DOECodeMetadata implements Serializable {
      * Saved - stored to the database without validation
      * Submitted - validated to business logic rules, and/or sent to OSTI
      * Approved - ready to be sent to SOLR/search services
+     * Announced - sent to OSTI
      */
     public enum Status {
         Saved,
         Submitted,
+        Announced,
         Approved
     }
     
@@ -270,6 +274,7 @@ public class DOECodeMetadata implements Serializable {
     public void setOpenSource(Boolean openSource) {
             this.openSource = openSource;
     }
+    @Size (max = 255, message = "Repository link is limited to 255 characters.")
     @Column (name="REPOSITORY_LINK")
     public String getRepositoryLink() {
             return repositoryLink;
@@ -306,6 +311,7 @@ public class DOECodeMetadata implements Serializable {
      */
     @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
+    @Valid
     public List<Contributor> getContributors() {
         return this.contributors;
     }
@@ -316,6 +322,7 @@ public class DOECodeMetadata implements Serializable {
      */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name ="OWNER_ID", referencedColumnName = "CODE_ID")
+    @Valid
     public List<SponsoringOrganization> getSponsoringOrganizations() {
         return this.sponsoringOrganizations;
     }
@@ -326,6 +333,7 @@ public class DOECodeMetadata implements Serializable {
      */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name = "OWNER_ID", referencedColumnName = "CODE_ID")
+    @Valid
     public List<ContributingOrganization> getContributingOrganizations() {
         return this.contributingOrganizations;
     }
@@ -336,10 +344,12 @@ public class DOECodeMetadata implements Serializable {
      */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
+    @Valid
     public List<ResearchOrganization> getResearchOrganizations() {
         return this.researchOrganizations;
     }
 
+    @Size (max = 1000, message = "Software title is limited to 1000 characters.")
     @Column (name = "SOFTWARE_TITLE", length = 1000)
     public String getSoftwareTitle() {
             return softwareTitle;
@@ -347,18 +357,21 @@ public class DOECodeMetadata implements Serializable {
     public void setSoftwareTitle(String softwareTitle) {
             this.softwareTitle = softwareTitle;
     }
+    @Size (max = 255, message = "Acronym is limited to 255 characters.")
     public String getAcronym() {
             return acronym;
     }
     public void setAcronym(String acronym) {
             this.acronym = acronym;
     }
+    @Size (max = 255, message = "DOI is limited to 255 characters.")
     public String getDoi() {
             return doi;
     }
     public void setDoi(String doi) {
             this.doi = doi;
     }
+    @Size (max = 4000, message = "Description is limited to 4000 characters.")
     @Column (length = 4000, name = "description")
     public String getDescription() {
             return description;
@@ -380,6 +393,7 @@ public class DOECodeMetadata implements Serializable {
         return this.relatedIdentifiers;
     }
 
+    @Size (max = 255, message = "Country is limited to 255 characters.")
     @Column (name = "COUNTRY_OF_ORIGIN")
     public String getCountryOfOrigin() {
             return countryOfOrigin;
@@ -387,6 +401,7 @@ public class DOECodeMetadata implements Serializable {
     public void setCountryOfOrigin(String countryOfOrigin) {
             this.countryOfOrigin = countryOfOrigin;
     }
+    @Size (max = 500, message = "Keywords are limited to 500 characters.")
     @Column (length = 500)
     public String getKeywords() {
             return keywords;
@@ -394,6 +409,7 @@ public class DOECodeMetadata implements Serializable {
     public void setKeywords(String keywords) {
             this.keywords = keywords;
     }
+    @Size (max = 3000, message = "Disclaimers are limited to 3000 characters.")
     @Column (length = 3000)
     public String getDisclaimers() {
             return disclaimers;
@@ -415,6 +431,7 @@ public class DOECodeMetadata implements Serializable {
     }
      
 
+    @Size (max = 255, message = "Proprietary URL is limited to 255 characters.")
     @Column (name="PROPRIETARY_URL")
     public String getProprietaryUrl() {
             return proprietaryUrl;
@@ -430,6 +447,7 @@ public class DOECodeMetadata implements Serializable {
      */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
+    @Valid
     public List<Developer> getDevelopers() {
             return developers;
     }
@@ -476,6 +494,7 @@ public class DOECodeMetadata implements Serializable {
         this.developers = devlist;
     }
 
+    @Size (max = 255, message = "Recipient name is limited to 255 characters.")
     @Column (name = "RECIPIENT_NAME")
     public String getRecipientName() {
             return recipientName;
@@ -483,6 +502,7 @@ public class DOECodeMetadata implements Serializable {
     public void setRecipientName(String recipientName) {
             this.recipientName = recipientName;
     }
+    @Size (max = 255, message = "Recipient email is limited to 255 characters.")
     @Column (name="RECIPIENT_EMAIL")
     public String getRecipientEmail() {
             return recipientEmail;
@@ -490,6 +510,7 @@ public class DOECodeMetadata implements Serializable {
     public void setRecipientEmail(String recipientEmail) {
             this.recipientEmail = recipientEmail;
     }
+    @Size (max = 255, message = "Recipient phone is limited to 255 characters.")
     @Column (name="RECIPIENT_PHONE")
     public String getRecipientPhone() {
             return recipientPhone;
@@ -497,6 +518,7 @@ public class DOECodeMetadata implements Serializable {
     public void setRecipientPhone(String recipientPhone) {
             this.recipientPhone = recipientPhone;
     }
+    @Size (max = 255, message = "Recipient organization is limited to 255 characters.")
     @Column (name = "RECIPIENT_ORGANIZATION")
     public String getRecipientOrg() {
             return recipientOrg;
@@ -505,6 +527,7 @@ public class DOECodeMetadata implements Serializable {
             this.recipientOrg = recipientOrg;
     }
 
+    @Size (max = 255, message = "Accession number is limited to 255 characters.")
     @Column (name="SITE_ACCESSION_NUMBER")
     public String getSiteAccessionNumber() {
             return siteAccessionNumber;
@@ -513,6 +536,7 @@ public class DOECodeMetadata implements Serializable {
             this.siteAccessionNumber = siteAccessionNumber;
     }
 
+    @Size (max = 1500, message = "Other special requirements field is limited to 255 characters.")
     @Column (name="OTHER_SPECIAL_REQUIREMENTS", length = 1500)
     public String getOtherSpecialRequirements() {
             return otherSpecialRequirements;
@@ -559,6 +583,7 @@ public class DOECodeMetadata implements Serializable {
         return this.releaseDate;
     }
 
+    @Size (max = 255, message = "Landing page URL is limited to 255 characters.")
     @Column (name="LANDING_PAGE")
 	public String getLandingPage() {
 		return landingPage;
