@@ -1,9 +1,12 @@
 
 package gov.osti.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import gov.osti.entity.DOECodeMetadata.Status;
 import java.io.Serializable;
+import java.util.Date;
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -13,7 +16,11 @@ import javax.persistence.IdClass;
 import javax.persistence.Lob;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 
 /**
@@ -44,6 +51,15 @@ public class MetadataSnapshot implements Serializable {
     @Lob
     @Column (name = "json")
     private String json;
+    // administrative dates
+    @Basic (optional = false)
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @Temporal (TemporalType.TIMESTAMP)
+    private Date dateRecordAdded;
+    @Basic (optional = false)
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @Temporal (TemporalType.TIMESTAMP)
+    private Date dateRecordUpdated;
 
     /**
      * Get the CODE ID identifier.
@@ -89,5 +105,67 @@ public class MetadataSnapshot implements Serializable {
      */
     public void setSnapshotStatus(Status snapshotStatus) {
         this.snapshotStatus = snapshotStatus;
+    }
+    
+    /**
+     * Method called when a record is first created.  Sets dates added and
+     * updated.
+     */
+    @PrePersist
+    void createdAt() {
+        setDateRecordAdded();
+        setDateRecordUpdated();
+    }
+
+    /**
+     * Method called when the record is updated.
+     */
+    @PreUpdate
+    void updatedAt() {
+        if (null==getDateRecordAdded())
+            setDateRecordAdded();
+        setDateRecordUpdated();
+    }
+
+    /**
+     * @return the dateRecordAdded
+     */
+    public Date getDateRecordAdded() {
+        return dateRecordAdded;
+    }
+
+    /**
+     * @param dateRecordAdded the dateRecordAdded to set
+     */
+    public void setDateRecordAdded(Date dateRecordAdded) {
+        this.dateRecordAdded = dateRecordAdded;
+    }
+    
+    /**
+     * Set the DATE ADDED to now.
+     */
+    public void setDateRecordAdded() {
+        setDateRecordAdded(new Date());
+    }
+
+    /**
+     * @return the dateRecordUpdated
+     */
+    public Date getDateRecordUpdated() {
+        return dateRecordUpdated;
+    }
+
+    /**
+     * @param dateRecordUpdated the dateRecordUpdated to set
+     */
+    public void setDateRecordUpdated(Date dateRecordUpdated) {
+        this.dateRecordUpdated = dateRecordUpdated;
+    }
+    
+    /**
+     * Set DATE UPDATED to now.
+     */
+    public void setDateRecordUpdated() {
+        setDateRecordUpdated(new Date());
     }
 }
