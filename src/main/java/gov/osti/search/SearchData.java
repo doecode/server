@@ -47,6 +47,7 @@ public class SearchData implements Serializable {
     private String sort = null;
     private Integer rows;
     private Integer start;
+    private String[] softwareType = null;
 
     /**
      * Parses JSON in the request body of the reader into a SearchDaa object.
@@ -203,6 +204,18 @@ public class SearchData implements Serializable {
                 q.append("(").append(codes.toString()).append(")");
             }
         }
+        // support ARRAY of SOFTWARE TYPES
+        if (null!=getSoftwareType()) {
+            StringBuilder types = new StringBuilder();
+            for ( String type : getSoftwareType() ) {
+                if (types.length()>0) types.append(" OR ");
+                types.append("softwareType:").append(type);
+            }
+            if ( types.length()>0) {
+                if (q.length()>0) q.append(" ");
+                q.append("(").append(types.toString()).append(")");
+            }
+        }
         if (null!=getLicenses()) {
             StringBuilder values = new StringBuilder();
             for ( String license : getLicenses() ) {
@@ -328,6 +341,20 @@ public class SearchData implements Serializable {
      */
     public void setLicenses(String[] licenses) {
         this.licenses = licenses;
+    }
+
+    /**
+     * @return the softwareType
+     */
+    public String[] getSoftwareType() {
+        return softwareType;
+    }
+
+    /**
+     * @param softwareType the softwareType to set
+     */
+    public void setSoftwareType(String[] softwareType) {
+        this.softwareType = softwareType;
     }
 
 }

@@ -179,12 +179,31 @@
 	  <type>jar</type>
 	 </dependency>
 
+         <!-- javax bean validation reference spec -->
+         <dependency>
+             <groupId>javax.validation</groupId>
+             <artifactId>validation-api</artifactId>
+             <version>2.0.0.Final</version>
+         </dependency>
+
+         <!-- Java Bean validation libraries from Hibernate -->
+         <dependency>
+             <groupId>org.hibernate.validator</groupId>
+             <artifactId>hibernate-validator</artifactId>
+             <version>6.0.2.Final</version>
+         </dependency>
+         <dependency>
+             <groupId>org.hibernate.validator</groupId>
+             <artifactId>hibernate-validator-annotation-processor</artifactId>
+             <version>6.0.2.Final</version>
+         </dependency>
 	 
-	 	<dependency>
+        <!-- apache shiro authentication layer -->
+	<dependency>
     		<groupId>org.apache.shiro</groupId>
     		<artifactId>shiro-core</artifactId>
      		<version>1.3.2</version>
-		</dependency>
+	</dependency>
 
 		<dependency>
 			<groupId>org.apache.shiro</groupId>

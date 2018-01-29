@@ -240,6 +240,9 @@ Validation rules are:
 * at least one developer
   * each developer must have a first and last name
   * if email is provided, it must be valid
+* software type is required:
+  * "S" (Scientific)
+  * "B" (Business), also requires at least one sponsoring organization
 
 
 
@@ -348,6 +351,7 @@ A full JSON example is [provided below.](#json_example)
 | acronym | A short descriptive acronym or abbreviation for this software project. |
 | date_of_issuance | The date the software project was made available or submitted. |
 | software_title | The software title. |
+| software_type | The type of software, either "S" for Scientific, or "B" for Business related. |
 
 ### <a name="persons_fields"></a>Developers and Contributors
 Developers and Contributors are one-to-many Objects within a software project's metadata information.  
@@ -454,6 +458,7 @@ metadata fields.
 {
 "code_id":2651,
 "accessibility":"OS",
+"software_type":"S",
 "repository_link":"https://github.com/doecode/doecode",
 "developers":[
  {"first_name":"Project",
