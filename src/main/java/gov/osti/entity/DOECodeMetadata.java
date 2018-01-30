@@ -127,6 +127,24 @@ public class DOECodeMetadata implements Serializable {
         }
     }
     
+    /**
+     * Define the valid SOFTWARE TYPES.
+     */
+    public enum Type {
+        S ("Scientific"),
+        B ("Business");
+        
+        private final String label;
+        
+        private Type(String label) {
+            this.label = label;
+        }
+        
+        public String label() {
+            return this.label;
+        }
+    }
+    
     // Attributes
     private Long codeId;
     private String siteOwnershipCode = null;
@@ -134,7 +152,8 @@ public class DOECodeMetadata implements Serializable {
     private String  repositoryLink = null;
     private String landingPage = null;
     private Accessibility accessibility = null;
-    
+    // the SOFTWARE TYPE
+    private Type softwareType;
     // set of Access Limitations (Strings)
     @JacksonXmlElementWrapper (localName = "accessLimitations")
     @JacksonXmlProperty (localName = "accessLimitation")
@@ -690,5 +709,26 @@ public class DOECodeMetadata implements Serializable {
         @JsonIgnore
         public boolean hasSetReleaseDate() {
             return setReleaseDate;
+        }
+        
+        /**
+         * Obtain the SOFTWARE TYPE: one of Type.S (scientific) or Type.B (Business)
+         * 
+         * @return the type the SOFTWARE TYPE
+         */
+        @Basic (optional = false)
+        @Column (name = "SOFTWARE_TYPE", length = 1)
+        @Enumerated (EnumType.STRING)
+        public Type getSoftwareType() {
+            return softwareType;
+        }
+
+        /**
+         * Set the SOFTWARE TYPE value.
+         * 
+         * @param type the type to set
+         */
+        public void setSoftwareType(Type type) {
+            this.softwareType = type;
         }
 }
