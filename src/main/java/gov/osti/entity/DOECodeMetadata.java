@@ -717,7 +717,8 @@ public class DOECodeMetadata implements Serializable {
          * @return the type the SOFTWARE TYPE
          */
         @Basic (optional = false)
-        @Column (name = "SOFTWARE_TYPE", length = 1)
+        @Valid
+        @Column (name = "SOFTWARE_TYPE")
         @Enumerated (EnumType.STRING)
         public Type getSoftwareType() {
             return softwareType;
