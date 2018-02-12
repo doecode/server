@@ -10,10 +10,11 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import gov.osti.listeners.DoeServletContextListener;
+import gov.osti.repository.GitRepository;
+import gov.osti.repository.SubversionRepository;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
-import java.util.Collection;
 import java.util.regex.Pattern;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -32,8 +33,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Ref;
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -257,7 +256,8 @@ public class Validation {
     /**
      * Determine whether or not the passed-in value is a VALID repository link.
      *
-     * Presently, valid means a remote-accessible HTTP(S)-based git repository.
+     * Supports: git and subversion repository types that are publically
+     * available via HTTP(s).
      *
      * @param value the repository link/URL to check
      * @return true if valid, false if not
@@ -266,21 +266,9 @@ public class Validation {
         if ( StringUtils.isBlank(value))
             return false;
 
-        try {
-            Collection<Ref> references = Git
-                    .lsRemoteRepository()
-                    .setHeads(true)
-                    .setTags(true)
-                    .setRemote(value)
-                    .call();
-
-            // must be a valid repository if it has references
-            return true;
-        } catch ( Exception e ) {
-            // jgit occasionally throws sloppy runtime exceptions
-            log.warn("Repository URL " + value + " failed: " + e.getMessage());
-            return false;
-        }
+        // check what we consider "valid" for repository info
+        return (GitRepository.isValid(value) || 
+                SubversionRepository.isValid(value));
     }
 
     /**
