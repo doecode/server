@@ -2,6 +2,7 @@ package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import gov.osti.services.Validation;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -85,9 +86,8 @@ public class Agent implements Serializable {
     public String getOrcid() {
             return orcid;
     }
-
     public void setOrcid(String orcid) {
-            this.orcid = orcid;
+            this.orcid = Validation.formatORCID(orcid, "dashed");
     }
     	
     /**

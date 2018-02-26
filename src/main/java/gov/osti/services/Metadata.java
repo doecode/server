@@ -22,6 +22,7 @@ import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
+import gov.osti.entity.Contributor;
 import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
@@ -720,7 +721,7 @@ public class Metadata {
                 // and thus ignored by the Bean copy; this sets the value regardless if setReleaseDate() got called
                 if (md.hasSetReleaseDate())
                     emd.setReleaseDate(md.getReleaseDate());
-
+            
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
 
@@ -1126,6 +1127,7 @@ public class Metadata {
                         .badRequest(errors)
                         .build();
             }
+            
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
             omd.set(md);
@@ -1521,6 +1523,18 @@ public class Metadata {
                 if ( StringUtils.isNotBlank(developer.getEmail()) ) {
                     if (!Validation.isValidEmail(developer.getEmail()))
                         reasons.add("Developer email \"" + developer.getEmail() +"\" is not valid.");
+                }
+                if ( StringUtils.isNotBlank(developer.getOrcid()) ) {
+                    if (!Validation.isValidORCID(developer.getOrcid()))
+                        reasons.add("Developer ORCID \"" + developer.getOrcid() +"\" is not valid.");
+                }
+            }
+        }
+        if (!(null==m.getContributors() || m.getContributors().isEmpty())) {
+            for ( Contributor contributor : m.getContributors() ) {
+                if ( StringUtils.isNotBlank(contributor.getOrcid()) ) {
+                    if (!Validation.isValidORCID(contributor.getOrcid()))
+                        reasons.add("Contributor ORCID \"" + contributor.getOrcid() +"\" is not valid.");
                 }
             }
         }

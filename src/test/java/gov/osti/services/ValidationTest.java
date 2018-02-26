@@ -136,5 +136,25 @@ public class ValidationTest {
             assertTrue  ("DOI " + doi + " should pass.", Validation.isValidDoi(doi));
         }
     }
+
+    @Test
+    public void testIsValidORCID() {
+        // some bad non-DOI patterns
+        String[] invalid = { "12345678901234567", "000000021825009X",
+            "http://notaorcid.com/", ""
+        };
+        // valid DOI patterns
+        String[] valid = { "0000000218250097", "0000-0003-3348-0736",
+            "HTTPS://orcid.org/0000-0001-8811-2688", "  00000003-33480736  "
+        };
+        
+        for ( String orcid : invalid ) {
+            assertFalse ("Shouldn't accept: " + orcid, Validation.isValidORCID(orcid));
+        }
+        
+        for ( String orcid : valid ) {
+            assertTrue  ("ORCID " + orcid + " should pass.", Validation.isValidORCID(orcid));
+        }
+    }
     
 }
