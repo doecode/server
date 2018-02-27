@@ -27,10 +27,6 @@ public class NoNullsBeanUtilsBean extends BeanUtilsBean {
             throws IllegalAccessException, InvocationTargetException {
         // skip any NULLs
         if (null!=value) {
-          if (value.getClass() == java.lang.String.class) {
-             String tmpStr = value.toString().trim();
-             value = tmpStr.equalsIgnoreCase("") ? null : tmpStr;
-          }
           super.copyProperty(dest, name, value);
         }
     }

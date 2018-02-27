@@ -5,3 +5,4 @@ nbproject/
 /target/
 /bin/
 .vagrant/
+/nbactions.xml
