@@ -75,6 +75,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.HtmlEmail;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -124,6 +126,12 @@ public class Metadata {
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
 
+    // SMTP email host name
+    private static final String EMAIL_HOST = DoeServletContextListener.getConfigurationProperty("email.host");
+    // EMAIL send-from account name
+    private static final String EMAIL_FROM = DoeServletContextListener.getConfigurationProperty("email.from");
+    // EMAIL address to send to for SUBMISSION/ANNOUNCE
+    private static final String EMAIL_SUBMISSION = DoeServletContextListener.getConfigurationProperty("email.notification");
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
@@ -1036,6 +1044,9 @@ public class Metadata {
             
             // commit it
             em.getTransaction().commit();
+            
+            // send a NOTIFICATION if configured to do so
+            sendStatusNotification(md);
 
             // we are done here
             return Response
@@ -1193,6 +1204,9 @@ public class Metadata {
             
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
+            
+            // send a NOTIFICATION if configured
+            sendStatusNotification(md);
 
             // and we're happy
             return Response
@@ -1439,6 +1453,9 @@ public class Metadata {
 
             // send it to the indexer
             sendToIndex(md);
+            
+            // send APPROVAL NOTIFICATION to OWNER
+            sendApprovalNotification(md);
 
             // and we're happy
             return Response
@@ -1594,5 +1611,92 @@ public class Metadata {
                 reasons.add("A file archive must be included for non-open source submissions.");
 
         return reasons;
+    }
+    
+    /**
+     * Send a NOTIFICATION EMAIL (if configured) when a record is SUBMITTED or
+     * ANNOUNCED.
+     * 
+     * @param md the METADATA in question
+     */
+    private static void sendStatusNotification(DOECodeMetadata md) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        // if EMAIL or DESTINATION ADDRESS are not set, abort
+        if (StringUtils.isEmpty(EMAIL_HOST) || 
+            StringUtils.isEmpty(EMAIL_SUBMISSION))
+            return;
+        
+        // only applicable to SUBMITTED or ANNOUNCED records
+        if (!Status.Announced.equals(md.getWorkflowStatus()) &&
+            !Status.Submitted.equals(md.getWorkflowStatus()))
+            return;
+        
+        try {
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOE CODE Record " + md.getWorkflowStatus().toString());
+            email.addTo(EMAIL_SUBMISSION);
+            
+            StringBuilder msg = new StringBuilder();
+            msg.append("<html>");
+            msg.append("A new DOE CODE record has been ")
+               .append(md.getWorkflowStatus())
+               .append(" and is awaiting approval:");
+            
+            msg.append("<P>Code ID: ").append(md.getCodeId());
+            msg.append("<BR>Software Title: ").append(md.getSoftwareTitle());
+            msg.append("</html>");
+            
+            email.setHtmlMsg(msg.toString());
+            
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Failed to send submission/announcement notification message for #" + md.getCodeId());
+            log.error("Message: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send an email notification on APPROVAL of DOE CODE records.
+     * 
+     * @param md the METADATA to send notification for
+     */
+    private static void sendApprovalNotification(DOECodeMetadata md) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        // if HOST or record OWNER isn't set, cannot send
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
+            null==md ||
+            StringUtils.isEmpty(md.getOwner()))
+            return;
+        // only has meaning for APPROVED records
+        if (!Status.Approved.equals(md.getWorkflowStatus()))
+            return;
+        
+        try {
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOE CODE Record #" + md.getCodeId() + " has been Approved.");
+            email.addTo(md.getOwner());
+            
+            StringBuilder msg = new StringBuilder();
+            
+            msg.append("<html>");
+            msg.append("Your DOE CODE record #")
+                    .append(md.getCodeId())
+                    .append(" entitled \"")
+                    .append(md.getSoftwareTitle())
+                    .append("\" has been approved on the DOE CODE service.");
+            msg.append("<P>It may now be found in the DOE CODE search application on the public access web site.");
+            msg.append("</html>");
+            
+            email.setHtmlMsg(msg.toString());
+            
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Unable to send APPROVAL notification for #" + md.getCodeId());
+            log.error("Message: " + e.getMessage());
+        }
     }
 }
