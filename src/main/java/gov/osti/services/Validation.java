@@ -112,7 +112,7 @@ public class Validation {
     protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     protected static final Pattern DOI_PATTERN = Pattern.compile("10.\\d{4,9}/[-._;()/:A-Za-z0-9]+$");
-    protected static final Pattern ORCID_PATTERN = Pattern.compile("(?i)^\\s*(?:(?:https?:\\/\\/)?orcid\\.org\\/)?(\\d{4}(?:-?\\d{4}){3})\\s*$");
+    protected static final Pattern ORCID_PATTERN = Pattern.compile("(?i)^\\s*(?:(?:https?:\\/\\/)?orcid\\.org\\/)?(\\d{4}(?:-?\\d{4}){2}(?:-?\\d{3}[\\dX]))\\s*$");
 
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class ValidationRequest implements Serializable {
@@ -193,7 +193,7 @@ public class Validation {
         
         if (matcher.find())
             // return matching 16 digit characters
-            return matcher.group(1).replaceAll("-", "");
+            return matcher.group(1).replaceAll("-", "").replaceAll("x", "X");
         else
             // no valid ORCID pattern
             return null;
