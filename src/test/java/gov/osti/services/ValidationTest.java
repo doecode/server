@@ -145,7 +145,7 @@ public class ValidationTest {
         };
         // valid DOI patterns
         String[] valid = { "0000000218250097", "0000-0003-3348-0736",
-            "HTTPS://orcid.org/0000-0001-8811-2688", "  00000003-33480736  "
+            "HTTPS://orcid.org/0000-0001-8811-2688", "  00000002-5667291x  "
         };
         
         for ( String orcid : invalid ) {
