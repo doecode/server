@@ -227,7 +227,7 @@ public class UserServices {
      * 403 - forbidden access
      * 500 - internal system error, unable to read JSON, etc.
      * 
-     * JSON returns email address, XSRF token, hasSite indiciating whether or not
+     * JSON returns email address, XSRF token, hasSite indicating whether or not
      * user is a lab site user, and first/last names if present.
      * 
      * @param object JSON containing "email" and "password" to authenticate.
@@ -1196,6 +1196,7 @@ public class UserServices {
         }
         
         public void setEmail(String email) {
+            email = email != null ? email.toLowerCase() : email;
             this.email = email;
         }
         
@@ -1257,6 +1258,7 @@ public class UserServices {
          * @param email the email to set
          */
         public void setEmail(String email) {
+            email = email != null ? email.toLowerCase() : email;
             this.email = email;
         }
 
@@ -1322,6 +1324,7 @@ public class UserServices {
          * @param email the email to set
          */
         public void setEmail(String email) {
+            email = email != null ? email.toLowerCase() : email;
             this.email = email;
         }
 

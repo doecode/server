@@ -58,7 +58,7 @@ public class BasicAuthenticationFilter extends AuthenticatingFilter {
                 EntityManager em = DoeServletContextListener.createEntityManager();
                 
                 try {
-                    TypedQuery<User> getUserByLogin = em.createQuery("SELECT u FROM User u WHERE u.email=:email", User.class)
+                    TypedQuery<User> getUserByLogin = em.createQuery("SELECT u FROM User u WHERE u.email=lower(:email)", User.class)
                             .setParameter("email", parts[0]);
                     User user = getUserByLogin.getSingleResult();
                     
