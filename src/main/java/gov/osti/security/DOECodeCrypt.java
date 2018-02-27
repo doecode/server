@@ -11,11 +11,12 @@ import javax.ws.rs.core.NewCookie;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import java.time.LocalDate;
 
 public class DOECodeCrypt {
 
     private static final SecureRandom random = new SecureRandom();
+    // set the TIME OUT value in MINUTES
+    private static final int TIMEOUT_IN_MINUTES = 45;
 
     public static String nextRandomString() {
         return new BigInteger(130, random).toString(32);
@@ -27,7 +28,7 @@ public class DOECodeCrypt {
 	public static String generateLoginJWT(String userID, String xsrfToken) {
 		
 		Calendar c = Calendar.getInstance();
-		c.add(Calendar.MINUTE, 30);
+		c.add(Calendar.MINUTE, TIMEOUT_IN_MINUTES);
 	    return Jwts.builder().setIssuer("doecode").claim("xsrfToken", xsrfToken).setSubject(userID).setExpiration(c.getTime()).signWith(SignatureAlgorithm.HS256,"Secret").compact();
 	       
 		
@@ -42,7 +43,7 @@ public class DOECodeCrypt {
          */
 	public static String generateConfirmationJwt(String confirmationCode, String email) {
 		Calendar c = Calendar.getInstance();
-		c.add(Calendar.MINUTE, 30);
+		c.add(Calendar.MINUTE, TIMEOUT_IN_MINUTES);
 	    return Jwts.builder().setIssuer("doecode").setId(confirmationCode).setSubject(email).signWith(SignatureAlgorithm.HS256,"Secret").compact();
 	}
 	
@@ -54,11 +55,11 @@ public class DOECodeCrypt {
 	
 	public static NewCookie generateNewCookie(String accessToken) {
 		Calendar c = Calendar.getInstance();
-		c.add(Calendar.MINUTE, 30);
+		c.add(Calendar.MINUTE, TIMEOUT_IN_MINUTES);
 		
 		Cookie cookie = new Cookie("accessToken", accessToken, "/", null);
 
-		return new NewCookie(cookie, "", 60*30, c.getTime(),false,true);
+		return new NewCookie(cookie, "", 60*TIMEOUT_IN_MINUTES, c.getTime(),false,true);
 	}
         
         public static NewCookie invalidateCookie() {
