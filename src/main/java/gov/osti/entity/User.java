@@ -24,7 +24,7 @@ import javax.persistence.TemporalType;
 @Table(name="users")
 @NamedQueries ({
     @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u ORDER BY u.lastName"),
-    @NamedQuery (name = "User.findUser", query = "SELECT u FROM User u WHERE u.email=:email")
+    @NamedQuery (name = "User.findUser", query = "SELECT u FROM User u WHERE u.email=lower(:email)")
 })
 public class User implements Serializable {
     
@@ -38,7 +38,7 @@ public class User implements Serializable {
     public User(String email, String password, String apiKey, String confirmationCode) {
             this.password = password;
             this.apiKey = apiKey;
-            this.email = email;
+            this.setEmail(email);
             this.confirmationCode = confirmationCode;
             // new users are blank slate
             this.failedCount = 0;
@@ -125,6 +125,7 @@ public class User implements Serializable {
     }
 
     public void setEmail(String email) {
+            email = email != null ? email.toLowerCase() : email;
             this.email = email;
     }
 

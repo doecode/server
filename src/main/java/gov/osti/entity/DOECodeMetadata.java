@@ -613,6 +613,7 @@ public class DOECodeMetadata implements Serializable {
 	}
 
 	public void setOwner(String owner) {
+                owner = owner != null ? owner.toLowerCase() : owner;
 		this.owner = owner;
 	}
 	

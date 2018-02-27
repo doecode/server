@@ -456,7 +456,7 @@ public class Metadata {
                         .setParameter("site", rolecode);
             } else {
                 // no roles, you see only YOUR OWN projects
-                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = lower(:owner)", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
             
