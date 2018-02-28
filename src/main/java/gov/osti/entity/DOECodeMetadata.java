@@ -495,7 +495,7 @@ public class DOECodeMetadata implements Serializable {
     }
 
     @Size (max = 255, message = "Recipient name is limited to 255 characters.")
-    @Column (name = "RECIPIENT_NAME")
+    @Column (name = "RECIPIENT_NAME", length = 255)
     public String getRecipientName() {
             return recipientName;
     }
