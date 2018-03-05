@@ -139,6 +139,8 @@ public class Metadata {
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
+    // get the SITE URL base for applications
+    private static String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
         try {
@@ -1690,19 +1692,57 @@ public class Metadata {
             return;
         
         try {
+            // get the OWNER information
+            User owner = UserServices.findUserByEmail(md.getOwner());
+            if (null==owner) {
+                log.warn("Unable to locate USER information for Code ID: " + md.getCodeId());
+                return;
+            }
+            
             email.setFrom(EMAIL_FROM);
-            email.setSubject("DOE CODE Record #" + md.getCodeId() + " has been Approved.");
+            email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + md.getSoftwareTitle());
             email.addTo(md.getOwner());
             
             StringBuilder msg = new StringBuilder();
             
             msg.append("<html>");
-            msg.append("Your DOE CODE record #")
-                    .append(md.getCodeId())
-                    .append(" entitled \"")
-                    .append(md.getSoftwareTitle())
-                    .append("\" has been approved on the DOE CODE service.");
-            msg.append("<P>It may now be found in the DOE CODE search application on the public access web site.");
+            msg.append("Dear ")
+               .append(owner.getFirstName())
+               .append(" ")
+               .append(owner.getLastName())
+               .append(":");
+            
+            msg.append("<P>Thank you -- your submitted project, DOE CODE ID: <a href=\"")
+               .append(SITE_URL)
+               .append("/biblio/")
+               .append(md.getCodeId())
+               .append("\">")
+               .append(md.getCodeId())
+               .append("</a>, has been approved.  It is now <a href=\"")
+               .append(SITE_URL)
+               .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
+            
+            // OMIT the following for BUSINESS TYPE software
+            if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType())) {
+                msg.append("<P>You may need to ")
+                   .append("<a href=\"")
+                   .append(SITE_URL)
+                   .append("/announce?code_id=")
+                   .append(md.getCodeId())
+                   .append("\">continue editing your project</a> to announce it to the Department of Energy ")
+                   .append("to ensure announcement and dissemination in accordance with DOE statutory responsibilities. For more information please see ")
+                   .append("<a href=\"")
+                   .append(SITE_URL)
+                   .append("/faq#what-does-it-mean-to-announce\">What does it mean to announce scientific code to DOE CODE?</a></P>");
+            }
+            msg.append("<P>If you have questions such as What are the benefits of getting a DOI for code or software?, see the ")
+               .append("<a href=\"")
+               .append(SITE_URL)
+               .append("/faq\">DOE CODE FAQs</a>.</P>");
+            msg.append("<P>If we can be of assistance, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
+            msg.append("<P>Sincerely,</P>");
+            msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+            
             msg.append("</html>");
             
             email.setHtmlMsg(msg.toString());

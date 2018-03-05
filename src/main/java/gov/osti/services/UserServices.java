@@ -1628,7 +1628,7 @@ public class UserServices {
      * @param email the EMAIL to look for
      * @return a User object if possible or null if not found or errors
      */
-    private static User findUserByEmail(String email) {
+    protected static User findUserByEmail(String email) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
