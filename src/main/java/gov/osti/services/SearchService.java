@@ -4,6 +4,7 @@ package gov.osti.services;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -222,86 +223,102 @@ public class SearchService {
      * @param parameters the JSON SearchData Object of search parameters
      * @param format the optional output format (YAML/JSON/XML; JSON is default)
      * @return the output of the SOLR search results, if any
-     * @throws IOException on unexpected IO errors
-     * @throws URISyntaxException on URI search errors
      */
     @POST
     @Produces ({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, "text/yaml"})
     @Consumes (MediaType.APPLICATION_JSON)
-    public Response search(String parameters, @QueryParam("format") String format) throws IOException, URISyntaxException {
+    public Response search(String parameters, @QueryParam("format") String format) {
         // no search configured, you get nothing
         if ("".equals(SEARCH_URL))
             return Response
                     .status(Response.Status.NO_CONTENT)
                     .build();
         
-        // get a set of search parameters
-        SearchData searchFor = SearchData.parseJson(new StringReader(parameters));
-        
-        CloseableHttpClient hc = HttpClientBuilder
-                .create()
-                .build();
-        
-        URIBuilder builder = new URIBuilder(SEARCH_URL)
-                .addParameter("q", searchFor.toQ())
-                .addParameter("fl", "json")
-                .addParameter("sort", searchFor.getSort());
-        // if values are specified for rows and start, supply those.
-        if (null!=searchFor.getRows())
-            builder.addParameter("rows", String.valueOf(searchFor.getRows()));
-        if (null!=searchFor.getStart())
-            builder.addParameter("start", String.valueOf(searchFor.getStart()));
-        
-        HttpGet get = new HttpGet(builder.build());
-        
-        HttpResponse response = hc.execute(get);
-        
-        if (HttpStatus.SC_OK==response.getStatusLine().getStatusCode()) {
-            SolrResult result = JSON_MAPPER.readValue(EntityUtils.toString(response.getEntity()), SolrResult.class);
-            // construct a search response object
-            SearchResponse query = new SearchResponse();
-            query.setStart(result.getSearchResponse().getStart());
-            query.setNumFound(result.getSearchResponse().getNumFound());
-            
-            // if there are matched documents, load them in
-            if ( null!=result.getSearchResponse().getDocuments() ) {
-                for ( SolrDocument doc : result.getSearchResponse().getDocuments() ) {
-                    query.add(JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class));
+        try {
+            // get a set of search parameters
+            SearchData searchFor = SearchData.parseJson(new StringReader(parameters));
+
+            CloseableHttpClient hc = HttpClientBuilder
+                    .create()
+                    .build();
+
+            URIBuilder builder = new URIBuilder(SEARCH_URL)
+                    .addParameter("q", searchFor.toQ())
+                    .addParameter("fl", "json")
+                    .addParameter("sort", searchFor.getSort());
+            // if values are specified for rows and start, supply those.
+            if (null!=searchFor.getRows())
+                builder.addParameter("rows", String.valueOf(searchFor.getRows()));
+            if (null!=searchFor.getStart())
+                builder.addParameter("start", String.valueOf(searchFor.getStart()));
+
+            HttpGet get = new HttpGet(builder.build());
+
+            HttpResponse response = hc.execute(get);
+
+            if (HttpStatus.SC_OK==response.getStatusLine().getStatusCode()) {
+                SolrResult result = JSON_MAPPER.readValue(EntityUtils.toString(response.getEntity()), SolrResult.class);
+                // construct a search response object
+                SearchResponse query = new SearchResponse();
+                query.setStart(result.getSearchResponse().getStart());
+                query.setNumFound(result.getSearchResponse().getNumFound());
+
+                // if there are matched documents, load them in
+                if ( null!=result.getSearchResponse().getDocuments() ) {
+                    for ( SolrDocument doc : result.getSearchResponse().getDocuments() ) {
+                        query.add(JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class));
+                    }
+                    // check out the FACETS
+                    query.setFacets(result.getSolrFacet().getValues());
                 }
-                // check out the FACETS
-                query.setFacets(result.getSolrFacet().getValues());
-            }
-            // respond with the appropriate format based on the input parameter
-            if ("xml".equals(format)) {
-                return Response
-                        .ok()
-                        .header("Content-Type", MediaType.APPLICATION_XML)
-                        .entity(XML_MAPPER
-                                .writer(filter)
-                                .writeValueAsString(query))
-                        .build();
-            } else if ("yaml".equals(format)) {
-                return Response
-                        .ok()
-                        .header("Content-Type", "text/yaml")
-                        .entity(YAML_MAPPER
-                                .writer(filter)
-                                .writeValueAsString(query))
-                        .build();
+                // respond with the appropriate format based on the input parameter
+                if ("xml".equals(format)) {
+                    return Response
+                            .ok()
+                            .header("Content-Type", MediaType.APPLICATION_XML)
+                            .entity(XML_MAPPER
+                                    .writer(filter)
+                                    .writeValueAsString(query))
+                            .build();
+                } else if ("yaml".equals(format)) {
+                    return Response
+                            .ok()
+                            .header("Content-Type", "text/yaml")
+                            .entity(YAML_MAPPER
+                                    .writer(filter)
+                                    .writeValueAsString(query))
+                            .build();
+                } else {
+                    return Response
+                            .ok()
+                            .header("Content-Type", MediaType.APPLICATION_JSON)
+                            .entity(JSON_MAPPER
+                                    .writer(filter)
+                                    .writeValueAsString(query))
+                            .build();
+                }
             } else {
-                return Response
-                        .ok()
-                        .header("Content-Type", MediaType.APPLICATION_JSON)
-                        .entity(JSON_MAPPER
-                                .writer(filter)
-                                .writeValueAsString(query))
+                // let the user know something failed
+                return ErrorResponse
+                        .status(response.getStatusLine().getStatusCode())
+                        .message(EntityUtils.toString(response.getEntity()))
                         .build();
             }
-        } else {
-            // let the user know something failed
+        } catch ( URISyntaxException e ) {
+            log.warn("URI Error: " + e.getMessage());
             return ErrorResponse
-                    .status(response.getStatusLine().getStatusCode())
-                    .message(EntityUtils.toString(response.getEntity()))
+                    .internalServerError("Unable to contact search provider.")
+                    .build();
+        } catch ( JsonProcessingException e ) {
+            log.warn("Unable to process JSON from: " + parameters);
+            log.warn("Message: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("JSON formatting error.")
+                    .build();
+        } catch ( IOException e ) {
+            log.warn("Unhandled IO Error: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("IO Error.")
                     .build();
         }
     }
