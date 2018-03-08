@@ -29,7 +29,7 @@ public class SubversionRepository {
             SVNURL repoUrl = SVNURL.parseURIEncoded(url);
             repository = SVNRepositoryFactory.create(repoUrl);
             
-            Collection logs = repository.log(new String[] { "" }, null, 0, -1, true, true);
+            Collection logs = repository.log(new String[] { "" }, null, -1, -1, true, true);
             
             // if we have some sort of log entry (even initial import), we are valid
             return !logs.isEmpty();
