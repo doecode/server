@@ -1724,12 +1724,7 @@ public class Metadata {
             
             // OMIT the following for BUSINESS TYPE software
             if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType())) {
-                msg.append("<P>You may need to ")
-                   .append("<a href=\"")
-                   .append(SITE_URL)
-                   .append("/announce?code_id=")
-                   .append(md.getCodeId())
-                   .append("\">continue editing your project</a> to announce it to the Department of Energy ")
+                msg.append("<P>You may need to continue editing your project to announce it to the Department of Energy ")
                    .append("to ensure announcement and dissemination in accordance with DOE statutory responsibilities. For more information please see ")
                    .append("<a href=\"")
                    .append(SITE_URL)
