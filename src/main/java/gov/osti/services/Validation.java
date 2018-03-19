@@ -5,15 +5,20 @@ package gov.osti.services;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import gov.osti.listeners.DoeServletContextListener;
+import gov.osti.repository.GitRepository;
+import gov.osti.repository.SubversionRepository;
 import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
-import java.util.Collection;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -32,8 +37,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Ref;
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +112,7 @@ public class Validation {
     protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     protected static final Pattern DOI_PATTERN = Pattern.compile("10.\\d{4,9}/[-._;()/:A-Za-z0-9]+$");
+    protected static final Pattern ORCID_PATTERN = Pattern.compile("(?i)^\\s*(?:(?:https?:\\/\\/)?orcid\\.org\\/)?(\\d{4}(?:-?\\d{4}){2}(?:-?\\d{3}[\\dX]))\\s*$");
 
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class ValidationRequest implements Serializable {
@@ -157,6 +161,85 @@ public class Validation {
         public void setError(String error) {
             this.error = error;
         }
+    }
+    
+    /** 
+     * Generates check digit as per ISO 7064 11,2. (from orcid.org)
+     * @param value the value to check.
+     * @return string the checksum digit of the value.
+     */ 
+    private static String generateCheckDigit(String value) { 
+        int total = 0; 
+        for (int i = 0; i < value.length(); i++) { 
+            int digit = Character.getNumericValue(value.charAt(i)); 
+            total = (total + digit) * 2; 
+        } 
+        int remainder = total % 11; 
+        int result = (12 - remainder) % 11; 
+        return result == 10 ? "X" : String.valueOf(result); 
+    }
+    
+    /** 
+     * Strip a string down to the known ORCID 16 digit value
+     * @param value the value to format.
+     * @return string the stripped down base 16 digits of the input ORCID, or null if value is invalid ORCID.
+     */ 
+    private static String stripBaseORCID(String value) {
+        if (value == null)
+            return null;
+        
+        // strip out valid 16 digit numeric
+        Matcher matcher = ORCID_PATTERN.matcher(value);
+        
+        if (matcher.find())
+            // return matching 16 digit characters
+            return matcher.group(1).replaceAll("-", "").replaceAll("x", "X");
+        else
+            // no valid ORCID pattern
+            return null;
+    }
+    
+    /** 
+     * Return a JSON of various formats of the ORCID value
+     * @param value the value to format.
+     * @return ObjectNode with three formats [base, dashed, url] of the value, or NULL if value is invalid ORCID.
+     */ 
+    private static ObjectNode formatORCID(String value) { 
+        String baseValue = stripBaseORCID(value);
+        
+        ObjectNode theNode = mapper.createObjectNode();
+        
+        if (baseValue == null) {
+            theNode.put("original", value);
+            return theNode;
+        }
+        
+        String dashedValue = String.format("%1$s-%2$s-%3$s-%4$s", baseValue.substring(0,4), baseValue.substring(4,8), baseValue.substring(8,12), baseValue.substring(12));
+        
+        theNode.put("base", baseValue);
+        theNode.put("dashed", dashedValue);
+        theNode.put("url", "https://orcid.org/" + dashedValue);        
+        
+        return theNode;
+    }
+    
+    /** 
+     * Return a specific format of the ORCID value
+     * @param value the value to format.
+     * @param format the specific format to return. Valid values [base, dashed, url].
+     * @return string that matches the requested format, or NULL if value is invalid ORCID.
+     */ 
+    public static String formatORCID(String value, String format) { 
+        ObjectNode theNode = formatORCID(value);     
+        
+        JsonNode originalValue = theNode.get("original");
+        
+        // if value is invalid, we get back the original, and if it is NULL, return NULL.
+        if (originalValue != null && originalValue.isNull())
+            return null;
+        
+        // otherwise, return the value of the original, or the formatted value.
+        return (theNode.isNull()) ? null : (originalValue != null ? theNode.get("original").asText() : theNode.get(format).asText());
     }
 
     /**
@@ -257,7 +340,8 @@ public class Validation {
     /**
      * Determine whether or not the passed-in value is a VALID repository link.
      *
-     * Presently, valid means a remote-accessible HTTP(S)-based git repository.
+     * Supports: git and subversion repository types that are publically
+     * available via HTTP(s).
      *
      * @param value the repository link/URL to check
      * @return true if valid, false if not
@@ -266,21 +350,9 @@ public class Validation {
         if ( StringUtils.isBlank(value))
             return false;
 
-        try {
-            Collection<Ref> references = Git
-                    .lsRemoteRepository()
-                    .setHeads(true)
-                    .setTags(true)
-                    .setRemote(value)
-                    .call();
-
-            // must be a valid repository if it has references
-            return true;
-        } catch ( Exception e ) {
-            // jgit occasionally throws sloppy runtime exceptions
-            log.warn("Repository URL " + value + " failed: " + e.getMessage());
-            return false;
-        }
+        // check what we consider "valid" for repository info
+        return (GitRepository.isValid(value) || 
+                SubversionRepository.isValid(value));
     }
 
     /**
@@ -293,6 +365,25 @@ public class Validation {
     public static boolean isValidDoi(String value) {
         // make sure the value, if present, conforms to DOI pattern.
         return (null==value) ? false : DOI_PATTERN.matcher(value).find();
+    }
+
+    /**
+     * Check to see if ORCID is valid or not.  Matches the pattern of a ORCID, and
+     * has a valid checksum.
+     *
+     * @param value the ORCID to check
+     * @return true if the ORCID is a valid pattern and passes checksum; false if not
+     */
+    public static boolean isValidORCID(String value) {
+        value = stripBaseORCID(value);
+        if (value == null)
+            return false;
+        
+        // 16 digits found, now validate checksum
+        String lastChar = (value.substring(value.length() - 1));
+        String baseValue = (value.substring(0, value.length() - 1));
+        
+        return lastChar.equals(generateCheckDigit(baseValue));
     }
 
     /**
@@ -361,6 +452,32 @@ public class Validation {
         return ( isValidDoi(value) ) ?
                 Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
                 ErrorResponse.badRequest("\"" + value + "\" is not a valid DOI.").build();
+    }
+
+    /**
+     * Check a ORCID.
+     *
+     * Response Codes:
+     * 200 - OK, value is valid
+     * 400 - Bad Request, value is NOT valid
+     *
+     * @param value the ORCID to check
+     * @return a Response
+     */
+    @GET
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/orcid")
+    public Response checkORCID(@QueryParam("value") String value) {        
+        ObjectNode theNode = mapper.createObjectNode();
+        
+        if (isValidORCID(value)) {
+            theNode.put("value", "OK");
+            theNode.set("format", formatORCID(value));
+            
+            return Response.ok().entity(theNode.toString()).build();
+        }
+        else
+            return ErrorResponse.badRequest("\"" + value + "\" is not a valid ORCID.").build();
     }
 
     /**
@@ -469,6 +586,10 @@ public class Validation {
                     req.setError((isValidEmail(req.getValue()) ? "" : req.getValue() + " is not a valid email address."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "awardnumber")) {
                     req.setError((isValidAwardNumber(req.getValue()) ? "" : req.getValue() + " is not a valid Award Number."));
+                } else if (StringUtils.equalsIgnoreCase(req.getType(), "orcid")) {
+                    boolean isValid = isValidORCID(req.getValue());
+                    req.setError((isValid ? "" : req.getValue() + " is not a valid ORCID."));
+                    req.setValue((isValid ? req.getValue() : formatORCID(req.getValue(), "dashed")));
                 } else {
                     log.warn("Unknown validation request type: " + req.getType());
                     return ErrorResponse

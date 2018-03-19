@@ -15,7 +15,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name="sites")
 @NamedQueries ({
-    @NamedQuery (name = "Site.findByDomain", query = "SELECT s FROM Site s JOIN s.emailDomains d WHERE d = :domain")
+    @NamedQuery (name = "Site.findByDomain", query = "SELECT s FROM Site s JOIN s.emailDomains d WHERE d = lower(:domain)")
 })
 public class Site implements Serializable {
 

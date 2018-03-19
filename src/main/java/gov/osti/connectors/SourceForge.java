@@ -30,7 +30,7 @@ public class SourceForge implements ConnectorInterface {
     // the logger implementation
     private static final Logger log = LoggerFactory.getLogger(SourceForge.class);
     // pattern to match for PROJECT NAME
-    private static final Pattern PROJECT_NAME_PATTERN = Pattern.compile("/projects/(.*)$");
+    private static final Pattern PROJECT_NAME_PATTERN = Pattern.compile("/(?:p|projects)/([a-zA-Z0-9_-]+).*$");
     
     /**
      * initialize this Connector
@@ -46,6 +46,8 @@ public class SourceForge implements ConnectorInterface {
      * 
      * Assumes it contains "sourceforge.net" and the PATH contains the
      * "project/project-name" value.
+     * SF might also be of the form: sourceforge.net/p/project-name or sf.net/p/project-name
+     * for example.
      * 
      * @param url the URL to process
      * @return the PROJECT NAME if possible, or null if not
@@ -58,7 +60,8 @@ public class SourceForge implements ConnectorInterface {
             
             // protection against bad URL input
             if (null!=uri.getHost()) {
-                if (uri.getHost().contains("sourceforge.net")) {
+                if (uri.getHost().contains("sourceforge.net") ||
+                    uri.getHost().contains("sf.net")) {
                     // assume SourceForge path is formed by "/projects/project-name"
                     if (null==uri.getPath())
                         return null;

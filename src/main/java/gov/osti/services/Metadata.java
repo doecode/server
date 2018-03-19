@@ -22,6 +22,7 @@ import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
+import gov.osti.entity.Contributor;
 import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
@@ -75,6 +76,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.HtmlEmail;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -124,12 +127,20 @@ public class Metadata {
     private static Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
 
+    // SMTP email host name
+    private static final String EMAIL_HOST = DoeServletContextListener.getConfigurationProperty("email.host");
+    // EMAIL send-from account name
+    private static final String EMAIL_FROM = DoeServletContextListener.getConfigurationProperty("email.from");
+    // EMAIL address to send to for SUBMISSION/ANNOUNCE
+    private static final String EMAIL_SUBMISSION = DoeServletContextListener.getConfigurationProperty("email.notification");
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
+    // get the SITE URL base for applications
+    private static String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
         try {
@@ -455,7 +466,7 @@ public class Metadata {
                         .setParameter("site", rolecode);
             } else {
                 // no roles, you see only YOUR OWN projects
-                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = lower(:owner)", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
             
@@ -720,7 +731,7 @@ public class Metadata {
                 // and thus ignored by the Bean copy; this sets the value regardless if setReleaseDate() got called
                 if (md.hasSetReleaseDate())
                     emd.setReleaseDate(md.getReleaseDate());
-
+            
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
 
@@ -1036,6 +1047,9 @@ public class Metadata {
             
             // commit it
             em.getTransaction().commit();
+            
+            // send a NOTIFICATION if configured to do so
+            sendStatusNotification(md);
 
             // we are done here
             return Response
@@ -1126,6 +1140,7 @@ public class Metadata {
                         .badRequest(errors)
                         .build();
             }
+            
             // send this to OSTI
             OstiMetadata omd = new OstiMetadata();
             omd.set(md);
@@ -1193,6 +1208,9 @@ public class Metadata {
             
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
+            
+            // send a NOTIFICATION if configured
+            sendStatusNotification(md);
 
             // and we're happy
             return Response
@@ -1439,6 +1457,9 @@ public class Metadata {
 
             // send it to the indexer
             sendToIndex(md);
+            
+            // send APPROVAL NOTIFICATION to OWNER
+            sendApprovalNotification(md);
 
             // and we're happy
             return Response
@@ -1522,6 +1543,18 @@ public class Metadata {
                     if (!Validation.isValidEmail(developer.getEmail()))
                         reasons.add("Developer email \"" + developer.getEmail() +"\" is not valid.");
                 }
+                if ( StringUtils.isNotBlank(developer.getOrcid()) ) {
+                    if (!Validation.isValidORCID(developer.getOrcid()))
+                        reasons.add("Developer ORCID \"" + developer.getOrcid() +"\" is not valid.");
+                }
+            }
+        }
+        if (!(null==m.getContributors() || m.getContributors().isEmpty())) {
+            for ( Contributor contributor : m.getContributors() ) {
+                if ( StringUtils.isNotBlank(contributor.getOrcid()) ) {
+                    if (!Validation.isValidORCID(contributor.getOrcid()))
+                        reasons.add("Contributor ORCID \"" + contributor.getOrcid() +"\" is not valid.");
+                }
             }
         }
         // if "OS" accessibility, a REPOSITORY LINK is REQUIRED
@@ -1594,5 +1627,125 @@ public class Metadata {
                 reasons.add("A file archive must be included for non-open source submissions.");
 
         return reasons;
+    }
+    
+    /**
+     * Send a NOTIFICATION EMAIL (if configured) when a record is SUBMITTED or
+     * ANNOUNCED.
+     * 
+     * @param md the METADATA in question
+     */
+    private static void sendStatusNotification(DOECodeMetadata md) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        // if EMAIL or DESTINATION ADDRESS are not set, abort
+        if (StringUtils.isEmpty(EMAIL_HOST) || 
+            StringUtils.isEmpty(EMAIL_SUBMISSION))
+            return;
+        
+        // only applicable to SUBMITTED or ANNOUNCED records
+        if (!Status.Announced.equals(md.getWorkflowStatus()) &&
+            !Status.Submitted.equals(md.getWorkflowStatus()))
+            return;
+        
+        try {
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOE CODE Record " + md.getWorkflowStatus().toString());
+            email.addTo(EMAIL_SUBMISSION);
+            
+            StringBuilder msg = new StringBuilder();
+            msg.append("<html>");
+            msg.append("A new DOE CODE record has been ")
+               .append(md.getWorkflowStatus())
+               .append(" and is awaiting approval:");
+            
+            msg.append("<P>Code ID: ").append(md.getCodeId());
+            msg.append("<BR>Software Title: ").append(md.getSoftwareTitle());
+            msg.append("</html>");
+            
+            email.setHtmlMsg(msg.toString());
+            
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Failed to send submission/announcement notification message for #" + md.getCodeId());
+            log.error("Message: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send an email notification on APPROVAL of DOE CODE records.
+     * 
+     * @param md the METADATA to send notification for
+     */
+    private static void sendApprovalNotification(DOECodeMetadata md) {
+        HtmlEmail email = new HtmlEmail();
+        email.setHostName(EMAIL_HOST);
+        
+        // if HOST or record OWNER isn't set, cannot send
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
+            null==md ||
+            StringUtils.isEmpty(md.getOwner()))
+            return;
+        // only has meaning for APPROVED records
+        if (!Status.Approved.equals(md.getWorkflowStatus()))
+            return;
+        
+        try {
+            // get the OWNER information
+            User owner = UserServices.findUserByEmail(md.getOwner());
+            if (null==owner) {
+                log.warn("Unable to locate USER information for Code ID: " + md.getCodeId());
+                return;
+            }
+            
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + md.getSoftwareTitle());
+            email.addTo(md.getOwner());
+            
+            StringBuilder msg = new StringBuilder();
+            
+            msg.append("<html>");
+            msg.append("Dear ")
+               .append(owner.getFirstName())
+               .append(" ")
+               .append(owner.getLastName())
+               .append(":");
+            
+            msg.append("<P>Thank you -- your submitted project, DOE CODE ID: <a href=\"")
+               .append(SITE_URL)
+               .append("/biblio/")
+               .append(md.getCodeId())
+               .append("\">")
+               .append(md.getCodeId())
+               .append("</a>, has been approved.  It is now <a href=\"")
+               .append(SITE_URL)
+               .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
+            
+            // OMIT the following for BUSINESS TYPE software
+            if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType())) {
+                msg.append("<P>You may need to continue editing your project to announce it to the Department of Energy ")
+                   .append("to ensure announcement and dissemination in accordance with DOE statutory responsibilities. For more information please see ")
+                   .append("<a href=\"")
+                   .append(SITE_URL)
+                   .append("/faq#what-does-it-mean-to-announce\">What does it mean to announce scientific code to DOE CODE?</a></P>");
+            }
+            msg.append("<P>If you have questions such as What are the benefits of getting a DOI for code or software?, see the ")
+               .append("<a href=\"")
+               .append(SITE_URL)
+               .append("/faq\">DOE CODE FAQs</a>.</P>");
+            msg.append("<P>If we can be of assistance, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
+            msg.append("<P>Sincerely,</P>");
+            msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+            
+            msg.append("</html>");
+            
+            email.setHtmlMsg(msg.toString());
+            
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Unable to send APPROVAL notification for #" + md.getCodeId());
+            log.error("Message: " + e.getMessage());
+        }
     }
 }

@@ -36,10 +36,11 @@ public class SourceForgeTest {
     }
 
     /**
-     * Test of getProjectNameFromUrl method, of class SourceForge.
+     * Test extraction of the project name from various SOURCEFORGE repository URLs.
      */
     @Test
     public void testGetProjectNameFromUrl() {
+        // these aren't recognized
         String[] badvalues = {
             "/projects/url",
             "sourceforge.com/projects/me",
@@ -52,8 +53,13 @@ public class SourceForgeTest {
             assertNull ("Found acceptable: " + value, SourceForge.getProjectNameFromUrl(value));
         }
         
+        assertEquals("arpa project name wrong", "arpa_project_x", SourceForge.getProjectNameFromUrl("https://svn.code.sf.net/p/arpa_project_x/code/trunk"));
+        
+        assertEquals("wrong niceproject", "niceproject", SourceForge.getProjectNameFromUrl("http://svn.code.sf.net/p/niceproject/code"));
+        assertEquals("Not ats", "ats-automatedtestingsystem", SourceForge.getProjectNameFromUrl("https://svn.code.sf.net/p/ats-automatedtestingsystem/code/"));
+        
         assertEquals("Matcher failed", "doecode", SourceForge.getProjectNameFromUrl("https://sourceforge.net/projects/doecode"));
-        assertEquals("Matcher failed", "doecode/", SourceForge.getProjectNameFromUrl("http://sourceforge.net/projects/doecode/"));
+        assertEquals("Matcher failed", "doecode", SourceForge.getProjectNameFromUrl("http://sourceforge.net/projects/doecode/"));
     }
     
 }

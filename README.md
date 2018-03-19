@@ -5,30 +5,62 @@ accessed by the front-end or presentation layer.  This application is targeted
 at a non-EE Java container such as Tomcat, using JPA and JAX/RS (Jersey implementation)
 for persistence layer and web API implementation.
 
-## Running the back-end
+## Notes on building the application
+
+The DOE CODE services API project is built using the maven build system, configured
+via the pom.xml in the project base folder.  In order to facilitate shared configuration
+elements amongst this and other supporting applications, certain environment-specific
+options and settings have been migrated into a shared resources folder separate from 
+each application.
+
+This folder is assumed to be in the developer's "home" folder, under the path "shared-resources/doecode/". 
+This folder should contain a standard Java properties file containing the desired 
+configuration elements, customized to your specific environment(s) as needed.  One 
+might have a file for development, testing, and production, or as many other disparate 
+configurations as dictated by your own systems.
+
+The configuration elements are detailed below, and should be in these properties
+files with your personal values.  In the maven build process, these properties
+are included according to the "environment" defined variable, which defaults to "development".
+Therefore, unless overridden, the $HOME/shared-resources/doecode/development.properties file
+should contain your default environmental settings.
+
+The "environment" value may be altered by your own private profiles, or through 
+the use of the command line switch -Denvironment=desired-value of maven at build time.
+
+In order to activate and load "test.properties" from your shared-resources for example:
+
+```bash
+mvn -Denvironment=test package
+```
+
+
+## Configuration Elements used
 
 The application will run on most back-end Java EE platforms, tested
 specifically on Jetty and Tomcat.  This assumes one already has a persistence
-store up-and-running; define your access information via a local maven
-profile, ensure you define:
+store up-and-running.  
+
+These properties are loaded from the "environment.properties" configuration file
+and should correspond to environmental settings per your setup.
 
 Parameter | Definition
 --- | ---
-${database.driver} | the JDBC database driver to use
-${database.url} | the JDBC URL to access
-${database.username} | the database user (with create/alter schema permission)
-${database.password} | the user's password
-${serviceapi.host} | base URL for validation services
-${publishing.host} | base URL for submitting final metadata to OSTI (via /submit API)
-${datacite.username} | (optional) DataCite user account name for registering DOIs
-${datacite.password} | (optional) DataCite account password for DOI registration
-${datacite.baseurl} | (optional) DataCite base URL prefix to use for DOI registration
-${datacite.prefix} | (optional) DataCite registration DOI prefix value
-${index.url} | (optional) URL to indexing service (e.g., SOLR, see below)
-${search.url} | (optional) base URL to searching service (SOLR, see below)
-${site.url} | base URL of the client front-end services
-${email.host} | SMTP host name for sending confirmation emails
-${email.from} | The user name to use for sending above emails
+database.driver | the JDBC database driver to use
+database.url | the JDBC URL to access
+database.username | the database user (with create/alter schema permission)
+database.password | the user's password
+serviceapi.host | base URL for validation services
+publishing.host | base URL for submitting final metadata to OSTI (via /submit API)
+datacite.username | (optional) DataCite user account name for registering DOIs
+datacite.password | (optional) DataCite account password for DOI registration
+datacite.baseurl | (optional) DataCite base URL prefix to use for DOI registration
+datacite.prefix | (optional) DataCite registration DOI prefix value
+index.url | (optional) URL to indexing service (e.g., SOLR, see below)
+search.url | (optional) base URL to searching service (SOLR, see below)
+site.url | base URL of the client front-end services
+email.host | SMTP host name for sending confirmation emails
+email.from | The user name to use for sending above emails
 
 If optional parameters, such as the DataCite settings, are left blank, those features
 will not apply.
@@ -37,8 +69,11 @@ Execute the back-end via:
 
 ```bash
 mvn jetty:run
+```
 
-# or
+or
+
+```bash
 mvn tomcat:run
 ```
 
@@ -48,12 +83,14 @@ Note that log4j assumes tomcat as a basis for its files; simply include the
 command line switch to override:
 
 ```bash
-mvn -P *your-profile* -Dcatalina.base=$HOME jetty:run
+mvn -P *your-profile* -Dcatalina.base=$HOME -Denvironment=*your-environment* jetty:run
 ```
 
 to have logs in $HOME/logs/doecode.log via log4j default configuration.
 
-The value of ${database.driver} is org.apache.derby.jdbc.EmbeddedDriver for Derby.
+The value of ${database.driver} is org.apache.derby.jdbc.EmbeddedDriver for Derby. You
+may wish to have a specific configuration file in your shared-resources to 
+facilitate this build and run process.
 
 ## API services
 
