@@ -57,6 +57,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Predicate;
 import javax.servlet.ServletContext;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
@@ -512,8 +513,8 @@ public class Metadata {
      * @param start the starting row number (from 0)
      * @param rows number of rows desired (0 is unlimited)
      * @param siteCode (optional) a SITE OWNERSHIP CODE to filter by site
-     * @param state the WORKFLOW STATE if desired (default Submitted). One of
-     * Approved, Saved, or Submitted, if supplied.
+     * @param state the WORKFLOW STATE if desired (default Submitted and Announced). One of
+     * Approved, Saved, Submitted, or Announced, if supplied.
      * @return JSON of a records response
      */
     @GET
@@ -538,34 +539,42 @@ public class Metadata {
 
             Expression<String> workflowStatus = md.get("workflowStatus");
             Expression<String> siteOwnershipCode = md.get("siteOwnershipCode");
-            ParameterExpression<String> status = cb.parameter(String.class, "status");
-            ParameterExpression<String> site = cb.parameter(String.class, "site");
 
             // default requested STATE; take Submitted as the default value if not supplied
-            DOECodeMetadata.Status requestedState;
+            List<DOECodeMetadata.Status> requestedStates = new ArrayList();
             String queryState = (StringUtils.isEmpty(state)) ? "" : state.toLowerCase();
             switch ( queryState ) {
                 case "approved":
-                    requestedState = DOECodeMetadata.Status.Approved;
+                    requestedStates.add(DOECodeMetadata.Status.Approved);
                     break;
                 case "saved":
-                    requestedState = DOECodeMetadata.Status.Saved;
+                    requestedStates.add(DOECodeMetadata.Status.Saved);
+                    break;
+                case "submitted":
+                    requestedStates.add(DOECodeMetadata.Status.Submitted);
+                    break;
+                case "announced":
+                    requestedStates.add(DOECodeMetadata.Status.Announced);
                     break;
                 default:
-                    requestedState = DOECodeMetadata.Status.Submitted;
+                    requestedStates.add(DOECodeMetadata.Status.Submitted);
+                    requestedStates.add(DOECodeMetadata.Status.Announced);
                     break;
             }
-            
+
+            Predicate statusPredicate = workflowStatus.in(requestedStates);
+            ParameterExpression<String> site = cb.parameter(String.class, "site");
+
             if (null==siteCode) {
-                countQuery.where(cb.equal(workflowStatus, status));
+                countQuery.where(statusPredicate);
             } else {
                 countQuery.where(cb.and(
-                        cb.equal(workflowStatus, status),
+                        statusPredicate,
                         cb.equal(siteOwnershipCode, site)));
             }
             // query for the COUNT
             TypedQuery<Long> cq = em.createQuery(countQuery);
-            cq.setParameter("status", requestedState);
+            cq.setParameter("status", requestedStates);
             if (null!=siteCode)
                 cq.setParameter("site", siteCode);
 
@@ -578,15 +587,15 @@ public class Metadata {
             rowQuery.select(md);
 
             if (null==siteCode) {
-                rowQuery.where(cb.equal(workflowStatus, status));
+                rowQuery.where(statusPredicate);
             } else {
                 rowQuery.where(cb.and(
-                        cb.equal(workflowStatus, status),
+                        statusPredicate,
                         cb.equal(siteOwnershipCode, site)));
             }
 
             TypedQuery<DOECodeMetadata> rq = em.createQuery(rowQuery);
-            rq.setParameter("status", requestedState);
+            rq.setParameter("status", requestedStates);
             if (null!=siteCode)
                 rq.setParameter("site", siteCode);
             rq.setFirstResult(start);
@@ -1101,7 +1110,7 @@ public class Metadata {
             // set the OWNER
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Submitted);
+            md.setWorkflowStatus(Status.Announced);
             // set the SITE
             md.setSiteOwnershipCode(user.getSiteId());
             // if there is NO DOI set, get one
@@ -1200,7 +1209,7 @@ public class Metadata {
             // store the snapshot copy of Metadata in SPECIAL STATUS
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.setCodeId(md.getCodeId());
-            snapshot.setSnapshotStatus(Status.Announced);
+            snapshot.setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -1430,10 +1439,10 @@ public class Metadata {
                         .notFound("Code ID not on file.")
                         .build();
 
-            // make sure this is Submitted
-            if (!DOECodeMetadata.Status.Submitted.equals(md.getWorkflowStatus()))
+            // make sure this is Submitted or Announced
+            if (!DOECodeMetadata.Status.Submitted.equals(md.getWorkflowStatus()) && !DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus()))
                 return ErrorResponse
-                        .badRequest("Metadata is not in the Submitted workflow state.")
+                        .badRequest("Metadata is not in the Submitted/Announced workflow state.")
                         .build();
 
             em.getTransaction().begin();
