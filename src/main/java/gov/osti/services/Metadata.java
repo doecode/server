@@ -698,10 +698,9 @@ public class Metadata {
                      !user.hasRole("OSTI"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
-                // if already Submitted, but not being Approved, keep it that way (can't go back to Saved)
-                if ((Status.Submitted.equals(emd.getWorkflowStatus()) || Status.Approved.equals(emd.getWorkflowStatus())) 
-                 && !Status.Approved.equals(md.getWorkflowStatus()))
-                    md.setWorkflowStatus(Status.Submitted);
+                // to Save, item must be non-existant, or already in Saved workflow status (if here, we know it exists)
+                if (Status.Saved.equals(md.getWorkflowStatus()) && !Status.Saved.equals(emd.getWorkflowStatus()))
+                    throw new BadRequestException (ErrorResponse.badRequest("Save cannot be performed after a record has been Submitted or Announced.").build());
 
                 // these fields WILL NOT CHANGE on edit/update
                 md.setOwner(emd.getOwner());
