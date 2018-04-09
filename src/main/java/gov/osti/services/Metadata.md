@@ -346,6 +346,9 @@ A full JSON example is [provided below.](#json_example)
 | research_organizations | (Array) Information about organizations providing research information for the project. Fields are [specified below.](#organization_fields) |
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
 | description | An abstract about the software project. |
+| programming_languages | (Array) Any programming language used on the software project. |
+| version_number | The version of the software project. |
+| documentation_url | URL providing available documentation for the software project. |
 | licenses | Any software licenses or rights information about the software project, may have multiple values, such as the ones at the following <a href='/doecodeapi/services/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
 | doi | A [Digital Object Identifier](http://doi.org/) assigned to this software project. |
 | acronym | A short descriptive acronym or abbreviation for this software project. |

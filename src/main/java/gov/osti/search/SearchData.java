@@ -40,6 +40,7 @@ public class SearchData implements Serializable {
     private Date dateEarliest = null;
     private Date dateLatest = null;
     private String[] accessibility = null;
+    private String[] programmingLanguages;
     private String[] licenses;
     private String[] researchOrganization = null;
     private String[] sponsoringOrganization = null;
@@ -216,6 +217,17 @@ public class SearchData implements Serializable {
                 q.append("(").append(types.toString()).append(")");
             }
         }
+        if (null!=getProgrammingLanguages()) {
+            StringBuilder values = new StringBuilder();
+            for ( String programmingLanguage : getProgrammingLanguages() ) {
+                if (values.length()>0) values.append(" OR ");
+                values.append("programmingLanguages:\"").append(escapeToken(programmingLanguage)).append("\"");
+            }
+            if (values.length()>0) {
+                if (q.length()>0) q.append(" ");
+                q.append("(").append(values.toString()).append(")");
+            }
+        }
         if (null!=getLicenses()) {
             StringBuilder values = new StringBuilder();
             for ( String license : getLicenses() ) {
@@ -341,6 +353,20 @@ public class SearchData implements Serializable {
      */
     public void setLicenses(String[] licenses) {
         this.licenses = licenses;
+    }
+
+    /**
+     * @return the programming languages
+     */
+    public String[] getProgrammingLanguages() {
+        return programmingLanguages;
+    }
+
+    /**
+     * @param programmingLanguages the programming languages to set
+     */
+    public void setProgrammingLanguages(String[] programmingLanguages) {
+        this.programmingLanguages = programmingLanguages;
     }
 
     /**

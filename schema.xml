@@ -461,6 +461,9 @@
   <field name="contributors.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="countryOfOrigin" type="text_en" indexed="true" stored="true"/>
   <field name="description" type="text_en" indexed="true" stored="true"/>
+  <field name="programmingLanguages" type="string" multiValued="true" indexed="true" stored="true"/>
+  <field name="versionNumber" type="text_en" indexed="true" stored="true"/>
+  <field name="documentationUrl" type="text_en" indexed="true" stored="true"/>
   <field name="developers.name" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="developers.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="doi" type="string"/>

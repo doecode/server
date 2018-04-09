@@ -188,12 +188,21 @@ public class DOECodeMetadata implements Serializable {
     private String acronym = null;
     private String doi = null;
     private String description = null;
+
+    @JacksonXmlElementWrapper (localName = "programmingLanguages")
+    @JacksonXmlProperty (localName = "programmingLanguage")
+    private List<String> programmingLanguages;
+
+    private String versionNumber = null;
+    private String documentationUrl = null;
     private String countryOfOrigin = null;
     private String keywords = null;
     private String disclaimers = null;
+
     @JacksonXmlElementWrapper (localName = "licenses")
     @JacksonXmlProperty (localName = "license")
     private List<String> licenses;
+
     private String proprietaryUrl = null;
     private String recipientName = null;
     private String recipientEmail = null;
@@ -203,15 +212,15 @@ public class DOECodeMetadata implements Serializable {
     private String otherSpecialRequirements = null;
     private String owner = null;
     private Status workflowStatus = null;
-    
+
     private String fileName = null;
-    
+
     // administrative dates
     @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
     private Date dateRecordAdded;
     @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
     private Date dateRecordUpdated;
-    
+
     // determine whether or not the RELEASE DATE was changed
     private transient boolean setReleaseDate=false;
 
@@ -378,6 +387,39 @@ public class DOECodeMetadata implements Serializable {
     }
     public void setDescription(String description) {
             this.description = description;
+    }
+
+    @ElementCollection
+    @CollectionTable(
+            name = "PROGRAMMING_LANGUAGES",
+            joinColumns=@JoinColumn(name="CODE_ID")
+    )
+    @Column (name = "PROGRAMMING_LANGUAGE")
+    public List<String> getProgrammingLanguages() {
+            return programmingLanguages;
+    }
+    public void setProgrammingLanguages(List<String> programmingLanguages) {
+            this.programmingLanguages = programmingLanguages;
+    }
+
+    @Size (max = 50, message = "Version Number is limited to 50 characters.")
+    @Column (name="VERSION_NUMBER", length = 50)
+    public String getVersionNumber() {
+            return versionNumber;
+    }
+
+    public void setVersionNumber(String versionNumber) {
+            this.versionNumber = versionNumber;
+    }
+
+    @Size (max = 255, message = "Documentation URL is limited to 255 characters.")
+    @Column (name="DOCUMENTATION_URL")
+    public String getDocumentationUrl() {
+            return documentationUrl;
+    }
+
+    public void setDocumentationUrl(String documentationUrl) {
+            this.documentationUrl = documentationUrl;
     }
 
     public void setRelatedIdentifiers(List<RelatedIdentifier> identifiers) {
