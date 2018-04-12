@@ -34,7 +34,7 @@
              //     fetcher: Flatdoc.file('../Metadata.md')
              // });
               Flatdoc.run({
-                fetcher: Flatdoc.github('doecode/server', 'src/main/java/gov/osti/services/Metadata.md', 'v1.2' )
+                fetcher: Flatdoc.github('doecode/server', 'src/main/java/gov/osti/services/Metadata.md' )
               });
           </script>
      </head>
