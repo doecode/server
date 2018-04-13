@@ -443,8 +443,8 @@ public class Metadata {
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
     public Response listProjects(
-            @QueryParam("rows") int rows, 
-            @QueryParam("start") int start) 
+            @QueryParam("rows") int rows,
+            @QueryParam("start") int start)
             throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
@@ -470,10 +470,10 @@ public class Metadata {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = lower(:owner)", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
-            
+
             // if rows specified, and greater than 100, cap it there
             rows = (rows>100) ? 100 : rows;
-            
+
             // if pagination elements are present, set them on the query
             if (0!=rows)
                 query.setMaxResults(rows);
@@ -679,10 +679,10 @@ public class Metadata {
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
         md.setOpenSource( !Accessibility.CS.equals(md.getAccessibility()) );
-        
+
         ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
         Validator validator = validators.getValidator();
-        
+
         // if there's a CODE ID, attempt to look up the record first and
         // copy attributes into it
         if ( null==md.getCodeId() || 0==md.getCodeId()) {
@@ -690,7 +690,7 @@ public class Metadata {
             Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
             if (!violations.isEmpty()) {
                 List<String> reasons = new ArrayList<>();
-                
+
                 violations.stream().forEach(violation->{
                     reasons.add(violation.getMessage());
                 });
@@ -716,10 +716,10 @@ public class Metadata {
                 md.setSiteOwnershipCode(emd.getSiteOwnershipCode());
                 // if there's ALREADY a DOI, and we have been SUBMITTED/APPROVED, keep it
                 if (StringUtils.isNotEmpty(emd.getDoi()) &&
-                    (Status.Submitted.equals(emd.getWorkflowStatus()) || 
+                    (Status.Submitted.equals(emd.getWorkflowStatus()) ||
                      Status.Approved.equals(emd.getWorkflowStatus())))
                     md.setDoi(emd.getDoi());
-                
+
                 // perform length validations on Bean
                 Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
                 if (!violations.isEmpty()) {
@@ -730,7 +730,7 @@ public class Metadata {
                     });
                     throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
                 }
-                
+
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
@@ -739,7 +739,8 @@ public class Metadata {
                 // and thus ignored by the Bean copy; this sets the value regardless if setReleaseDate() got called
                 if (md.hasSetReleaseDate())
                     emd.setReleaseDate(md.getReleaseDate());
-            
+
+
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
 
@@ -783,7 +784,7 @@ public class Metadata {
      * Send this Metadata to the ARCHIVER external support process.
      *
      * Needs a CODE ID and one of either an ARCHIVE FILE or REPOSITORY LINK.
-     * 
+     *
      * If nothing supplied to archive, do nothing.
      *
      * @param codeId the CODE ID for this METADATA
@@ -798,7 +799,7 @@ public class Metadata {
         // Nothing sent?
         if (StringUtils.isBlank(repositoryLink) && null==archiveFile)
             return;
-        
+
         // set up a connection
         CloseableHttpClient hc =
                 HttpClientBuilder
@@ -1121,10 +1122,10 @@ public class Metadata {
                 // set it
                 md.setDoi(reservation.getReservedDoi());
             }
-            
+
             // persist this to the database
             store(em, md, user);
-            
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
@@ -1237,7 +1238,7 @@ public class Metadata {
             return ErrorResponse
                     .forbidden("Invalid Access: Unable to edit indicated record.")
                     .build();
-        } catch ( IOException |  InvocationTargetException e ) {
+        } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
@@ -1465,7 +1466,7 @@ public class Metadata {
 
             // send it to the indexer
             sendToIndex(md);
-            
+
             // send APPROVAL NOTIFICATION to OWNER
             sendApprovalNotification(md);
 
@@ -1636,60 +1637,60 @@ public class Metadata {
 
         return reasons;
     }
-    
+
     /**
      * Send a NOTIFICATION EMAIL (if configured) when a record is SUBMITTED or
      * ANNOUNCED.
-     * 
+     *
      * @param md the METADATA in question
      */
     private static void sendStatusNotification(DOECodeMetadata md) {
         HtmlEmail email = new HtmlEmail();
         email.setHostName(EMAIL_HOST);
-        
+
         // if EMAIL or DESTINATION ADDRESS are not set, abort
-        if (StringUtils.isEmpty(EMAIL_HOST) || 
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
             StringUtils.isEmpty(EMAIL_SUBMISSION))
             return;
-        
+
         // only applicable to SUBMITTED or ANNOUNCED records
         if (!Status.Announced.equals(md.getWorkflowStatus()) &&
             !Status.Submitted.equals(md.getWorkflowStatus()))
             return;
-        
+
         try {
             email.setFrom(EMAIL_FROM);
             email.setSubject("DOE CODE Record " + md.getWorkflowStatus().toString());
             email.addTo(EMAIL_SUBMISSION);
-            
+
             StringBuilder msg = new StringBuilder();
             msg.append("<html>");
             msg.append("A new DOE CODE record has been ")
                .append(md.getWorkflowStatus())
                .append(" and is awaiting approval:");
-            
+
             msg.append("<P>Code ID: ").append(md.getCodeId());
             msg.append("<BR>Software Title: ").append(md.getSoftwareTitle());
             msg.append("</html>");
-            
+
             email.setHtmlMsg(msg.toString());
-            
+
             email.send();
         } catch ( EmailException e ) {
             log.error("Failed to send submission/announcement notification message for #" + md.getCodeId());
             log.error("Message: " + e.getMessage());
         }
     }
-    
+
     /**
      * Send an email notification on APPROVAL of DOE CODE records.
-     * 
+     *
      * @param md the METADATA to send notification for
      */
     private static void sendApprovalNotification(DOECodeMetadata md) {
         HtmlEmail email = new HtmlEmail();
         email.setHostName(EMAIL_HOST);
-        
+
         // if HOST or record OWNER isn't set, cannot send
         if (StringUtils.isEmpty(EMAIL_HOST) ||
             null==md ||
@@ -1698,7 +1699,7 @@ public class Metadata {
         // only has meaning for APPROVED records
         if (!Status.Approved.equals(md.getWorkflowStatus()))
             return;
-        
+
         try {
             // get the OWNER information
             User owner = UserServices.findUserByEmail(md.getOwner());
@@ -1706,20 +1707,20 @@ public class Metadata {
                 log.warn("Unable to locate USER information for Code ID: " + md.getCodeId());
                 return;
             }
-            
+
             email.setFrom(EMAIL_FROM);
             email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + md.getSoftwareTitle());
             email.addTo(md.getOwner());
-            
+
             StringBuilder msg = new StringBuilder();
-            
+
             msg.append("<html>");
             msg.append("Dear ")
                .append(owner.getFirstName())
                .append(" ")
                .append(owner.getLastName())
                .append(":");
-            
+
             msg.append("<P>Thank you -- your submitted project, DOE CODE ID: <a href=\"")
                .append(SITE_URL)
                .append("/biblio/")
@@ -1729,7 +1730,7 @@ public class Metadata {
                .append("</a>, has been approved.  It is now <a href=\"")
                .append(SITE_URL)
                .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
-            
+
             // OMIT the following for BUSINESS TYPE software
             if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType())) {
                 msg.append("<P>You may need to continue editing your project to announce it to the Department of Energy ")
