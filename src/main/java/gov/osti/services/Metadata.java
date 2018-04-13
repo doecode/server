@@ -1042,7 +1042,7 @@ public class Metadata {
                 } catch ( IOException e ) {
                     // tell why the DataCite registration failed
                     return ErrorResponse
-                            .internalServerError(e.getMessage())
+                            .internalServerError("DOI registration failed: " + e.getMessage())
                             .build();
                 }
             }
@@ -1167,7 +1167,7 @@ public class Metadata {
                 } catch ( IOException e ) {
                     // if DataCite registration failed, say why
                     return ErrorResponse
-                            .internalServerError(e.getMessage())
+                            .internalServerError("DOI registration failed: " + e.getMessage())
                             .build();
                 }
             }
