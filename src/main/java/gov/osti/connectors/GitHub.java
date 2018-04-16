@@ -134,8 +134,16 @@ public class GitHub implements ConnectorInterface {
             // if it's not empty, use that
             if (null!=yaml)
                 return yaml;
-            // try alternate names
+            // try alternate metadata name
+            yaml = HttpUtil.readMetadataYaml(GITHUB_RAW_BASE_URL + name + "/master/.metadata.yml");
+            if (null!=yaml)
+                return yaml;
+            // try alternate name
             yaml = HttpUtil.readMetadataYaml(GITHUB_RAW_BASE_URL + name + "/master/doecode.yml");
+            if (null!=yaml)
+                return yaml;
+            // try alternate doecode name
+            yaml = HttpUtil.readMetadataYaml(GITHUB_RAW_BASE_URL + name + "/master/.doecode.yml");
             if (null!=yaml)
                 return yaml;
 

@@ -156,7 +156,7 @@ Mapped repository information varies according to service API-supplied metadata.
 a query parameter of "format=yaml" to receive YAML file suitable for download.  
 
 If a DOE CODE YAML file is present
-in the source repository at the base URL (named either "metadata.yml" or "doecode.yml") that file will
+in the source repository at the base URL (named either ".metadata.yml" or ".doecode.yml" or "metadata.yml" or "doecode.yml") that file will
 be read for more complete repository information.
 
 ## Metadata Submission

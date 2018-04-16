@@ -97,11 +97,18 @@ public class BitBucket implements ConnectorInterface {
         try {
             // try to get the METADATA YAML first
             JsonNode results = HttpUtil.readMetadataYaml(BITBUCKET_RAW_URL + name + "/raw/master/metadata.yml");
-
             if (null!=results)
                 return results;
-            // try alternate names
+            // try alternate metadata name
+            results = HttpUtil.readMetadataYaml(BITBUCKET_RAW_URL + name + "/raw/master/.metadata.yml");
+            if (null!=results)
+                return results;
+            // try alternate name
             results = HttpUtil.readMetadataYaml(BITBUCKET_RAW_URL + name + "/raw/master/doecode.yml");
+            if (null!=results)
+                return results;
+            // try alternate doecode name
+            results = HttpUtil.readMetadataYaml(BITBUCKET_RAW_URL + name + "/raw/master/.doecode.yml");
             if (null!=results)
                 return results;
             
