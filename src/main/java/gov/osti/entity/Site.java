@@ -19,43 +19,42 @@ import javax.persistence.Table;
 })
 public class Site implements Serializable {
 
-	
-	private String lab;
-	private List<String> emailDomains;
-	private String siteCode;
-    
-	public Site() {
-		
-	}
-	
-	@Id
-	public String getLab() {
-		return lab;
-	}
-	public void setLab(String lab) {
-		this.lab = lab;
-	}
-	
+    private String siteCode;
+    private List<String> emailDomains;
+    private String lab;
+
+    public Site() {
+    }
+
+    @Id
+    @Column(name = "SITE_CODE")
+    public String getSiteCode() {
+        return siteCode;
+    }
+
+    public void setSiteCode(String siteCode) {
+        this.siteCode = siteCode;
+    }
+
     @ElementCollection
     @CollectionTable(
             name = "EMAIL_DOMAINS",
-            joinColumns=@JoinColumn(name="lab")
+            joinColumns = @JoinColumn(name = "SITE_CODE")
     )
-    @Column (name="EMAIL_DOMAIN")
-	public List<String> getEmailDomains() {
-		return emailDomains;
-	}
-	public void setEmailDomains(List<String> emailDomains) {
-		this.emailDomains = emailDomains;
-	}
-	
-	@Column (name="SITE_CODE")
-	public String getSiteCode() {
-		return siteCode;
-	}
-	public void setSiteCode(String siteCode) {
-		this.siteCode = siteCode;
-	}
-	
-	
+    @Column(name = "EMAIL_DOMAIN")
+    public List<String> getEmailDomains() {
+        return emailDomains;
+    }
+
+    public void setEmailDomains(List<String> emailDomains) {
+        this.emailDomains = emailDomains;
+    }
+
+    public String getLab() {
+        return lab;
+    }
+
+    public void setLab(String lab) {
+        this.lab = lab;
+    }
 }
