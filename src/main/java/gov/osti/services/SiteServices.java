@@ -196,6 +196,7 @@ public class SiteServices {
                 Site site;
                 try {
                     site = query.getSingleResult();
+                    site.setPocEmails(emails);
                 } catch (Exception e) {
                     return ErrorResponse
                             .badRequest("site_code: '" + siteCode + "' is invalid.")
