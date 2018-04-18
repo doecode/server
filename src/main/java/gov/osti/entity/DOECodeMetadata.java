@@ -73,24 +73,25 @@ public class DOECodeMetadata implements Serializable {
         Announced,
         Approved
     }
-    
+
     // Accessibility values
     public enum Accessibility {
         OS("Open Source"),
         ON("Open Source, No Public Access"),
-        CS("Closed Source");
-        
+        CS("Closed Source"),
+        CO("Closed Source, OSTI Hosted");
+
         private final String label;
-        
+
         private Accessibility(String label) {
             this.label = label;
         }
-        
+
         public String label() {
             return this.label;
         }
     }
-    
+
     /**
      * Enumerate known or accepted license values.
      */

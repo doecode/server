@@ -231,9 +231,10 @@ Validation rules are:
 </p>
 
 * source accessibility is required:
-  * "OS" (Open Source, publicly available repository), also requires a valid accessible repository link
-  * "ON" (Open Source, No publicly available repository), requires a landing page
-  * "CS" (Closed Source), also requires a landing page
+  * "OS" (Open Source, Publicly Available Repository), requires a valid accessible repository link
+  * "ON" (Open Source, No Publicly Available Repository), requires a landing page
+  * "CS" (Closed Source, Site Hosted), requires a landing page
+  * "CO" (Closed Source, OSTI Hosted), repository provided by OSTI, with optional landing page
 * software title
 * description
 * at least one license

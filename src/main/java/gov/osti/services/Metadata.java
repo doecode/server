@@ -678,7 +678,9 @@ public class Metadata {
     private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException,
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
-        md.setOpenSource( !Accessibility.CS.equals(md.getAccessibility()) );
+        md.setOpenSource(
+                Accessibility.OS.equals(md.getAccessibility()) ||
+                Accessibility.ON.equals(md.getAccessibility()));
 
         ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
         Validator validator = validators.getValidator();
@@ -1574,6 +1576,13 @@ public class Metadata {
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
+        } else if (DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility())) {
+            // OC requires OSTI to provide a GitLab repo
+
+//            TODO
+//            1) create GitLab repo
+//            2) assign it to repo link
+//            3) otherwise, fail
         } else {
             // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
             if (!Validation.isValidUrl(m.getLandingPage()))
