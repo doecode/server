@@ -31,6 +31,7 @@ import gov.osti.entity.Developer;
 import gov.osti.entity.DoiReservation;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.ResearchOrganization;
+import gov.osti.entity.Site;
 import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
@@ -1055,12 +1056,13 @@ public class Metadata {
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
-            
+
             // commit it
             em.getTransaction().commit();
-            
-            // send a NOTIFICATION if configured to do so
+
+            // send NOTIFICATION if configured to do so
             sendStatusNotification(md);
+            sendPOCNotification(md);
 
             // we are done here
             return Response
@@ -1180,12 +1182,13 @@ public class Metadata {
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
-            
+
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
-            
-            // send a NOTIFICATION if configured
+
+            // send NOTIFICATION if configured
             sendStatusNotification(md);
+            sendPOCNotification(md);
 
             // and we're happy
             return Response
@@ -1759,15 +1762,95 @@ public class Metadata {
             msg.append("<P>If we can be of assistance, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
             msg.append("<P>Sincerely,</P>");
             msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
-            
+
             msg.append("</html>");
-            
+
             email.setHtmlMsg(msg.toString());
-            
+
             email.send();
         } catch ( EmailException e ) {
             log.error("Unable to send APPROVAL notification for #" + md.getCodeId());
             log.error("Message: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Send a POC email notification on SUBMISSION/APPROVAL of DOE CODE records.
+     *
+     * @param md the METADATA to send notification for
+     */
+    private static void sendPOCNotification(DOECodeMetadata md) {
+        // if HOST or MD isn't set, cannot send
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
+            null == md)
+            return;
+
+        Long codeId = md.getCodeId();
+        String siteCode = md.getSiteOwnershipCode();
+        Status workflowStatus = md.getWorkflowStatus();
+
+        // if SITE OWNERSHIP isn't set, cannot send
+        if (StringUtils.isEmpty(siteCode))
+            return;
+
+        // only applicable to SUBMITTED or ANNOUNCED records
+        if (!Status.Announced.equals(workflowStatus) &&
+            !Status.Submitted.equals(workflowStatus))
+            return;
+
+        // get the SITE information
+        Site site = SiteServices.findSiteBySiteCode(siteCode);
+        if (null == site) {
+            log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
+            return;
+        }
+
+            List<String> emails = site.getPocEmails();
+
+        // if POC is setup
+        for (String pocEmail : emails) {
+            try {
+                HtmlEmail email = new HtmlEmail();
+                email.setHostName(EMAIL_HOST);
+
+                String lab = site.getLab();
+                lab = lab.isEmpty() ? siteCode : lab;
+
+                email.setFrom(EMAIL_FROM);
+                email.setSubject("POC Notification -- " + workflowStatus + " -- DOE CODE ID: " + codeId + ", " + md.getSoftwareTitle());
+                email.addTo(pocEmail);
+
+                StringBuilder msg = new StringBuilder();
+
+                msg.append("<html>");
+                msg.append("Dear Sir or Madam:");
+
+                msg.append("<P>As a Point of Contact for ").append(lab).append(", we wanted to inform you that a project was ")
+                   .append(workflowStatus)
+                   .append(" and assigned DOE CODE ID: <a href=\"")
+                   .append(SITE_URL)
+                   .append("/biblio/")
+                   .append(codeId)
+                   .append("\">")
+                   .append(codeId)
+                   .append("</a>.  Once approved, it will be <a href=\"")
+                   .append(SITE_URL)
+                   .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
+
+
+                msg.append("<P>If you have any questions, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
+                msg.append("<P>Sincerely,</P>");
+                msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+
+                msg.append("</html>");
+
+                email.setHtmlMsg(msg.toString());
+
+                email.send();
+            } catch ( EmailException e ) {
+                log.error("Unable to send POC notification to " + pocEmail + " for #" + md.getCodeId());
+                log.error("Message: " + e.getMessage());
+            }
         }
     }
 }

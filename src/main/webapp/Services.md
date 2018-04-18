@@ -14,6 +14,10 @@ DOECode [metadata related services](/doecodeapi/services/metadata) having to do 
 
 API calls [for user services](/doecodeapi/services/user) for authentication, registration, and management of DOECode user accounts.
 
+### Site
+
+API calls [for site services](/doecodeapi/services/site) for management of Sites.
+
 ### Search
 
 API calls [for search/disseminiation](/doecodeapi/services/search) for retrieval and search capabilities for Approved records.
