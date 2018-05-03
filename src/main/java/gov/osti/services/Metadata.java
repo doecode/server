@@ -1,5 +1,3 @@
-/*
- */
 package gov.osti.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,11 +13,15 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
+import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.GitHub;
+import gov.osti.connectors.GitLab;
 import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
+import gov.osti.connectors.api.GitLabAPI;
+import gov.osti.connectors.gitlab.Commit;
+import gov.osti.connectors.gitlab.GitLabFile;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
 import gov.osti.entity.Contributor;
@@ -39,6 +41,8 @@ import gov.osti.listeners.DoeServletContextListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -77,6 +81,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
@@ -103,6 +109,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
 
+import gov.osti.connectors.gitlab.Project;
+
 /**
  * REST Web Service for Metadata.
  *
@@ -126,7 +134,7 @@ public class Metadata {
     @Context ServletContext context;
 
     // logger instance
-    private static Logger log = LoggerFactory.getLogger(Metadata.class);
+    private static final Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
 
     // SMTP email host name
@@ -150,6 +158,7 @@ public class Metadata {
                 .add(new GitHub())
                 .add(new SourceForge())
                 .add(new BitBucket())
+                .add(new GitLab())
                 .build();
         } catch ( IOException e ) {
             log.warn("Configuration failure: " + e.getMessage());
@@ -299,6 +308,7 @@ public class Metadata {
     @Path ("{codeId}")
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml", MediaType.APPLICATION_XML})
     @RequiresAuthentication
+    @SuppressWarnings("ConvertToStringSwitch")
     public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
@@ -1003,6 +1013,7 @@ public class Metadata {
 
             // store it
             store(em, md, user);
+
             // check validations for Submitted workflow
             List<String> errors = validateSubmit(md);
             if ( !errors.isEmpty() ) {
@@ -1013,13 +1024,25 @@ public class Metadata {
             }
 
             // if there's a FILE associated here, store it
+            String fileName = null;
+            String base64 = null;
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
 
                 try {
-                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    // can only read InputStream once, so copy in order to reset for base64 conversion
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    org.apache.commons.io.IOUtils.copy(file, baos);
+                    byte[] bytes = baos.toByteArray();
+
+                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                    fileName = writeFile(bais, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
+
+                    // convert to base64 for GitLab
+                    bais.reset();
+                    base64 = convertBase64(bais);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1027,6 +1050,18 @@ public class Metadata {
                             .build();
                 }
             }
+
+            // create OSTI Hosted project, as needed
+            try {
+                // process local GitLab, if needed
+                processOSTIGitLab(md, new File(fileName).getName(), base64);
+            } catch ( Exception e ) {
+                log.error("OSTI GitLab failure: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError("Unable to create OSTI Hosted project.")
+                        .build();
+            }
+
             // send this file upload along to archiver if configured
             try {
                 // if a FILE was sent, create a File Object from it
@@ -1038,6 +1073,7 @@ public class Metadata {
                         .internalServerError("Unable to archive project.")
                         .build();
             }
+
             // send to DataCite if needed (and there is a RELEASE DATE set)
             if ( null!=md.getDoi() && null!=md.getReleaseDate() ) {
                 try {
@@ -1049,6 +1085,7 @@ public class Metadata {
                             .build();
                 }
             }
+
             // store the snapshot copy of Metadata
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.setCodeId(md.getCodeId());
@@ -1532,6 +1569,23 @@ public class Metadata {
     }
 
     /**
+     * Convert a File InputStream to a BAse64 string.
+     *
+     * @param in the InputStream containing the file content
+     * @return the Base64 string of the file
+     * @throws IOException on IO errors
+     */
+    private static String convertBase64(InputStream in) throws IOException {
+        byte[] fileBytes = IOUtils.toByteArray(in);
+
+        in.read(fileBytes, 0, fileBytes.length);
+        in.close();
+        String base64Str = Base64.encodeBase64String(fileBytes);
+
+        return base64Str;
+    }
+
+    /**
      * Perform validations for SUBMITTED records.
      *
      * @param m the Metadata information to validate
@@ -1579,20 +1633,13 @@ public class Metadata {
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
-        } else if (DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility())) {
-            // OC requires OSTI to provide a GitLab repo
-
-//            TODO
-//            1) create GitLab repo
-//            2) assign it to repo link
-//            3) otherwise, fail
-        } else {
-            // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
+        } else if (!DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility())) {
+            // non-OS & non-CO submissions require a LANDING PAGE (prefix with http:// if missing)
             if (!Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
-        // if repository link is present, it needs to be valid too
-        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
+        // if repository link is present, and not CO, it needs to be valid too
+        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
         return reasons;
     }
@@ -1852,5 +1899,103 @@ public class Metadata {
                 log.error("Message: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * As needed, Create/Update OSTI Hosted GitLab projects.
+     *
+     * @param md the METADATA to process GitLab for
+     */
+    private static void processOSTIGitLab(DOECodeMetadata md, String fileName, String base64Content) throws Exception {
+        // only process OSTI Hosted type
+        if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
+            return;
+
+        if (fileName == null)
+            throw new Exception("File Name required for OSTI Hosted project!");
+
+        if (base64Content == null)
+            throw new Exception("Base 64 Content required for OSTI Hosted project!");
+
+
+        String projectName = "dc-" + md.getCodeId();
+        String hostedFolder = "hosted_files";
+
+        String uploadFile = hostedFolder + "/" + fileName;
+
+        GitLabAPI glApi = new GitLabAPI();
+        glApi.setProjectName(projectName);
+
+        // check existance of project
+        Project project = glApi.fetchProject();
+
+        Commit commit = new Commit();
+        if (project == null) {
+            // create new project, if none exists
+            project = glApi.createProject(md);
+
+            commit.setBranch(glApi.getBranch());
+            commit.setCommitMessage("Adding Hosted Files: " + fileName);
+            commit.addBase64ActionByValues("create", uploadFile, base64Content);
+        }
+        else {
+            // edit project, if one already exists
+            project = glApi.updateProject(md);
+
+            // for each file in the hosted folder, check against submitted files and process as needed
+            GitLabFile[] files = glApi.fetchTree(hostedFolder);
+
+            int adds = 0;
+            int updates = 0;
+            int deletes = 0;
+            for ( GitLabFile f : files ) {
+                if (!f.getType().equalsIgnoreCase("tree")) {
+                    if (f.getPath().equals(uploadFile)) {
+                        // update, if filename exists already
+                        commit.addBase64ActionByValues("update", uploadFile, base64Content);
+
+                        updates++;
+                    }
+                    else {
+                        // delete, if file is not being submitted
+                        commit.addBase64ActionByValues("delete", f.getPath(), null);
+
+                        deletes++;
+                    }
+                }
+            }
+
+            // right now there is only ever one file, so if we did not updated anything, we need to create it
+            if (updates == 0) {
+                // create, if there was no matching file to update
+                commit.addBase64ActionByValues("create", uploadFile, base64Content);
+
+                adds++;
+            }
+
+            String prefix;
+            String detail = uploadFile;
+            if (adds == 1 && updates == 0 && deletes == 0) {
+                prefix = "Adding";
+            }
+            else if (adds == 0 && updates == 1 && deletes == 0) {
+                prefix = "Updating";
+            }
+            else {
+                prefix = "Modifying";
+                detail = (adds > 0 ? "Added " + adds : "");
+                detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + updates : "");
+                detail += (deletes > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Deleted " + deletes : "");
+            }
+
+            commit.setBranch(project.getDefaultBranch());
+            commit.setCommitMessage(prefix + " Hosted Files: " + detail);
+        }
+
+        // commit file actions, as needed
+        glApi.commitFiles(commit);
+
+        // override repo link, no matter what
+        md.setRepositoryLink(project.getWebUrl());
     }
 }

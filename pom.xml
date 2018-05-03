@@ -10,16 +10,22 @@
 
 	<properties>
 		<jdk.version>1.8</jdk.version>
-                <jersey.version>2.22.2</jersey.version>
-                <httpclient.version>4.5.2</httpclient.version>
-                <jackson.version>2.9.0</jackson.version>
-                <projectName>doecodeapi</projectName>
-                <datacite.url>https://mds.test.datacite.org/</datacite.url>
-                <environment>development</environment>
+        <jersey.version>2.22.2</jersey.version>
+        <httpclient.version>4.5.2</httpclient.version>
+        <jackson.version>2.9.0</jackson.version>
+		<commons-io.version>2.6</commons-io.version>
+        <projectName>doecodeapi</projectName>
+        <datacite.url>https://mds.test.datacite.org/</datacite.url>
+        <environment>development</environment>
 	 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
- 
+
 	<dependencies>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${commons-io.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
