@@ -147,7 +147,7 @@ public class GitHub implements ConnectorInterface {
             if (null!=yaml)
                 return yaml;
 
-            // acquire the SourceForge API response as JSON
+            // acquire the GitHub API response as JSON
             HttpGet get = gitHubAPIGet(GITHUB_BASE_URL + name);
 
             // Convert the JSON into an Object we can handle
