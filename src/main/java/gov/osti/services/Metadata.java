@@ -1054,7 +1054,7 @@ public class Metadata {
             // create OSTI Hosted project, as needed
             try {
                 // process local GitLab, if needed
-                processOSTIGitLab(md, new File(fileName).getName(), base64);
+                processOSTIGitLab(md, fileName, base64);
             } catch ( Exception e ) {
                 log.error("OSTI GitLab failure: " + e.getMessage());
                 return ErrorResponse
@@ -1906,17 +1906,18 @@ public class Metadata {
      *
      * @param md the METADATA to process GitLab for
      */
-    private static void processOSTIGitLab(DOECodeMetadata md, String fileName, String base64Content) throws Exception {
+    private static void processOSTIGitLab(DOECodeMetadata md, String filePath, String base64Content) throws Exception {
         // only process OSTI Hosted type
         if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
             return;
 
-        if (fileName == null)
+        if (filePath == null)
             throw new Exception("File Name required for OSTI Hosted project!");
 
         if (base64Content == null)
             throw new Exception("Base 64 Content required for OSTI Hosted project!");
 
+        String fileName = new File(filePath).getName();
 
         String projectName = "dc-" + md.getCodeId();
         String hostedFolder = "hosted_files";
