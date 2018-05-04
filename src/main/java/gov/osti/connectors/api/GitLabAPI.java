@@ -467,7 +467,16 @@ public final class GitLabAPI {
      * @throws IOException
      */
     public GitLabFile[] fetchTree(String path) throws IOException {
-        String response = fetch(gitLabAPIGet(acquireTreeCmd(path)));
+        String response = "";
+        try {
+            response = fetch(gitLabAPIGet(acquireTreeCmd(path)));
+        } catch (IOException e) {
+            // if we didn't find Files on GET, its okay, they just doesn't exist.  Return NULL.
+            if (!e.getMessage().equals("Failed response: " + HttpServletResponse.SC_NOT_FOUND))
+                throw e;
+
+            return null;
+        }
         return MAPPER.readValue(response, GitLabFile[].class);
     }
 

@@ -1949,19 +1949,22 @@ public class Metadata {
             int adds = 0;
             int updates = 0;
             int deletes = 0;
-            for ( GitLabFile f : files ) {
-                if (!f.getType().equalsIgnoreCase("tree")) {
-                    if (f.getPath().equals(uploadFile)) {
-                        // update, if filename exists already
-                        commit.addBase64ActionByValues("update", uploadFile, base64Content);
 
-                        updates++;
-                    }
-                    else {
-                        // delete, if file is not being submitted
-                        commit.addBase64ActionByValues("delete", f.getPath(), null);
+            if (files != null) {
+                for ( GitLabFile f : files ) {
+                    if (!f.getType().equalsIgnoreCase("tree")) {
+                        if (f.getPath().equals(uploadFile)) {
+                            // update, if filename exists already
+                            commit.addBase64ActionByValues("update", uploadFile, base64Content);
 
-                        deletes++;
+                            updates++;
+                        }
+                        else {
+                            // delete, if file is not being submitted
+                            commit.addBase64ActionByValues("delete", f.getPath(), null);
+
+                            deletes++;
+                        }
                     }
                 }
             }
