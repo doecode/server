@@ -1064,9 +1064,12 @@ public class Metadata {
 
             // send this file upload along to archiver if configured
             try {
-                // if a FILE was sent, create a File Object from it
-                File archiveFile = (null==file) ? null : new File(md.getFileName());
-                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                // if CO project type, no need to archive the repo or file because they are in GitLab
+                if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility())) {
+                    // if a FILE was sent, create a File Object from it
+                    File archiveFile = (null==file) ? null : new File(md.getFileName());
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                }
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
@@ -1216,14 +1219,18 @@ public class Metadata {
 
             // send this file upload along to archiver if configured
             try {
-                File archiveFile = (null==file) ? null : new File(md.getFileName());
-                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                // if CO project type, no need to archive the repo or file because they are in GitLab
+                if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility())) {
+                    File archiveFile = (null==file) ? null : new File(md.getFileName());
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                }
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
                         .internalServerError("Unable to archive project.")
                         .build();
             }
+
             // send any updates to DataCite as well (if RELEASE DATE is set)
             if (StringUtils.isNotEmpty(md.getDoi()) && null!=md.getReleaseDate()) {
                 try {
