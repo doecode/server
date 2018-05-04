@@ -1168,19 +1168,42 @@ public class Metadata {
             store(em, md, user);
 
             // if there's a FILE associated here, store it
+            String fileName = null;
+            String base64 = null;
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
 
                 try {
-                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    // can only read InputStream once, so copy in order to reset for base64 conversion
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    org.apache.commons.io.IOUtils.copy(file, baos);
+                    byte[] bytes = baos.toByteArray();
+
+                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                    fileName = writeFile(bais, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
+
+                    // convert to base64 for GitLab
+                    bais.reset();
+                    base64 = convertBase64(bais);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
                             .internalServerError("File upload failed.")
                             .build();
                 }
+            }
+
+            // create OSTI Hosted project, as needed
+            try {
+                // process local GitLab, if needed
+                processOSTIGitLab(md, fileName, base64);
+            } catch ( Exception e ) {
+                log.error("OSTI GitLab failure: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError("Unable to create OSTI Hosted project.")
+                        .build();
             }
 
             // check validations
