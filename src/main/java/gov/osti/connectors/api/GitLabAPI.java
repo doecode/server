@@ -523,7 +523,11 @@ public final class GitLabAPI {
 
     // generate a valid GitLab API "project" command for the currently set GitLab and Project
     private String acquireProjectCmd() {
-        return getApiBase() + "projects/" + encodeValue(getNamespace().getFullPath() + "/" + getProjectName());
+        String namespace = "";
+        if (getNamespace() != null)
+            namespace = getNamespace().getFullPath() + "/";
+
+        return getApiBase() + "projects/" + encodeValue(namespace + getProjectName());
     }
 
     /**
