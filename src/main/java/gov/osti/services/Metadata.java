@@ -1975,7 +1975,7 @@ public class Metadata {
             }
 
             String prefix;
-            String detail = uploadFile;
+            String detail = fileName;
             if (adds == 1 && updates == 0 && deletes == 0) {
                 prefix = "Adding";
             }
