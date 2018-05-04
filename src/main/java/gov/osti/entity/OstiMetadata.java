@@ -92,7 +92,7 @@ public class OstiMetadata {
         setCodeId(md.getCodeId());
         setSiteOwnershipCode(md.getSiteOwnershipCode());
         setKeywords(md.getKeywords());
-        // DOECODE stores COUNTRY NAME; convert to two-character standard COUNTRY CODE
+        // DOE CODE stores COUNTRY NAME; convert to two-character standard COUNTRY CODE
         List<CountryCode> countries = findCountryByName(md.getCountryOfOrigin());
         // "ZZ" is the default unknown value for ELINK
         setCountryPublicationCode ((countries.isEmpty()) ? "ZZ" : countries.get(0).getAlpha2());

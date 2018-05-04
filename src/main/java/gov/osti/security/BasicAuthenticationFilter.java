@@ -19,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Create a Basic HTTP authentication filter implementation for DOECode.
- * 
+ * Create a Basic HTTP authentication filter implementation for DOE CODE.
+ *
  * @author ensornl
  */
 public class BasicAuthenticationFilter extends AuthenticatingFilter {

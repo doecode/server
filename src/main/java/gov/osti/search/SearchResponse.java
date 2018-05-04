@@ -13,8 +13,8 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * DOECode Search Response Object.
- * 
+ * DOE CODE Search Response Object.
+ *
  * @author ensornl
  */
 @XmlRootElement (name="query")

@@ -1,4 +1,4 @@
-DOECode User Services
+DOE CODE User Services
 =====================
 
 Introduction

@@ -1,18 +1,18 @@
-DOECode API Services
+DOE CODE API Services
 ==================
 
 Introduction
 ------------
 
-Various API functionality for the DOECode project are available grouped by functionality via separate endpoints documented below.
+Various API functionality for the DOE CODE project are available grouped by functionality via separate endpoints documented below.
 
 ### Metadata
 
-DOECode [metadata related services](/doecodeapi/services/metadata) having to do with manipulation and editing of software metadata information.
+DOE CODE [metadata related services](/doecodeapi/services/metadata) having to do with manipulation and editing of software metadata information.
 
 ### Users
 
-API calls [for user services](/doecodeapi/services/user) for authentication, registration, and management of DOECode user accounts.
+API calls [for user services](/doecodeapi/services/user) for authentication, registration, and management of DOE CODE user accounts.
 
 ### Site
 

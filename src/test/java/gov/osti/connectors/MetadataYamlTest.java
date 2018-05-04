@@ -118,10 +118,10 @@ public class MetadataYamlTest {
                 fail ("Unknown developer found: " + d.getLastName());
             }
         }
-        assertEquals("title is wrong", "Sample development and testing repository for DOECode", metadata.getSoftwareTitle());
+        assertEquals("title is wrong", "Sample development and testing repository for DOE CODE", metadata.getSoftwareTitle());
         assertEquals("Acronym wrong", "dev-test-repo", metadata.getAcronym());
         assertEquals("DOI wrong", "10.5072/23892", metadata.getDoi());
-        assertEquals("Description wrong", "An example testing repository for submissions of YAML and other associated testing projects related to the development of DOECode.\n",
+        assertEquals("Description wrong", "An example testing repository for submissions of YAML and other associated testing projects related to the development of DOE CODE.\n",
                 metadata.getDescription());
         
         List<String> licenses = metadata.getLicenses();
@@ -149,7 +149,7 @@ public class MetadataYamlTest {
         assertEquals("ID#2 value wrong", "10.5072/doecode2017/dev-test-repo/2", identifier.getIdentifierValue());
         assertEquals("ID#2 relation wrong", RelatedIdentifier.RelationType.Cites, identifier.getRelationType());
         
-        assertEquals("Keywords wrong", "software, DOECode, hosting repositories", metadata.getKeywords());
+        assertEquals("Keywords wrong", "software, DOE CODE, hosting repositories", metadata.getKeywords());
         assertEquals("disclaimers wrong", "open source", metadata.getDisclaimers());
         assertEquals("recipient name wrong", "Neal Ensor", metadata.getRecipientName());
         assertEquals("recipient email wrong", "ensorn@osti.gov", metadata.getRecipientEmail());

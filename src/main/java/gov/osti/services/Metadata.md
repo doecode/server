@@ -512,10 +512,10 @@ metadata fields.
    "identifier_value":"10.5072/OSTI/2017/1",
    "relation_type":"IsSourceOf"}],
 "date_of_issuance":"2016-02-03",
-"software_title":"Department of Energy DOECode Project",
+"software_title":"Department of Energy DOE CODE Project",
 "acronym":"doecode",
-"doi":"10.5072/DOECode2017/7174",
-"description":"Main repository for managing the new DOE Code site from the DOE Office of Scientific and Technical Information (OSTI)",
+"doi":"10.5072/dc/2017/7174",
+"description":"Main repository for managing the new DOE CODE site from the DOE Office of Scientific and Technical Information (OSTI)",
 "license":["Apache License 2.0"],
 "release_date":"2017-08-23"
 }

@@ -1,4 +1,4 @@
-#Metadata template for DOECode users
+#Metadata template for DOE CODE users
 #Version: 1.3
 
 ---
@@ -68,14 +68,14 @@ sponsoring_organizations:
         identifier_value: UWIN-888
       - identifier_type: AwardNumber
         identifier_value: UFL-11
-software_title: Sample development and testing repository for DOECode
+software_title: Sample development and testing repository for DOE CODE
 acronym: dev-test-repo
 doi: 10.5072/23892
 license: GNU General Public License
 description: > 
   An example testing repository for submissions of YAML and other associated
-  testing projects related to the development of DOECode.
-keywords: software, DOECode, hosting repositories
+  testing projects related to the development of DOE CODE.
+keywords: software, doecode, DOE CODE, hosting repositories
 disclaimers: open source
 recipient_name: Neal Ensor
 recipient_email: ensorn@osti.gov

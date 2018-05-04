@@ -1,4 +1,4 @@
-DOECode Validation Services
+DOE CODE Validation Services
 =====================
 
 Introduction

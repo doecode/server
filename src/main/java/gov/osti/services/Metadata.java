@@ -1285,7 +1285,7 @@ public class Metadata {
 
 
     /**
-     * SUBMIT a record to DOECODE.
+     * SUBMIT a record to DOE CODE.
      *
      * Will return a FORBIDDEN attempt should a User attempt to modify someone
      * else's record.
@@ -1304,7 +1304,7 @@ public class Metadata {
     }
 
     /**
-     * ANNOUNCE endpoint; saves Software record to DOECode and sends results to
+     * ANNOUNCE endpoint; saves Software record to DOE CODE and sends results to
      * OSTI ELINK and enters the OSTI workflow.
      *
      * Will return a FORBIDDEN response if the OWNER logged in does not match
