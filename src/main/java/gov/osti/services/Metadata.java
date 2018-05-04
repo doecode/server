@@ -637,10 +637,13 @@ public class Metadata {
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
     public Response autopopulate(@QueryParam("repo") String url,
                                  @QueryParam("format") String format) {
-        JsonNode result = factory.read(url);
+        JsonNode resultJson = factory.read(url);
 
-        if (null==result)
+        if (null==resultJson)
             return Response.status(Response.Status.NO_CONTENT).build();
+
+        ObjectNode result = (ObjectNode) resultJson;
+        result.remove("code_id");
 
         // if YAML is requested, return that; otherwise, default to JSON output
         if ("yaml".equals(format)) {
