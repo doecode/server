@@ -149,7 +149,7 @@ public class MetadataYamlTest {
         assertEquals("ID#2 value wrong", "10.5072/doecode2017/dev-test-repo/2", identifier.getIdentifierValue());
         assertEquals("ID#2 relation wrong", RelatedIdentifier.RelationType.Cites, identifier.getRelationType());
         
-        assertEquals("Keywords wrong", "software, DOE CODE, hosting repositories", metadata.getKeywords());
+        assertEquals("Keywords wrong", "software, doecode, DOE CODE, hosting repositories", metadata.getKeywords());
         assertEquals("disclaimers wrong", "open source", metadata.getDisclaimers());
         assertEquals("recipient name wrong", "Neal Ensor", metadata.getRecipientName());
         assertEquals("recipient email wrong", "ensorn@osti.gov", metadata.getRecipientEmail());
