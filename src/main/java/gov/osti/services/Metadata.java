@@ -41,8 +41,6 @@ import gov.osti.listeners.DoeServletContextListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -110,6 +108,8 @@ import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
 
 import gov.osti.connectors.gitlab.Project;
+import java.io.FileInputStream;
+import org.apache.commons.codec.binary.Base64InputStream;
 
 /**
  * REST Web Service for Metadata.
@@ -1034,18 +1034,11 @@ public class Metadata {
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
 
                 try {
-                    // can only read InputStream once, so copy in order to reset for base64 conversion
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    org.apache.commons.io.IOUtils.copy(file, baos);
-                    byte[] bytes = baos.toByteArray();
-
-                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                    fileName = writeFile(bais, md.getCodeId(), fileInfo.getFileName());
+                    fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
 
                     // convert to base64 for GitLab
-                    bais.reset();
-                    base64 = convertBase64(bais);
+                    base64 = convertBase64(new FileInputStream(fileName));
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1181,18 +1174,11 @@ public class Metadata {
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
 
                 try {
-                    // can only read InputStream once, so copy in order to reset for base64 conversion
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    org.apache.commons.io.IOUtils.copy(file, baos);
-                    byte[] bytes = baos.toByteArray();
-
-                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                    fileName = writeFile(bais, md.getCodeId(), fileInfo.getFileName());
+                    fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
 
                     // convert to base64 for GitLab
-                    bais.reset();
-                    base64 = convertBase64(bais);
+                    base64 = convertBase64(new FileInputStream(fileName));
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1602,20 +1588,15 @@ public class Metadata {
     }
 
     /**
-     * Convert a File InputStream to a BAse64 string.
+     * Convert a File InputStream to a Base64 string.
      *
      * @param in the InputStream containing the file content
      * @return the Base64 string of the file
      * @throws IOException on IO errors
      */
     private static String convertBase64(InputStream in) throws IOException {
-        byte[] fileBytes = IOUtils.toByteArray(in);
-
-        in.read(fileBytes, 0, fileBytes.length);
-        in.close();
-        String base64Str = Base64.encodeBase64String(fileBytes);
-
-        return base64Str;
+        Base64InputStream b64in = new Base64InputStream(in, true);
+        return IOUtils.toString(b64in, "UTF-8");
     }
 
     /**
