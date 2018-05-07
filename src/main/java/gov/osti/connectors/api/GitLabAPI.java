@@ -121,9 +121,9 @@ public final class GitLabAPI {
                         .create()
                         .setDefaultRequestConfig(RequestConfig
                                 .custom()
-                                .setConnectTimeout(5000)
-                                .setConnectionRequestTimeout(5000)
-                                .setSocketTimeout(5000)
+                                .setConnectTimeout(60000)
+                                .setConnectionRequestTimeout(60000)
+                                .setSocketTimeout(60000)
                                 .build())
                         .build();
 
@@ -159,9 +159,9 @@ public final class GitLabAPI {
                         .create()
                         .setDefaultRequestConfig(RequestConfig
                                 .custom()
-                                .setConnectTimeout(5000)
-                                .setConnectionRequestTimeout(5000)
-                                .setSocketTimeout(5000)
+                                .setConnectTimeout(60000)
+                                .setConnectionRequestTimeout(60000)
+                                .setSocketTimeout(60000)
                                 .build())
                         .build();
 
@@ -197,9 +197,9 @@ public final class GitLabAPI {
                         .create()
                         .setDefaultRequestConfig(RequestConfig
                                 .custom()
-                                .setConnectTimeout(5000)
-                                .setConnectionRequestTimeout(5000)
-                                .setSocketTimeout(5000)
+                                .setConnectTimeout(60000)
+                                .setConnectionRequestTimeout(60000)
+                                .setSocketTimeout(60000)
                                 .build())
                         .build();
 
