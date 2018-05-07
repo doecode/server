@@ -1027,18 +1027,13 @@ public class Metadata {
             }
 
             // if there's a FILE associated here, store it
-            String fileName = null;
-            String base64 = null;
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
 
                 try {
-                    fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
-
-                    // convert to base64 for GitLab
-                    base64 = convertBase64(new FileInputStream(fileName));
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1050,7 +1045,7 @@ public class Metadata {
             // create OSTI Hosted project, as needed
             try {
                 // process local GitLab, if needed
-                processOSTIGitLab(md, fileName, base64);
+                processOSTIGitLab(md);
             } catch ( Exception e ) {
                 log.error("OSTI GitLab failure: " + e.getMessage());
                 return ErrorResponse
@@ -1167,18 +1162,13 @@ public class Metadata {
             store(em, md, user);
 
             // if there's a FILE associated here, store it
-            String fileName = null;
-            String base64 = null;
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
                 md = em.find(DOECodeMetadata.class, md.getCodeId());
 
                 try {
-                    fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
-
-                    // convert to base64 for GitLab
-                    base64 = convertBase64(new FileInputStream(fileName));
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1190,7 +1180,7 @@ public class Metadata {
             // create OSTI Hosted project, as needed
             try {
                 // process local GitLab, if needed
-                processOSTIGitLab(md, fileName, base64);
+                processOSTIGitLab(md);
             } catch ( Exception e ) {
                 log.error("OSTI GitLab failure: " + e.getMessage());
                 return ErrorResponse
@@ -1920,18 +1910,28 @@ public class Metadata {
      *
      * @param md the METADATA to process GitLab for
      */
-    private static void processOSTIGitLab(DOECodeMetadata md, String filePath, String base64Content) throws Exception {
+    private static void processOSTIGitLab(DOECodeMetadata md) throws Exception {
         // only process OSTI Hosted type
         if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
             return;
 
-        if (filePath == null)
-            throw new Exception("File Name required for OSTI Hosted project!");
+        String fileName = md.getFileName();
+
+        // sometimes getFileName returns a full path (this should be addressed overall, but temp fix here for now)
+        fileName = fileName.substring(fileName.lastIndexOf(File.separator)+1);
+
+        String codeId = String.valueOf(md.getCodeId());
+        java.nio.file.Path uploadedFile = Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
+
+        // if no file was uploaded, fail
+        if (!Files.exists(uploadedFile))
+            throw new Exception("File not found in Uploads directory! [" + uploadedFile.toString() + "]");
+
+        // convert to base64 for GitLab
+        String base64Content = convertBase64(new FileInputStream(uploadedFile.toString()));
 
         if (base64Content == null)
             throw new Exception("Base 64 Content required for OSTI Hosted project!");
-
-        String fileName = new File(filePath).getName();
 
         String projectName = "dc-" + md.getCodeId();
         String hostedFolder = "hosted_files";
