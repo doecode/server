@@ -1,5 +1,6 @@
 package gov.osti.connectors.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gov.osti.connectors.gitlab.Project;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +17,14 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -56,6 +65,8 @@ public final class GitLabAPI {
     private String currentApiBase = "";
     private String currentBranch = "master";
     private Namespace currentNamespace = null;
+
+    private final Set<Integer> goodResponses = new HashSet<>(Arrays.asList(HttpServletResponse.SC_OK, HttpServletResponse.SC_CREATED, HttpServletResponse.SC_NO_CONTENT));
 
     public static enum HttpType {
         GET, POST, PUT;
@@ -130,13 +141,7 @@ public final class GitLabAPI {
         try {
             // only return if response is OK
             HttpResponse response = hc.execute(get);
-            int statusCode = response.getStatusLine().getStatusCode();
-
-            if (HttpServletResponse.SC_NOT_FOUND == statusCode)
-                throw new IOException("Failed response: " + HttpServletResponse.SC_NOT_FOUND);
-
-            if (HttpServletResponse.SC_OK != statusCode)
-                throw new IOException("Failed response: " + EntityUtils.toString(response.getEntity()));
+            processResponse(response);
 
             return EntityUtils.toString(response.getEntity());
         } finally {
@@ -168,13 +173,7 @@ public final class GitLabAPI {
         try {
             // only return if response is OK
             HttpResponse response = hc.execute(post);
-            int statusCode = response.getStatusLine().getStatusCode();
-
-            if (HttpServletResponse.SC_NOT_FOUND == statusCode)
-                throw new IOException("Failed response: " + HttpServletResponse.SC_NOT_FOUND);
-
-            if (HttpServletResponse.SC_OK != statusCode && HttpServletResponse.SC_CREATED != statusCode)
-                throw new IOException("Failed response: " + EntityUtils.toString(response.getEntity()));
+            processResponse(response);
 
             return EntityUtils.toString(response.getEntity());
         } finally {
@@ -206,18 +205,75 @@ public final class GitLabAPI {
         try {
             // only return if response is OK
             HttpResponse response = hc.execute(put);
-            int statusCode = response.getStatusLine().getStatusCode();
-
-            if (HttpServletResponse.SC_NOT_FOUND == statusCode)
-                throw new IOException("Failed response: " + HttpServletResponse.SC_NOT_FOUND);
-
-            if (HttpServletResponse.SC_OK != statusCode)
-                throw new IOException("Failed response: " + EntityUtils.toString(response.getEntity()));
+            processResponse(response);
 
             return EntityUtils.toString(response.getEntity());
         } finally {
             hc.close();
         }
+    }
+
+    /**
+     * Process the API response, based on API validation/error documentation.
+     *
+     * @param response the HTTP Response to process
+     * @return String consolidated error message contents, if not successful
+     * @throws IOException on IO errors
+     */
+    private String processResponse(HttpResponse response) throws IOException {
+        // get status code
+        int statusCode = response.getStatusLine().getStatusCode();
+
+        // if successful, just return, no errors to parse
+        if (goodResponses.contains(statusCode))
+            return null;
+
+        // if not found, throw specific error for special handling
+        if (HttpServletResponse.SC_NOT_FOUND == statusCode)
+            throw new IOException("404 Not Found");
+
+        // otherwise, get API response body data
+        String responseString = EntityUtils.toString(response.getEntity());
+        JsonNode root = MAPPER.readTree(responseString);
+
+        // if response has an error, use it
+        if (root.has("error"))
+            responseString = root.get("error").asText();
+        // otherwise, use message info, if exists
+        else if (root.has("message"))
+            responseString = parseErrors(root.get("message"));
+
+        throw new IOException(responseString);
+    }
+
+    /**
+     * Recurse into JsonNode pulling out error messages, based on v4 API documentation
+     *
+     * @param node the JsonNode to iterate on
+     * @return String of error message.
+     */
+    private String parseErrors(JsonNode node) {
+        String errors = "";
+        Iterator<Entry<String, JsonNode>> fields = node.fields();
+
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = (Map.Entry<String, JsonNode>) fields.next();
+
+            String key = entry.getKey();
+            JsonNode value = entry.getValue();
+
+            if (value.isArray()) {
+                List<String> msgs = new ArrayList<>();
+                for (final JsonNode msg : value)
+                    if (!StringUtils.isBlank(msg.asText()))
+                        msgs.add(msg.asText());
+
+                errors += (StringUtils.isBlank(errors) ? "" : "; ") + "'" + key + "' - " + String.join("|", msgs);
+            } else if (value.isObject())
+                errors += (StringUtils.isBlank(errors) ? "" : "; ") + key + ":" + parseErrors(value);
+        }
+
+        return errors;
     }
 
     /**
@@ -472,7 +528,7 @@ public final class GitLabAPI {
             response = fetch(gitLabAPIGet(acquireTreeCmd(path)));
         } catch (IOException e) {
             // if we didn't find Files on GET, its okay, they just doesn't exist.  Return NULL.
-            if (!e.getMessage().equals("Failed response: " + HttpServletResponse.SC_NOT_FOUND))
+            if (!e.getMessage().equals("404 Not Found"))
                 throw e;
 
             return null;
@@ -605,7 +661,7 @@ public final class GitLabAPI {
                     response = fetch(gitLabAPIGet(acquireProjectCmd()));
                 } catch (IOException e) {
                     // if we didn't find Project on GET, its okay, it just doesn't exist.  Return NULL.
-                    if (!e.getMessage().equals("Failed response: " + HttpServletResponse.SC_NOT_FOUND))
+                    if (!e.getMessage().equals("404 Not Found"))
                         throw e;
 
                     return null;
@@ -649,7 +705,7 @@ public final class GitLabAPI {
             return MAPPER.readValue(response, Namespace.class);
         } catch (IOException e) {
             // if we didn't find Project, its okay.
-            if (!e.getMessage().equals("Failed response: " + HttpServletResponse.SC_NOT_FOUND))
+            if (!e.getMessage().equals("404 Not Found"))
                 throw e;
         }
 

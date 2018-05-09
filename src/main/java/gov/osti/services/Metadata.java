@@ -1049,7 +1049,7 @@ public class Metadata {
             } catch ( Exception e ) {
                 log.error("OSTI GitLab failure: " + e.getMessage());
                 return ErrorResponse
-                        .internalServerError("Unable to create OSTI Hosted project.")
+                        .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
                         .build();
             }
 
@@ -1184,7 +1184,7 @@ public class Metadata {
             } catch ( Exception e ) {
                 log.error("OSTI GitLab failure: " + e.getMessage());
                 return ErrorResponse
-                        .internalServerError("Unable to create OSTI Hosted project.")
+                        .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
                         .build();
             }
 
@@ -1911,114 +1911,121 @@ public class Metadata {
      * @param md the METADATA to process GitLab for
      */
     private static void processOSTIGitLab(DOECodeMetadata md) throws Exception {
-        // only process OSTI Hosted type
-        if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
-            return;
+        try {
+            // only process OSTI Hosted type
+            if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
+                return;
 
-        String fileName = md.getFileName();
+            String fileName = md.getFileName();
 
-        // sometimes getFileName returns a full path (this should be addressed overall, but temp fix here for now)
-        fileName = fileName.substring(fileName.lastIndexOf(File.separator)+1);
+            // sometimes getFileName returns a full path (this should be addressed overall, but temp fix here for now)
+            fileName = fileName.substring(fileName.lastIndexOf(File.separator)+1);
 
-        String codeId = String.valueOf(md.getCodeId());
-        java.nio.file.Path uploadedFile = Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
+            String codeId = String.valueOf(md.getCodeId());
+            java.nio.file.Path uploadedFile = Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
 
-        // if no file was uploaded, fail
-        if (!Files.exists(uploadedFile))
-            throw new Exception("File not found in Uploads directory! [" + uploadedFile.toString() + "]");
+            // if no file was uploaded, fail
+            if (!Files.exists(uploadedFile))
+                throw new Exception("File not found in Uploads directory! [" + uploadedFile.toString() + "]");
 
-        // convert to base64 for GitLab
-        String base64Content = convertBase64(new FileInputStream(uploadedFile.toString()));
+            // convert to base64 for GitLab
+            String base64Content = convertBase64(new FileInputStream(uploadedFile.toString()));
 
-        if (base64Content == null)
-            throw new Exception("Base 64 Content required for OSTI Hosted project!");
+            if (base64Content == null)
+                throw new Exception("Base 64 Content required for OSTI Hosted project!");
 
-        String projectName = "dc-" + md.getCodeId();
-        String hostedFolder = "hosted_files";
+            String projectName = "dc-" + md.getCodeId();
+            String hostedFolder = "hosted_files";
 
-        String uploadFile = hostedFolder + "/" + fileName;
+            String uploadFile = hostedFolder + "/" + fileName;
 
-        GitLabAPI glApi = new GitLabAPI();
-        glApi.setProjectName(projectName);
+            GitLabAPI glApi = new GitLabAPI();
+            glApi.setProjectName(projectName);
 
-        // check existance of project
-        Project project = glApi.fetchProject();
+            // check existance of project
+            Project project = glApi.fetchProject();
 
-        Commit commit = new Commit();
-        if (project == null) {
-            // create new project, if none exists
-            project = glApi.createProject(md);
+            Commit commit = new Commit();
+            if (project == null) {
+                // create new project, if none exists
+                project = glApi.createProject(md);
 
-            commit.setBranch(glApi.getBranch());
-            commit.setCommitMessage("Adding Hosted Files: " + fileName);
-            commit.addBase64ActionByValues("create", uploadFile, base64Content);
-        }
-        else {
-            // edit project, if one already exists
-            project = glApi.updateProject(md);
+                commit.setBranch(glApi.getBranch());
+                commit.setCommitMessage("Adding Hosted Files: " + fileName);
+                commit.addBase64ActionByValues("create", uploadFile, base64Content);
+            }
+            else {
+                // edit project, if one already exists
+                project = glApi.updateProject(md);
 
-            // for each file in the hosted folder, check against submitted files and process as needed
-            GitLabFile[] files = glApi.fetchTree(hostedFolder);
+                // for each file in the hosted folder, check against submitted files and process as needed
+                GitLabFile[] files = glApi.fetchTree(hostedFolder);
 
-            int adds = 0;
-            int updates = 0;
-            int deletes = 0;
+                int adds = 0;
+                int updates = 0;
+                int deletes = 0;
 
-            if (files != null) {
-                for ( GitLabFile f : files ) {
-                    if (!f.getType().equalsIgnoreCase("tree")) {
-                        if (f.getPath().equals(uploadFile)) {
-                            // update, if filename exists already
-                            commit.addBase64ActionByValues("update", uploadFile, base64Content);
+                if (files != null) {
+                    for ( GitLabFile f : files ) {
+                        if (!f.getType().equalsIgnoreCase("tree")) {
+                            if (f.getPath().equals(uploadFile)) {
+                                // update, if filename exists already
+                                commit.addBase64ActionByValues("update", uploadFile, base64Content);
 
-                            updates++;
-                        }
-                        else {
-                            // delete, if file is not being submitted
-                            commit.addBase64ActionByValues("delete", f.getPath(), null);
+                                updates++;
+                            }
+                            else {
+                                // delete, if file is not being submitted
+                                commit.addBase64ActionByValues("delete", f.getPath(), null);
 
-                            deletes++;
+                                deletes++;
+                            }
                         }
                     }
                 }
+
+                // right now there is only ever one file, so if we did not updated anything, we need to create it
+                if (updates == 0) {
+                    // create, if there was no matching file to update
+                    commit.addBase64ActionByValues("create", uploadFile, base64Content);
+
+                    adds++;
+                }
+
+                String prefix;
+                String detail = "\"" + fileName + "\"";
+                if (adds == 1 && updates == 0 && deletes == 0) {
+                    prefix = "Adding";
+                }
+                else if (adds == 0 && updates == 1 && deletes == 0) {
+                    prefix = "Updating";
+                }
+                else {
+                    prefix = "Modifying";
+
+                    String tmp = (adds == 1) ? "\"" + fileName + "\"" : String.valueOf(adds);
+                    detail = (adds > 0 ? "Added " + tmp : "");
+
+                    tmp = (updates == 1) ? "\"" + fileName + "\"" : String.valueOf(updates);
+                    detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + tmp : "");
+
+                    detail += (deletes > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Deleted " + deletes : "");
+                }
+
+                commit.setBranch(project.getDefaultBranch());
+                commit.setCommitMessage(prefix + " Hosted Files: " + detail);
             }
 
-            // right now there is only ever one file, so if we did not updated anything, we need to create it
-            if (updates == 0) {
-                // create, if there was no matching file to update
-                commit.addBase64ActionByValues("create", uploadFile, base64Content);
+            // commit file actions, as needed
+            glApi.commitFiles(commit);
 
-                adds++;
-            }
-
-            String prefix;
-            String detail = "\"" + fileName + "\"";
-            if (adds == 1 && updates == 0 && deletes == 0) {
-                prefix = "Adding";
-            }
-            else if (adds == 0 && updates == 1 && deletes == 0) {
-                prefix = "Updating";
-            }
-            else {
-                prefix = "Modifying";
-
-                String tmp = (adds == 1) ? "\"" + fileName + "\"" : String.valueOf(adds);
-                detail = (adds > 0 ? "Added " + tmp : "");
-
-                tmp = (updates == 1) ? "\"" + fileName + "\"" : String.valueOf(updates);
-                detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + tmp : "");
-
-                detail += (deletes > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Deleted " + deletes : "");
-            }
-
-            commit.setBranch(project.getDefaultBranch());
-            commit.setCommitMessage(prefix + " Hosted Files: " + detail);
+            // override repo link, no matter what
+            md.setRepositoryLink(project.getWebUrl());
+        } catch ( Exception e ) {
+            // replace non-obvious 'name' with 'software_title' for user clarity
+            String eMsg = e.getMessage();
+            eMsg = eMsg.replaceFirst("'name'", "'software_title'");
+            throw new Exception(eMsg);
         }
-
-        // commit file actions, as needed
-        glApi.commitFiles(commit);
-
-        // override repo link, no matter what
-        md.setRepositoryLink(project.getWebUrl());
     }
 }
