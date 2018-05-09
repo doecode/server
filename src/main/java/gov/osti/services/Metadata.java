@@ -1992,7 +1992,7 @@ public class Metadata {
             }
 
             String prefix;
-            String detail = fileName;
+            String detail = "\"" + fileName + "\"";
             if (adds == 1 && updates == 0 && deletes == 0) {
                 prefix = "Adding";
             }
@@ -2001,8 +2001,13 @@ public class Metadata {
             }
             else {
                 prefix = "Modifying";
-                detail = (adds > 0 ? "Added " + adds : "");
-                detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + updates : "");
+
+                String tmp = (adds == 1) ? "\"" + fileName + "\"" : String.valueOf(adds);
+                detail = (adds > 0 ? "Added " + tmp : "");
+
+                tmp = (updates == 1) ? "\"" + fileName + "\"" : String.valueOf(updates);
+                detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + tmp : "");
+
                 detail += (deletes > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Deleted " + deletes : "");
             }
 
