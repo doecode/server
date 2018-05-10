@@ -257,7 +257,7 @@ public class OstiMetadata {
     /**
      * @return the issuanceDate
      */
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     public Date getIssuanceDate() {
         return issuanceDate;
     }

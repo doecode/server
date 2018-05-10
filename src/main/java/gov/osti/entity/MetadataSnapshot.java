@@ -53,12 +53,12 @@ public class MetadataSnapshot implements Serializable {
     private String json;
     // administrative dates
     @Basic (optional = false)
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column (name = "date_record_added", insertable = true, updatable = false)
     @Temporal (TemporalType.TIMESTAMP)
     private Date dateRecordAdded;
     @Basic (optional = false)
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column (name = "date_record_updated", insertable = true, updatable = true)
     @Temporal (TemporalType.TIMESTAMP)
     private Date dateRecordUpdated;

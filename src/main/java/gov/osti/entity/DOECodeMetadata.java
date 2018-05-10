@@ -217,9 +217,9 @@ public class DOECodeMetadata implements Serializable {
     private String fileName = null;
 
     // administrative dates
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateRecordAdded;
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateRecordUpdated;
 
     // determine whether or not the RELEASE DATE was changed
@@ -615,13 +615,13 @@ public class DOECodeMetadata implements Serializable {
      */
     public void setReleaseDate(Date date) {
         this.releaseDate = date;
-        // set the fact we have called this method to se the date value
+        // set the fact we have called this method to set the date value
         this.setReleaseDate=true;
     }
     
     @Column (name="release_date")
     @Temporal(javax.persistence.TemporalType.DATE)
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     public Date getReleaseDate() {
         return this.releaseDate;
     }
