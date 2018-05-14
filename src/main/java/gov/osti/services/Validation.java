@@ -16,7 +16,6 @@ import gov.osti.repository.GitRepository;
 import gov.osti.repository.SubversionRepository;
 import java.io.IOException;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,7 +59,7 @@ class ApiResponse {
      * @return the isValid
      */
     public Boolean isValid() {
-        return isValid;
+        return (null==isValid) ? false : isValid;
     }
 
     /**
@@ -102,7 +101,7 @@ public class Validation {
     // API host for servicing external validation calls
     private static final String API_HOST = DoeServletContextListener.getConfigurationProperty("api.host");
     // a JSON mapper
-    private static final ObjectMapper mapper = new ObjectMapper();
+    protected static final ObjectMapper mapper = new ObjectMapper();
     // static DOI resolution prefix
     private static final String DOI_BASE_URL = "https://doi.org/";
 

@@ -2,6 +2,7 @@
  */
 package gov.osti.services;
 
+import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -51,6 +52,18 @@ public class ValidationTest {
         }
     }
 
+    /**
+     * Test for specific failing Boolean conversions in API responses.
+     * 
+     * @throws IOException on unexpected errors
+     */
+    @Test
+    public void testApiResponse() throws IOException {
+        ApiResponse response = Validation.mapper.readValue("{}", ApiResponse.class);
+        
+        assertFalse ("Empty JSON should be invalid", response.isValid());
+    }
+    
     /**
      * Test of isValidUrl method, of class Validation.
      */

@@ -17,6 +17,8 @@ import gov.osti.entity.SponsoringOrganization;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import org.junit.After;
@@ -215,10 +217,12 @@ public class MetadataYamlTest {
         assertTrue  ("Should be DOE", reorg.isDOE());
         
         Date issue_date = metadata.getReleaseDate();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
         
         assertNotNull("Date is missing", issue_date);
-        assertEquals ("Date is wrong", "06/02/1999", sdf.format(issue_date));
+        assertEquals ("Date is wrong", "06/02/1999", 
+                DateTimeFormatter.ofPattern("MM/dd/yyyy")
+                        .withZone(ZoneId.of("UTC"))
+                        .format(issue_date.toInstant()));
         
         log.info("Writing back out:");
         log.info(HttpUtil.writeMetadataYaml(metadata));
