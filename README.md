@@ -1,6 +1,6 @@
-# DOECode Web Application
+# DOE CODE Web Application
 
-Consists of the "back-end" services and JAX/RS API calls for DOE Code, to be
+Consists of the "back-end" services and JAX/RS API calls for DOE CODE, to be
 accessed by the front-end or presentation layer.  This application is targeted
 at a non-EE Java container such as Tomcat, using JPA and JAX/RS (Jersey implementation)
 for persistence layer and web API implementation.
@@ -109,7 +109,7 @@ to obtain the output in YAML format.
 
 `POST /services/metadata`
 
-Store a given metadata JSON to the DOECode persistence layer in an incomplete or
+Store a given metadata JSON to the DOE CODE persistence layer in an incomplete or
 pending status.  The resulting JSON information is returned as the JSON object "metadata",
 including the generated unique IDs as appropriate if the operation was successful. Record
 is placed in the "Saved" work flow.
@@ -121,16 +121,16 @@ format.  Does not persist any data.
 
 `POST /services/metadata/publish`
 
-Store the metadata information to the DOECode persistence layer with a "Published"
+Store the metadata information to the DOE CODE persistence layer with a "Published"
 work flow.  JSON is returned as with the "Saved" service above, and this record
-is marked as available to the DOECode search output services.  If DataCite information
+is marked as available to the DOE CODE search output services.  If DataCite information
 has been configured, this step will attempt to register any DOI entered and update
 metadata information with DataCite.
 
 `POST /services/metadata/submit`
 
 Post the metadata to OSTI, attempt to register a DOI if possible, and persist
-the information on DOECode.  If workflow validations pass, the JSON will be returned
+the information on DOE CODE.  If workflow validations pass, the JSON will be returned
 with appropriate unique identifier information and DOI values posted in the
 JSON object "metadata".  Data is placed in "Published" state.
 
@@ -191,11 +191,11 @@ It is often useful to have a simple database for testing that is not your instit
 3) In Eclipse, open the "Database Development" perspective.
 4) Follow the [Eclipse Documentation](http://help.eclipse.org/kepler/index.jsp?topic=%2Forg.eclipse.datatools.common.doc.user%2Fdoc%2Fhtml%2Fasc1229700387729.html) to create a Derby Connector, create a connection profile, and connect to Derby.
 
-In step 4, be sure to select "Derby Client Driver" instead of "Derby Embedded Driver." DOE Code is not currently configured to work with the Embedded driver.
+In step 4, be sure to select "Derby Client Driver" instead of "Derby Embedded Driver." DOE CODE is not currently configured to work with the Embedded driver.
 
 ## Running on AWS
 
-The DOE Code server works well on AWS. For the default RHEL 7 instance, the server can be executed with a Derby database for storing using the following rough steps:
+The DOE CODE server works well on AWS. For the default RHEL 7 instance, the server can be executed with a Derby database for storing using the following rough steps:
 1) Create the instance. Make sure your security group is configured to let the necessary ports through (normally 8080).
 2) SSH into the instance using your key. Issue the following commands to download and install prerequisites including Java, Git, and Derby.
 ```bash
@@ -250,7 +250,7 @@ cd ~/server
 ## SOLR for Searching and Indexing (Dissemination)
 
 If configured in the deployment profile, Apache SOLR may be used for an indexing and
-searching service for DOECode.  Setting up SOLR distribution package version 6.6.0 
+searching service for DOE CODE.  Setting up SOLR distribution package version 6.6.0 
 as a stand-alone service as follows:
 
 1) Download the [SOLR package from Apache](http://http://lucene.apache.org/solr/)
@@ -285,7 +285,7 @@ http://localhost:{port}/solr/doecode/query
 ```
 in order to get JSON results back in expected formats for the dissemination/searching service.  
 
-These values assume that the DOECode back-end is deployed on the same server as the SOLR standalone service.  If not, alter the
+These values assume that the DOE CODE back-end is deployed on the same server as the SOLR standalone service.  If not, alter the
 URL host names and ports appropriately.  In order to terminate the SOLR standalone server, issue the command:
 ```bash
 $ bin/solr stop

@@ -59,7 +59,7 @@ Once this script runs, SOLR should be up and running on the {port} you specify.
 Creation of the search core and customization
 ---------------------------------------------
 Once SOLR is running, we will need to create a search and index core to use,
-and customize it according to the DOECode specific schema and configuration,
+and customize it according to the DOE CODE specific schema and configuration,
 which are available in the root of https://github.com/doecode/server.
 
 Switch to the newly-created "solr" user and issue the SOLR commands:
@@ -82,7 +82,7 @@ Issue the command to reload the SOLR core with the new configuration.
 [solr] $ curl http://localhost:{port}/solr/admin/cores?action=RELOAD\&core=doecode
 ```
 
-The DOECode SOLR search core should be up and ready to use on the indicated
+The DOE CODE SOLR search core should be up and ready to use on the indicated
 port.  All that remains is to configure the EC2 instance TCP access rules
 to allow inbound connections on the port to the desired group(s) or application
 server IPs for the "server" back-end process, which will allow it to index

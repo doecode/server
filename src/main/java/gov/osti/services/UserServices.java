@@ -1533,11 +1533,11 @@ public class UserServices {
         try {
                 email.setFrom(EMAIL_FROM);
                 String confirmation_url = SITE_URL + "/confirmuser?confirmation=" + DOECodeCrypt.generateConfirmationJwt(confirmationCode, userEmail);
-                email.setSubject("Confirm DOE Code Registration");
+                email.setSubject("Confirm DOE CODE Registration");
                 email.addTo(userEmail);
 
 
-                String msg = "<html> Thank you for registering for a DOE Code Account. Please click the link below or paste it into your browser to confirm your account. <br/> ";
+                String msg = "<html> Thank you for registering for a DOE CODE Account. Please click the link below or paste it into your browser to confirm your account. <br/> ";
                 msg += "<a href=\"" + confirmation_url + "\">" + confirmation_url + "</a></html>";
                 email.setHtmlMsg(msg);
                 email.send();

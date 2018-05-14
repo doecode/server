@@ -3,7 +3,7 @@
 These are the currently-supported repositories from which the API will attempt
 to pre-populate information it can glean given the project URL.  Currently the
 information obtained is somewhat sparse, as this is intended to provoke 
-discussion on what elements of metadata we should map to DOECode's schema.
+discussion on what elements of metadata we should map to DOE CODE's schema.
 
 If any of these sources should have a "metadata.yml" file checked-in on the
 master branch, project root level, the Connector will attempt to read from and

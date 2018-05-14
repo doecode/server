@@ -69,16 +69,16 @@ public class User implements Serializable {
     @Basic(optional = false)
     @Column(name = "date_record_added", insertable = true, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateRecordAdded;
     @Basic(optional = false)
     @Column(name = "date_record_updated", insertable = true, updatable = true)
     @Temporal(TemporalType.TIMESTAMP)
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateRecordUpdated;
     @Column (name = "date_password_changed")
     @Temporal (TemporalType.TIMESTAMP)
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "EST")
+    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date datePasswordChanged;
 
     // count of failed logins

@@ -12,8 +12,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- * Test DOECode JSON to DataCite formatted XML output for DOI registration.
- * 
+ * Test DOE CODE JSON to DataCite formatted XML output for DOI registration.
+ *
  * @author ensornl
  */
 public class DataCiteTest {
@@ -23,7 +23,7 @@ public class DataCiteTest {
 "	\"site_ownership_code\": \"OSTI\",\n" +
 "	\"open_source\": false,\n" +
 "	\"repository_link\": \"https://github.com/doecode/doecode\",\n" +
-"       \"doi\":\"10.5072/DOECode2017/2551\",\n" +
+"       \"doi\":\"10.5072/dc/2017/2551\",\n" +
 "	\"access_limitations\": [\"UNL\"],\n" +
 "	\"developers\": [{\n" +
 "		\"place\": 1,\n" +
@@ -206,7 +206,7 @@ public class DataCiteTest {
 "	\"software_title\": \"doecode/doecode\",\n" +
 "	\"acronym\": \"doecode\",\n" +
             "\"keywords\":\"linux;repository information;reporting requirements\"," +
-"	\"description\": \"Main repo for managing the new DOE Code site from the DOE Office of Scientific and Technical Information (OSTI)\",\n" +
+"	\"description\": \"Main repo for managing the new DOE CODE site from the DOE Office of Scientific and Technical Information (OSTI)\",\n" +
 "	\"licenses\": [],\n" +
 "	\"workflow_status\": \"Saved\"\n" +
 "}";
@@ -250,7 +250,7 @@ public class DataCiteTest {
         String datacite_xml = DataCite.writeMetadata(md);
         
         assertTrue ("DOI identifier missing", 
-                datacite_xml.contains("<identifier identifierType=\"DOI\">10.5072/DOECode2017/2551</identifier>"));
+                datacite_xml.contains("<identifier identifierType=\"DOI\">10.5072/dc/2017/2551</identifier>"));
         assertTrue ("Resource type missing", 
                 datacite_xml.contains("<resourceType resourceTypeGeneral=\"Software\">doecode/doecode</resourceType>"));
         assertTrue ("First developer missing",

@@ -303,7 +303,7 @@ public class DataCite {
         // send the "code ID" as the alternate identifier value
         sw.writeStartElement("alternateIdentifiers");
         sw.writeStartElement("alternateIdentifier");
-        sw.writeAttribute("alternateIdentifierType", "DOECode ID");
+        sw.writeAttribute("alternateIdentifierType", "DOE CODE ID");
         sw.writeCharacters(String.valueOf(m.getCodeId()));
         sw.writeEndElement();
         sw.writeEndElement();

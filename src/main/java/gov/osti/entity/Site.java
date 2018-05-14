@@ -13,49 +13,70 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name="sites")
-@NamedQueries ({
-    @NamedQuery (name = "Site.findByDomain", query = "SELECT s FROM Site s JOIN s.emailDomains d WHERE d = lower(:domain)")
+@Table(name = "sites")
+@NamedQueries({
+    @NamedQuery(name = "Site.findByDomain", query = "SELECT s FROM Site s JOIN s.emailDomains d WHERE d = lower(:domain)")
+    ,
+    @NamedQuery(name = "Site.findBySiteCode", query = "SELECT s FROM Site s WHERE s.siteCode = :site")
+    ,
+    @NamedQuery(name = "Site.findAll", query = "SELECT s FROM Site s ORDER BY s")
 })
 public class Site implements Serializable {
 
-	
-	private String lab;
-	private List<String> emailDomains;
-	private String siteCode;
-    
-	public Site() {
-		
-	}
-	
-	@Id
-	public String getLab() {
-		return lab;
-	}
-	public void setLab(String lab) {
-		this.lab = lab;
-	}
-	
+    private String siteCode;
+    private List<String> emailDomains;
+    private List<String> pocEmails;
+    private String lab;
+
+    public Site() {
+    }
+
+    @Id
+    @Column(name = "SITE_CODE")
+    public String getSiteCode() {
+        return siteCode;
+    }
+
+    public void setSiteCode(String siteCode) {
+        this.siteCode = siteCode;
+    }
+
     @ElementCollection
     @CollectionTable(
             name = "EMAIL_DOMAINS",
-            joinColumns=@JoinColumn(name="lab")
+            joinColumns = @JoinColumn(name = "SITE_CODE")
     )
-    @Column (name="EMAIL_DOMAIN")
-	public List<String> getEmailDomains() {
-		return emailDomains;
-	}
-	public void setEmailDomains(List<String> emailDomains) {
-		this.emailDomains = emailDomains;
-	}
-	
-	@Column (name="SITE_CODE")
-	public String getSiteCode() {
-		return siteCode;
-	}
-	public void setSiteCode(String siteCode) {
-		this.siteCode = siteCode;
-	}
-	
-	
+    @Column(name = "EMAIL_DOMAIN")
+    public List<String> getEmailDomains() {
+        return emailDomains;
+    }
+
+    public void setEmailDomains(List<String> emailDomains) {
+        this.emailDomains = emailDomains;
+    }
+
+    @ElementCollection
+    @CollectionTable(
+            name = "SOFTWARE_POC",
+            joinColumns = @JoinColumn(name = "SITE_CODE")
+    )
+    @Column(name = "EMAIL")
+    public List<String> getPocEmails() {
+        return pocEmails;
+    }
+
+    public void setPocEmails(List<String> pocEmails) {
+        for (int i = 0; i < pocEmails.size(); i++)
+            pocEmails.set(i, pocEmails.get(i).toLowerCase());
+
+        this.pocEmails = pocEmails;
+    }
+
+    public String getLab() {
+        return lab;
+    }
+
+    public void setLab(String lab) {
+        this.lab = lab;
+    }
 }

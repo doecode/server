@@ -1,5 +1,5 @@
 <%-- 
-    Document   : DOECode web API documentation template
+    Document   : DOE CODE web API documentation template
     Created on : Jun 29, 2017, 1:02:39 PM
     Author     : ensornl
 --%>
@@ -12,7 +12,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width">
 
-  <title>DOECode API Documentation</title>
+  <title>DOE CODE API Documentation</title>
 
   <!-- Flatdoc -->
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -25,8 +25,8 @@
   <script src="${pageContext.request.contextPath}/js/flatdoc-theme.js"></script>
 
   <!-- Meta -->
-  <meta content="DOECode API" property="og:title">
-  <meta content="Root API documentation listing for DOECode back-end services." name="description">
+  <meta content="DOE CODE API" property="og:title">
+  <meta content="Root API documentation listing for DOE CODE back-end services." name="description">
 
   <!-- Initializer -->
   <script>
@@ -39,7 +39,7 @@
 
   <div class='header'>
     <div class='left'>
-      <h1>DOECode API</h1>
+      <h1>DOE CODE API</h1>
       <ul>
         <li><a href="#">API Services Documentation</a></li>
         <li><a href='https://github.com/doecode/server'>View on GitHub</a></li>

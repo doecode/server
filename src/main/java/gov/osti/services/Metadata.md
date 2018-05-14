@@ -156,7 +156,7 @@ Mapped repository information varies according to service API-supplied metadata.
 a query parameter of "format=yaml" to receive YAML file suitable for download.  
 
 If a DOE CODE YAML file is present
-in the source repository at the base URL (named either "metadata.yml" or "doecode.yml") that file will
+in the source repository at the base URL (named either ".metadata.yml" or ".doecode.yml" or "metadata.yml" or "doecode.yml") that file will
 be read for more complete repository information.
 
 ## Metadata Submission
@@ -231,9 +231,10 @@ Validation rules are:
 </p>
 
 * source accessibility is required:
-  * "OS" (Open Source, publicly available repository), also requires a valid accessible repository link
-  * "ON" (Open Source, No publicly available repository), requires a landing page
-  * "CS" (Closed Source), also requires a landing page
+  * "OS" (Open Source, Publicly Available Repository), requires a valid accessible repository link
+  * "ON" (Open Source, No Publicly Available Repository), requires a landing page
+  * "CS" (Closed Source, Site Hosted), requires a landing page
+  * "CO" (Closed Source, OSTI Hosted), repository provided by OSTI, with optional landing page
 * software title
 * description
 * at least one license
@@ -336,7 +337,7 @@ A full JSON example is [provided below.](#json_example)
 | Field Name | Description |
 | --- | --- |
 | code_id | The unique value given to a particular DOE CODE Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
-| accessibility | Project source code accessibility value; must be one of "OS" (open source), "ON" (open source, not public) or "CS" (closed source) |
+| accessibility | This refers to how the source of the project type is accessed; must be one of "OS" (open source), "ON" (open source, not public), "CS" (closed source, site hosted), or "CO" (closed source, OSTI hosted) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public repository URL should be provided here. |
 | landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |
 | developers | An array of Objects, providing information about a project's developers or creators. Fields are [specified below.](#persons_fields) |
@@ -346,6 +347,9 @@ A full JSON example is [provided below.](#json_example)
 | research_organizations | (Array) Information about organizations providing research information for the project. Fields are [specified below.](#organization_fields) |
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
 | description | An abstract about the software project. |
+| programming_languages | (Array) Any programming language used on the software project. |
+| version_number | The version of the software project. |
+| documentation_url | URL providing available documentation for the software project. |
 | licenses | Any software licenses or rights information about the software project, may have multiple values, such as the ones at the following <a href='/doecodeapi/services/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
 | doi | A [Digital Object Identifier](http://doi.org/) assigned to this software project. |
 | acronym | A short descriptive acronym or abbreviation for this software project. |
@@ -508,10 +512,10 @@ metadata fields.
    "identifier_value":"10.5072/OSTI/2017/1",
    "relation_type":"IsSourceOf"}],
 "date_of_issuance":"2016-02-03",
-"software_title":"Department of Energy DOECode Project",
+"software_title":"Department of Energy DOE CODE Project",
 "acronym":"doecode",
-"doi":"10.5072/DOECode2017/7174",
-"description":"Main repository for managing the new DOE Code site from the DOE Office of Scientific and Technical Information (OSTI)",
+"doi":"10.5072/dc/2017/7174",
+"description":"Main repository for managing the new DOE CODE site from the DOE Office of Scientific and Technical Information (OSTI)",
 "license":["Apache License 2.0"],
 "release_date":"2017-08-23"
 }

@@ -78,7 +78,7 @@ public class GoogleSitemapService {
                xml_string.append("<sitemap>");
                xml_string.append("<loc>")
                        .append(SITE_URL)
-                       .append("/api/sitemap/xml/")
+                       .append("api/services/sitemap/xml/")
                        .append(i + 1)
                        .append("</loc>");
                xml_string.append("<lastmod>").append(moddedDate).append("</lastmod>");

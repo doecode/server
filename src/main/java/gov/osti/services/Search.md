@@ -1,4 +1,4 @@
-DOECode Search API
+DOE CODE Search API
 ==================
 
 Introduction

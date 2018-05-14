@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app 
- id="DOECode" version="3.0" 
- xmlns="http://java.sun.com/xml/ns/javaee" 
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<web-app
+ id="DOECode" version="3.0"
+ xmlns="http://java.sun.com/xml/ns/javaee"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
-    <display-name>DOE Code Web Application</display-name>
+    <display-name>DOE CODE Web Application</display-name>
     <context-param>
         <description>JPA persistence unit name</description>
         <param-name>persistence_unit</param-name>
@@ -31,15 +31,15 @@
             <param-name>jersey.config.server.provider.classnames</param-name>
             <param-value>org.secnod.shiro.jersey.AuthorizationFilterFeature, org.secnod.shiro.jersey.SubjectFactory, org.secnod.shiro.jersey.AuthInjectionBinder,
             org.secnod.shiro.jaxrs.ShiroExceptionMapper,
-            gov.osti.services.Metadata,gov.osti.services.Types,gov.osti.services.Validation, 
+            gov.osti.services.Metadata,gov.osti.services.Types,gov.osti.services.Validation,
             gov.osti.services.SearchService,gov.osti.services.GoogleSitemapService,org.glassfish.jersey.media.multipart.MultiPartFeature,
             gov.osti.services.Documentation,
-            gov.osti.services.Authentication, gov.osti.services.UserServices,org.glassfish.jersey.server.mvc.jsp.JspMvcFeature</param-value>
+            gov.osti.services.Authentication, gov.osti.services.UserServices,gov.osti.services.SiteServices,org.glassfish.jersey.server.mvc.jsp.JspMvcFeature</param-value>
         </init-param>
         <init-param>
             <param-name>jersey.config.server.mvc.templateBasePath.jsp</param-name>
             <param-value>/WEB-INF/jsp</param-value>
-        </init-param>       
+        </init-param>
     </servlet>
     <servlet-mapping>
         <servlet-name>DOECode</servlet-name>
@@ -63,5 +63,5 @@
 		<dispatcher>INCLUDE</dispatcher>
 		<dispatcher>ERROR</dispatcher>
 	</filter-mapping>
-	
+
 </web-app>

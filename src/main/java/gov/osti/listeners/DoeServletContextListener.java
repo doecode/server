@@ -68,7 +68,7 @@ public class DoeServletContextListener implements ServletContextListener {
         String persistence_unit = sce.getServletContext().getInitParameter("persistence_unit");
         emf = Persistence.createEntityManagerFactory(persistence_unit);
         
-        log.info("DOECode instance started.");
+        log.info("DOE CODE instance started.");
     }
 
     /**
@@ -78,7 +78,7 @@ public class DoeServletContextListener implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         // close down the Entity Manager
-        log.info("Shutting down DOE Code application.");
+        log.info("Shutting down DOE CODE application.");
         if (null!=emf)
             emf.close();
     }

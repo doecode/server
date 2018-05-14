@@ -1,5 +1,3 @@
-/*
- */
 package gov.osti.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,11 +13,15 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.ConnectorFactory;
+import gov.osti.connectors.BitBucket;
 import gov.osti.connectors.GitHub;
+import gov.osti.connectors.GitLab;
 import gov.osti.connectors.HttpUtil;
 import gov.osti.connectors.SourceForge;
+import gov.osti.connectors.api.GitLabAPI;
+import gov.osti.connectors.gitlab.Commit;
+import gov.osti.connectors.gitlab.GitLabFile;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
 import gov.osti.entity.Contributor;
@@ -31,6 +33,7 @@ import gov.osti.entity.Developer;
 import gov.osti.entity.DoiReservation;
 import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.ResearchOrganization;
+import gov.osti.entity.Site;
 import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
 import gov.osti.indexer.AgentSerializer;
@@ -57,6 +60,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Predicate;
 import javax.servlet.ServletContext;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
@@ -75,6 +79,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
@@ -101,6 +107,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.glassfish.jersey.server.mvc.Viewable;
 
+import gov.osti.connectors.gitlab.Project;
+import java.io.FileInputStream;
+import org.apache.commons.codec.binary.Base64InputStream;
+
 /**
  * REST Web Service for Metadata.
  *
@@ -124,7 +134,7 @@ public class Metadata {
     @Context ServletContext context;
 
     // logger instance
-    private static Logger log = LoggerFactory.getLogger(Metadata.class);
+    private static final Logger log = LoggerFactory.getLogger(Metadata.class);
     private static ConnectorFactory factory;
 
     // SMTP email host name
@@ -148,6 +158,7 @@ public class Metadata {
                 .add(new GitHub())
                 .add(new SourceForge())
                 .add(new BitBucket())
+                .add(new GitLab())
                 .build();
         } catch ( IOException e ) {
             log.warn("Configuration failure: " + e.getMessage());
@@ -297,6 +308,7 @@ public class Metadata {
     @Path ("{codeId}")
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml", MediaType.APPLICATION_XML})
     @RequiresAuthentication
+    @SuppressWarnings("ConvertToStringSwitch")
     public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
@@ -442,8 +454,8 @@ public class Metadata {
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
     public Response listProjects(
-            @QueryParam("rows") int rows, 
-            @QueryParam("start") int start) 
+            @QueryParam("rows") int rows,
+            @QueryParam("start") int start)
             throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
@@ -469,10 +481,10 @@ public class Metadata {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = lower(:owner)", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
-            
+
             // if rows specified, and greater than 100, cap it there
             rows = (rows>100) ? 100 : rows;
-            
+
             // if pagination elements are present, set them on the query
             if (0!=rows)
                 query.setMaxResults(rows);
@@ -512,8 +524,8 @@ public class Metadata {
      * @param start the starting row number (from 0)
      * @param rows number of rows desired (0 is unlimited)
      * @param siteCode (optional) a SITE OWNERSHIP CODE to filter by site
-     * @param state the WORKFLOW STATE if desired (default Submitted). One of
-     * Approved, Saved, or Submitted, if supplied.
+     * @param state the WORKFLOW STATE if desired (default Submitted and Announced). One of
+     * Approved, Saved, Submitted, or Announced, if supplied.
      * @return JSON of a records response
      */
     @GET
@@ -538,34 +550,42 @@ public class Metadata {
 
             Expression<String> workflowStatus = md.get("workflowStatus");
             Expression<String> siteOwnershipCode = md.get("siteOwnershipCode");
-            ParameterExpression<String> status = cb.parameter(String.class, "status");
-            ParameterExpression<String> site = cb.parameter(String.class, "site");
 
             // default requested STATE; take Submitted as the default value if not supplied
-            DOECodeMetadata.Status requestedState;
+            List<DOECodeMetadata.Status> requestedStates = new ArrayList();
             String queryState = (StringUtils.isEmpty(state)) ? "" : state.toLowerCase();
             switch ( queryState ) {
                 case "approved":
-                    requestedState = DOECodeMetadata.Status.Approved;
+                    requestedStates.add(DOECodeMetadata.Status.Approved);
                     break;
                 case "saved":
-                    requestedState = DOECodeMetadata.Status.Saved;
+                    requestedStates.add(DOECodeMetadata.Status.Saved);
+                    break;
+                case "submitted":
+                    requestedStates.add(DOECodeMetadata.Status.Submitted);
+                    break;
+                case "announced":
+                    requestedStates.add(DOECodeMetadata.Status.Announced);
                     break;
                 default:
-                    requestedState = DOECodeMetadata.Status.Submitted;
+                    requestedStates.add(DOECodeMetadata.Status.Submitted);
+                    requestedStates.add(DOECodeMetadata.Status.Announced);
                     break;
             }
-            
+
+            Predicate statusPredicate = workflowStatus.in(requestedStates);
+            ParameterExpression<String> site = cb.parameter(String.class, "site");
+
             if (null==siteCode) {
-                countQuery.where(cb.equal(workflowStatus, status));
+                countQuery.where(statusPredicate);
             } else {
                 countQuery.where(cb.and(
-                        cb.equal(workflowStatus, status),
+                        statusPredicate,
                         cb.equal(siteOwnershipCode, site)));
             }
             // query for the COUNT
             TypedQuery<Long> cq = em.createQuery(countQuery);
-            cq.setParameter("status", requestedState);
+            cq.setParameter("status", requestedStates);
             if (null!=siteCode)
                 cq.setParameter("site", siteCode);
 
@@ -578,15 +598,15 @@ public class Metadata {
             rowQuery.select(md);
 
             if (null==siteCode) {
-                rowQuery.where(cb.equal(workflowStatus, status));
+                rowQuery.where(statusPredicate);
             } else {
                 rowQuery.where(cb.and(
-                        cb.equal(workflowStatus, status),
+                        statusPredicate,
                         cb.equal(siteOwnershipCode, site)));
             }
 
             TypedQuery<DOECodeMetadata> rq = em.createQuery(rowQuery);
-            rq.setParameter("status", requestedState);
+            rq.setParameter("status", requestedStates);
             if (null!=siteCode)
                 rq.setParameter("site", siteCode);
             rq.setFirstResult(start);
@@ -617,10 +637,13 @@ public class Metadata {
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml"})
     public Response autopopulate(@QueryParam("repo") String url,
                                  @QueryParam("format") String format) {
-        JsonNode result = factory.read(url);
+        JsonNode resultJson = factory.read(url);
 
-        if (null==result)
+        if (null==resultJson)
             return Response.status(Response.Status.NO_CONTENT).build();
+
+        ObjectNode result = (ObjectNode) resultJson;
+        result.remove("code_id");
 
         // if YAML is requested, return that; otherwise, default to JSON output
         if ("yaml".equals(format)) {
@@ -669,11 +692,13 @@ public class Metadata {
     private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException,
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
-        md.setOpenSource( !Accessibility.CS.equals(md.getAccessibility()) );
-        
+        md.setOpenSource(
+                Accessibility.OS.equals(md.getAccessibility()) ||
+                Accessibility.ON.equals(md.getAccessibility()));
+
         ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
         Validator validator = validators.getValidator();
-        
+
         // if there's a CODE ID, attempt to look up the record first and
         // copy attributes into it
         if ( null==md.getCodeId() || 0==md.getCodeId()) {
@@ -681,7 +706,7 @@ public class Metadata {
             Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
             if (!violations.isEmpty()) {
                 List<String> reasons = new ArrayList<>();
-                
+
                 violations.stream().forEach(violation->{
                     reasons.add(violation.getMessage());
                 });
@@ -698,20 +723,19 @@ public class Metadata {
                      !user.hasRole("OSTI"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
-                // if already Submitted, but not being Approved, keep it that way (can't go back to Saved)
-                if ((Status.Submitted.equals(emd.getWorkflowStatus()) || Status.Approved.equals(emd.getWorkflowStatus())) 
-                 && !Status.Approved.equals(md.getWorkflowStatus()))
-                    md.setWorkflowStatus(Status.Submitted);
+                // to Save, item must be non-existant, or already in Saved workflow status (if here, we know it exists)
+                if (Status.Saved.equals(md.getWorkflowStatus()) && !Status.Saved.equals(emd.getWorkflowStatus()))
+                    throw new BadRequestException (ErrorResponse.badRequest("Save cannot be performed after a record has been Submitted or Announced.").build());
 
                 // these fields WILL NOT CHANGE on edit/update
                 md.setOwner(emd.getOwner());
                 md.setSiteOwnershipCode(emd.getSiteOwnershipCode());
                 // if there's ALREADY a DOI, and we have been SUBMITTED/APPROVED, keep it
                 if (StringUtils.isNotEmpty(emd.getDoi()) &&
-                    (Status.Submitted.equals(emd.getWorkflowStatus()) || 
+                    (Status.Submitted.equals(emd.getWorkflowStatus()) ||
                      Status.Approved.equals(emd.getWorkflowStatus())))
                     md.setDoi(emd.getDoi());
-                
+
                 // perform length validations on Bean
                 Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
                 if (!violations.isEmpty()) {
@@ -722,7 +746,7 @@ public class Metadata {
                     });
                     throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
                 }
-                
+
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
@@ -731,7 +755,8 @@ public class Metadata {
                 // and thus ignored by the Bean copy; this sets the value regardless if setReleaseDate() got called
                 if (md.hasSetReleaseDate())
                     emd.setReleaseDate(md.getReleaseDate());
-            
+
+
                 // what comes back needs to be complete:
                 noNulls.copyProperties(md, emd);
 
@@ -775,7 +800,7 @@ public class Metadata {
      * Send this Metadata to the ARCHIVER external support process.
      *
      * Needs a CODE ID and one of either an ARCHIVE FILE or REPOSITORY LINK.
-     * 
+     *
      * If nothing supplied to archive, do nothing.
      *
      * @param codeId the CODE ID for this METADATA
@@ -790,7 +815,7 @@ public class Metadata {
         // Nothing sent?
         if (StringUtils.isBlank(repositoryLink) && null==archiveFile)
             return;
-        
+
         // set up a connection
         CloseableHttpClient hc =
                 HttpClientBuilder
@@ -991,6 +1016,7 @@ public class Metadata {
 
             // store it
             store(em, md, user);
+
             // check validations for Submitted workflow
             List<String> errors = validateSubmit(md);
             if ( !errors.isEmpty() ) {
@@ -1015,17 +1041,33 @@ public class Metadata {
                             .build();
                 }
             }
+
+            // create OSTI Hosted project, as needed
+            try {
+                // process local GitLab, if needed
+                processOSTIGitLab(md);
+            } catch ( Exception e ) {
+                log.error("OSTI GitLab failure: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
+                        .build();
+            }
+
             // send this file upload along to archiver if configured
             try {
-                // if a FILE was sent, create a File Object from it
-                File archiveFile = (null==file) ? null : new File(md.getFileName());
-                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                // if CO project type, no need to archive the repo or file because they are in GitLab
+                if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility())) {
+                    // if a FILE was sent, create a File Object from it
+                    File archiveFile = (null==file) ? null : new File(md.getFileName());
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                }
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
                         .internalServerError("Unable to archive project.")
                         .build();
             }
+
             // send to DataCite if needed (and there is a RELEASE DATE set)
             if ( null!=md.getDoi() && null!=md.getReleaseDate() ) {
                 try {
@@ -1033,10 +1075,11 @@ public class Metadata {
                 } catch ( IOException e ) {
                     // tell why the DataCite registration failed
                     return ErrorResponse
-                            .internalServerError(e.getMessage())
+                            .internalServerError("DOI registration failed: " + e.getMessage())
                             .build();
                 }
             }
+
             // store the snapshot copy of Metadata
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.setCodeId(md.getCodeId());
@@ -1044,12 +1087,13 @@ public class Metadata {
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
-            
+
             // commit it
             em.getTransaction().commit();
-            
-            // send a NOTIFICATION if configured to do so
+
+            // send NOTIFICATION if configured to do so
             sendStatusNotification(md);
+            sendPOCNotification(md);
 
             // we are done here
             return Response
@@ -1102,7 +1146,7 @@ public class Metadata {
             // set the OWNER
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
-            md.setWorkflowStatus(Status.Submitted);
+            md.setWorkflowStatus(Status.Announced);
             // set the SITE
             md.setSiteOwnershipCode(user.getSiteId());
             // if there is NO DOI set, get one
@@ -1113,10 +1157,10 @@ public class Metadata {
                 // set it
                 md.setDoi(reservation.getReservedDoi());
             }
-            
+
             // persist this to the database
             store(em, md, user);
-            
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
@@ -1132,7 +1176,18 @@ public class Metadata {
                             .build();
                 }
             }
-            
+
+            // create OSTI Hosted project, as needed
+            try {
+                // process local GitLab, if needed
+                processOSTIGitLab(md);
+            } catch ( Exception e ) {
+                log.error("OSTI GitLab failure: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
+                        .build();
+            }
+
             // check validations
             List<String> errors = validateAnnounce(md);
             if ( !errors.isEmpty() ) {
@@ -1140,53 +1195,21 @@ public class Metadata {
                         .badRequest(errors)
                         .build();
             }
-            
-            // send this to OSTI
-            OstiMetadata omd = new OstiMetadata();
-            omd.set(md);
 
-            // if configured, post this to OSTI
-            String publishing_host = context.getInitParameter("publishing.host");
-            if (null!=publishing_host) {
-                // set some reasonable default timeouts
-                // create an HTTP client to request through
-                CloseableHttpClient hc =
-                        HttpClientBuilder
-                        .create()
-                        .setDefaultRequestConfig(RequestConfig
-                                .custom()
-                                .setSocketTimeout(5000)
-                                .setConnectTimeout(5000)
-                                .setConnectionRequestTimeout(5000)
-                                .build())
-                        .build();
-                HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
-                post.setHeader("Content-Type", "application/json");
-                post.setHeader("Accept", "application/json");
-                post.setEntity(new StringEntity(omd.toJsonString(), "UTF-8"));
-
-                try {
-                    HttpResponse response = hc.execute(post);
-                    String text = EntityUtils.toString(response.getEntity());
-
-                    if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode()) {
-                        log.warn("OSTI Error: " + text);
-                        throw new IOException ("OSTI software publication error");
-                    }
-                } finally {
-                    hc.close();
-                }
-            }
             // send this file upload along to archiver if configured
             try {
-                File archiveFile = (null==file) ? null : new File(md.getFileName());
-                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                // if CO project type, no need to archive the repo or file because they are in GitLab
+                if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility())) {
+                    File archiveFile = (null==file) ? null : new File(md.getFileName());
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                }
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
                         .internalServerError("Unable to archive project.")
                         .build();
             }
+
             // send any updates to DataCite as well (if RELEASE DATE is set)
             if (StringUtils.isNotEmpty(md.getDoi()) && null!=md.getReleaseDate()) {
                 try {
@@ -1194,23 +1217,24 @@ public class Metadata {
                 } catch ( IOException e ) {
                     // if DataCite registration failed, say why
                     return ErrorResponse
-                            .internalServerError(e.getMessage())
+                            .internalServerError("DOI registration failed: " + e.getMessage())
                             .build();
                 }
             }
             // store the snapshot copy of Metadata in SPECIAL STATUS
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.setCodeId(md.getCodeId());
-            snapshot.setSnapshotStatus(Status.Announced);
+            snapshot.setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
-            
+
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
-            
-            // send a NOTIFICATION if configured
+
+            // send NOTIFICATION if configured
             sendStatusNotification(md);
+            sendPOCNotification(md);
 
             // and we're happy
             return Response
@@ -1229,7 +1253,7 @@ public class Metadata {
             return ErrorResponse
                     .forbidden("Invalid Access: Unable to edit indicated record.")
                     .build();
-        } catch ( IOException |  InvocationTargetException e ) {
+        } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
@@ -1270,7 +1294,7 @@ public class Metadata {
 
 
     /**
-     * SUBMIT a record to DOECODE.
+     * SUBMIT a record to DOE CODE.
      *
      * Will return a FORBIDDEN attempt should a User attempt to modify someone
      * else's record.
@@ -1289,7 +1313,7 @@ public class Metadata {
     }
 
     /**
-     * ANNOUNCE endpoint; saves Software record to DOECode and sends results to
+     * ANNOUNCE endpoint; saves Software record to DOE CODE and sends results to
      * OSTI ELINK and enters the OSTI workflow.
      *
      * Will return a FORBIDDEN response if the OWNER logged in does not match
@@ -1431,11 +1455,51 @@ public class Metadata {
                         .notFound("Code ID not on file.")
                         .build();
 
-            // make sure this is Submitted
-            if (!DOECodeMetadata.Status.Submitted.equals(md.getWorkflowStatus()))
+            // make sure this is Submitted or Announced
+            if (!DOECodeMetadata.Status.Submitted.equals(md.getWorkflowStatus()) && !DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus()))
                 return ErrorResponse
-                        .badRequest("Metadata is not in the Submitted workflow state.")
+                        .badRequest("Metadata is not in the Submitted/Announced workflow state.")
                         .build();
+
+            // if approving announced, send this to OSTI
+            if (DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus())) {
+
+                OstiMetadata omd = new OstiMetadata();
+                omd.set(md);
+
+                // if configured, post this to OSTI
+                String publishing_host = context.getInitParameter("publishing.host");
+                if (null!=publishing_host) {
+                    // set some reasonable default timeouts
+                    // create an HTTP client to request through
+                    CloseableHttpClient hc =
+                            HttpClientBuilder
+                            .create()
+                            .setDefaultRequestConfig(RequestConfig
+                                    .custom()
+                                    .setSocketTimeout(5000)
+                                    .setConnectTimeout(5000)
+                                    .setConnectionRequestTimeout(5000)
+                                    .build())
+                            .build();
+                    HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
+                    post.setHeader("Content-Type", "application/json");
+                    post.setHeader("Accept", "application/json");
+                    post.setEntity(new StringEntity(omd.toJsonString(), "UTF-8"));
+
+                    try {
+                        HttpResponse response = hc.execute(post);
+                        String text = EntityUtils.toString(response.getEntity());
+
+                        if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode()) {
+                            log.warn("OSTI Error: " + text);
+                            throw new IOException ("OSTI software publication error");
+                        }
+                    } finally {
+                        hc.close();
+                    }
+                }
+            }
 
             em.getTransaction().begin();
             // set the WORKFLOW STATUS
@@ -1457,7 +1521,7 @@ public class Metadata {
 
             // send it to the indexer
             sendToIndex(md);
-            
+
             // send APPROVAL NOTIFICATION to OWNER
             sendApprovalNotification(md);
 
@@ -1478,7 +1542,7 @@ public class Metadata {
             return ErrorResponse
                     .status(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit indicated record.")
                     .build();
-        } catch ( InvocationTargetException e ) {
+        } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
@@ -1511,6 +1575,18 @@ public class Metadata {
         Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
 
         return destination.toString();
+    }
+
+    /**
+     * Convert a File InputStream to a Base64 string.
+     *
+     * @param in the InputStream containing the file content
+     * @return the Base64 string of the file
+     * @throws IOException on IO errors
+     */
+    private static String convertBase64(InputStream in) throws IOException {
+        Base64InputStream b64in = new Base64InputStream(in, true);
+        return IOUtils.toString(b64in, "UTF-8");
     }
 
     /**
@@ -1561,13 +1637,13 @@ public class Metadata {
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
-        } else {
-            // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
+        } else if (!DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility())) {
+            // non-OS & non-CO submissions require a LANDING PAGE (prefix with http:// if missing)
             if (!Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
-        // if repository link is present, it needs to be valid too
-        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
+        // if repository link is present, and not CO, it needs to be valid too
+        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
         return reasons;
     }
@@ -1628,60 +1704,60 @@ public class Metadata {
 
         return reasons;
     }
-    
+
     /**
      * Send a NOTIFICATION EMAIL (if configured) when a record is SUBMITTED or
      * ANNOUNCED.
-     * 
+     *
      * @param md the METADATA in question
      */
     private static void sendStatusNotification(DOECodeMetadata md) {
         HtmlEmail email = new HtmlEmail();
         email.setHostName(EMAIL_HOST);
-        
+
         // if EMAIL or DESTINATION ADDRESS are not set, abort
-        if (StringUtils.isEmpty(EMAIL_HOST) || 
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
             StringUtils.isEmpty(EMAIL_SUBMISSION))
             return;
-        
+
         // only applicable to SUBMITTED or ANNOUNCED records
         if (!Status.Announced.equals(md.getWorkflowStatus()) &&
             !Status.Submitted.equals(md.getWorkflowStatus()))
             return;
-        
+
         try {
             email.setFrom(EMAIL_FROM);
             email.setSubject("DOE CODE Record " + md.getWorkflowStatus().toString());
             email.addTo(EMAIL_SUBMISSION);
-            
+
             StringBuilder msg = new StringBuilder();
             msg.append("<html>");
             msg.append("A new DOE CODE record has been ")
                .append(md.getWorkflowStatus())
                .append(" and is awaiting approval:");
-            
+
             msg.append("<P>Code ID: ").append(md.getCodeId());
             msg.append("<BR>Software Title: ").append(md.getSoftwareTitle());
             msg.append("</html>");
-            
+
             email.setHtmlMsg(msg.toString());
-            
+
             email.send();
         } catch ( EmailException e ) {
             log.error("Failed to send submission/announcement notification message for #" + md.getCodeId());
             log.error("Message: " + e.getMessage());
         }
     }
-    
+
     /**
      * Send an email notification on APPROVAL of DOE CODE records.
-     * 
+     *
      * @param md the METADATA to send notification for
      */
     private static void sendApprovalNotification(DOECodeMetadata md) {
         HtmlEmail email = new HtmlEmail();
         email.setHostName(EMAIL_HOST);
-        
+
         // if HOST or record OWNER isn't set, cannot send
         if (StringUtils.isEmpty(EMAIL_HOST) ||
             null==md ||
@@ -1690,7 +1766,7 @@ public class Metadata {
         // only has meaning for APPROVED records
         if (!Status.Approved.equals(md.getWorkflowStatus()))
             return;
-        
+
         try {
             // get the OWNER information
             User owner = UserServices.findUserByEmail(md.getOwner());
@@ -1698,20 +1774,20 @@ public class Metadata {
                 log.warn("Unable to locate USER information for Code ID: " + md.getCodeId());
                 return;
             }
-            
+
             email.setFrom(EMAIL_FROM);
             email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + md.getSoftwareTitle());
             email.addTo(md.getOwner());
-            
+
             StringBuilder msg = new StringBuilder();
-            
+
             msg.append("<html>");
             msg.append("Dear ")
                .append(owner.getFirstName())
                .append(" ")
                .append(owner.getLastName())
                .append(":");
-            
+
             msg.append("<P>Thank you -- your submitted project, DOE CODE ID: <a href=\"")
                .append(SITE_URL)
                .append("/biblio/")
@@ -1721,7 +1797,7 @@ public class Metadata {
                .append("</a>, has been approved.  It is now <a href=\"")
                .append(SITE_URL)
                .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
-            
+
             // OMIT the following for BUSINESS TYPE software
             if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType())) {
                 msg.append("<P>You may need to continue editing your project to announce it to the Department of Energy ")
@@ -1737,15 +1813,219 @@ public class Metadata {
             msg.append("<P>If we can be of assistance, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
             msg.append("<P>Sincerely,</P>");
             msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
-            
+
             msg.append("</html>");
-            
+
             email.setHtmlMsg(msg.toString());
-            
+
             email.send();
         } catch ( EmailException e ) {
             log.error("Unable to send APPROVAL notification for #" + md.getCodeId());
             log.error("Message: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Send a POC email notification on SUBMISSION/APPROVAL of DOE CODE records.
+     *
+     * @param md the METADATA to send notification for
+     */
+    private static void sendPOCNotification(DOECodeMetadata md) {
+        // if HOST or MD isn't set, cannot send
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
+            null == md)
+            return;
+
+        Long codeId = md.getCodeId();
+        String siteCode = md.getSiteOwnershipCode();
+        Status workflowStatus = md.getWorkflowStatus();
+
+        // if SITE OWNERSHIP isn't set, cannot send
+        if (StringUtils.isEmpty(siteCode))
+            return;
+
+        // only applicable to SUBMITTED or ANNOUNCED records
+        if (!Status.Announced.equals(workflowStatus) &&
+            !Status.Submitted.equals(workflowStatus))
+            return;
+
+        // get the SITE information
+        Site site = SiteServices.findSiteBySiteCode(siteCode);
+        if (null == site) {
+            log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
+            return;
+        }
+
+            List<String> emails = site.getPocEmails();
+
+        // if POC is setup
+        for (String pocEmail : emails) {
+            try {
+                HtmlEmail email = new HtmlEmail();
+                email.setHostName(EMAIL_HOST);
+
+                String lab = site.getLab();
+                lab = lab.isEmpty() ? siteCode : lab;
+
+                email.setFrom(EMAIL_FROM);
+                email.setSubject("POC Notification -- " + workflowStatus + " -- DOE CODE ID: " + codeId + ", " + md.getSoftwareTitle());
+                email.addTo(pocEmail);
+
+                StringBuilder msg = new StringBuilder();
+
+                msg.append("<html>");
+                msg.append("Dear Sir or Madam:");
+
+                msg.append("<P>As a Point of Contact for ").append(lab).append(", we wanted to inform you that a project was ")
+                   .append(workflowStatus)
+                   .append(" and assigned DOE CODE ID: <a href=\"")
+                   .append(SITE_URL)
+                   .append("/biblio/")
+                   .append(codeId)
+                   .append("\">")
+                   .append(codeId)
+                   .append("</a>.  Once approved, it will be <a href=\"")
+                   .append(SITE_URL)
+                   .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
+
+
+                msg.append("<P>If you have any questions, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
+                msg.append("<P>Sincerely,</P>");
+                msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+
+                msg.append("</html>");
+
+                email.setHtmlMsg(msg.toString());
+
+                email.send();
+            } catch ( EmailException e ) {
+                log.error("Unable to send POC notification to " + pocEmail + " for #" + md.getCodeId());
+                log.error("Message: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * As needed, Create/Update OSTI Hosted GitLab projects.
+     *
+     * @param md the METADATA to process GitLab for
+     */
+    private static void processOSTIGitLab(DOECodeMetadata md) throws Exception {
+        try {
+            // only process OSTI Hosted type
+            if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
+                return;
+
+            String fileName = md.getFileName();
+
+            // sometimes getFileName returns a full path (this should be addressed overall, but temp fix here for now)
+            fileName = fileName.substring(fileName.lastIndexOf(File.separator)+1);
+
+            String codeId = String.valueOf(md.getCodeId());
+            java.nio.file.Path uploadedFile = Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
+
+            // if no file was uploaded, fail
+            if (!Files.exists(uploadedFile))
+                throw new Exception("File not found in Uploads directory! [" + uploadedFile.toString() + "]");
+
+            // convert to base64 for GitLab
+            String base64Content = convertBase64(new FileInputStream(uploadedFile.toString()));
+
+            if (base64Content == null)
+                throw new Exception("Base 64 Content required for OSTI Hosted project!");
+
+            String projectName = "dc-" + md.getCodeId();
+            String hostedFolder = "hosted_files";
+
+            String uploadFile = hostedFolder + "/" + fileName;
+
+            GitLabAPI glApi = new GitLabAPI();
+            glApi.setProjectName(projectName);
+
+            // check existance of project
+            Project project = glApi.fetchProject();
+
+            Commit commit = new Commit();
+            if (project == null) {
+                // create new project, if none exists
+                project = glApi.createProject(md);
+
+                commit.setBranch(glApi.getBranch());
+                commit.setCommitMessage("Adding Hosted Files: " + fileName);
+                commit.addBase64ActionByValues("create", uploadFile, base64Content);
+            }
+            else {
+                // edit project, if one already exists
+                project = glApi.updateProject(md);
+
+                // for each file in the hosted folder, check against submitted files and process as needed
+                GitLabFile[] files = glApi.fetchTree(hostedFolder);
+
+                int adds = 0;
+                int updates = 0;
+                int deletes = 0;
+
+                if (files != null) {
+                    for ( GitLabFile f : files ) {
+                        if (!f.getType().equalsIgnoreCase("tree")) {
+                            if (f.getPath().equals(uploadFile)) {
+                                // update, if filename exists already
+                                commit.addBase64ActionByValues("update", uploadFile, base64Content);
+
+                                updates++;
+                            }
+                            else {
+                                // delete, if file is not being submitted
+                                commit.addBase64ActionByValues("delete", f.getPath(), null);
+
+                                deletes++;
+                            }
+                        }
+                    }
+                }
+
+                // right now there is only ever one file, so if we did not updated anything, we need to create it
+                if (updates == 0) {
+                    // create, if there was no matching file to update
+                    commit.addBase64ActionByValues("create", uploadFile, base64Content);
+
+                    adds++;
+                }
+
+                String prefix;
+                String detail = "\"" + fileName + "\"";
+                if (adds == 1 && updates == 0 && deletes == 0) {
+                    prefix = "Adding";
+                }
+                else if (adds == 0 && updates == 1 && deletes == 0) {
+                    prefix = "Updating";
+                }
+                else {
+                    prefix = "Modifying";
+
+                    String tmp = (adds == 1) ? "\"" + fileName + "\"" : String.valueOf(adds);
+                    detail = (adds > 0 ? "Added " + tmp : "");
+
+                    tmp = (updates == 1) ? "\"" + fileName + "\"" : String.valueOf(updates);
+                    detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + tmp : "");
+
+                    detail += (deletes > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Deleted " + deletes : "");
+                }
+
+                commit.setBranch(project.getDefaultBranch());
+                commit.setCommitMessage(prefix + " Hosted Files: " + detail);
+            }
+
+            // commit file actions, as needed
+            glApi.commitFiles(commit);
+
+            // override repo link, no matter what
+            md.setRepositoryLink(project.getWebUrl());
+        } catch ( Exception e ) {
+            // replace non-obvious 'name' with 'software_title' for user clarity
+            String eMsg = e.getMessage();
+            eMsg = eMsg.replaceFirst("'name'", "'software_title'");
+            throw new Exception(eMsg);
         }
     }
 }
