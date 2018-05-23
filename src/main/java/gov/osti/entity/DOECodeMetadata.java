@@ -223,7 +223,7 @@ public class DOECodeMetadata implements Serializable {
     private Date dateRecordUpdated;
 
     // determine whether or not the RELEASE DATE was changed
-    private transient boolean setReleaseDate=false;
+    private transient boolean hasSetReleaseDate=false;
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -616,7 +616,7 @@ public class DOECodeMetadata implements Serializable {
     public void setReleaseDate(Date date) {
         this.releaseDate = date;
         // set the fact we have called this method to set the date value
-        this.setReleaseDate=true;
+        this.hasSetReleaseDate=true;
     }
     
     @Column (name="release_date")
@@ -752,7 +752,7 @@ public class DOECodeMetadata implements Serializable {
          */
         @JsonIgnore
         public boolean hasSetReleaseDate() {
-            return setReleaseDate;
+            return hasSetReleaseDate;
         }
         
         /**
