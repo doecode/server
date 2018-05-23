@@ -109,6 +109,7 @@ import org.glassfish.jersey.server.mvc.Viewable;
 
 import gov.osti.connectors.gitlab.Project;
 import java.io.FileInputStream;
+import java.util.TimeZone;
 import org.apache.commons.codec.binary.Base64InputStream;
 
 /**
@@ -202,14 +203,17 @@ public class Metadata {
     protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .addMixIn(Object.class, PropertyFilterMixIn.class);
+            .addMixIn(Object.class, PropertyFilterMixIn.class)
+            .setTimeZone(TimeZone.getDefault());
     // ObjectMapper instance for metadata interchange
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
     // ObjectMapper specifically for indexing purposes
     protected static final ObjectMapper index_mapper = new ObjectMapper()
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
     static {
         // customized serializer module for Agent names consolidation
         SimpleModule module = new SimpleModule();

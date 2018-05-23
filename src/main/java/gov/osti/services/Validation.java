@@ -17,6 +17,7 @@ import gov.osti.repository.SubversionRepository;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.ServletContext;
@@ -101,7 +102,7 @@ public class Validation {
     // API host for servicing external validation calls
     private static final String API_HOST = DoeServletContextListener.getConfigurationProperty("api.host");
     // a JSON mapper
-    protected static final ObjectMapper mapper = new ObjectMapper();
+    protected static final ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
     // static DOI resolution prefix
     private static final String DOI_BASE_URL = "https://doi.org/";
 

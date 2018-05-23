@@ -15,6 +15,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -120,7 +121,7 @@ public class GitHub implements ConnectorInterface {
     @Override
     public JsonNode read(String url) {
         DOECodeMetadata md = new DOECodeMetadata();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());;
         
         try {
             // try to identify the NAME of the project

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TimeZone;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -59,7 +60,7 @@ public final class GitLabAPI {
     private static final String API_PATH = "/api/v4/";
 
     private static final JsonNodeFactory FACTORY_INSTANCE = JsonNodeFactory.instance;
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper().setTimeZone(TimeZone.getDefault());
 
     private String currentProjectName = "";
     private String currentApiBase = "";

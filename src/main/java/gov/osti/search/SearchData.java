@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 
@@ -25,7 +26,8 @@ public class SearchData implements Serializable {
 
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(Include.NON_NULL);
+            .setSerializationInclusion(Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
 
     // set of special characters to be escaped before sending to SOLR
     protected static Pattern TEXT_REGEX_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");

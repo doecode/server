@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 
@@ -54,7 +55,8 @@ public class OstiMetadata {
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
     
     public OstiMetadata() {
         

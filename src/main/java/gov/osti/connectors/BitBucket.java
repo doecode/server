@@ -14,6 +14,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +86,7 @@ public class BitBucket implements ConnectorInterface {
     @Override
     public JsonNode read(String url) {
         DOECodeMetadata md = new DOECodeMetadata();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());;
         
         String name = getProjectNameFromUrl(url);
         if (null==name)

@@ -24,6 +24,7 @@ import javax.persistence.Table;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.TimeZone;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
@@ -54,8 +55,9 @@ import org.slf4j.LoggerFactory;
 @XmlRootElement (name = "metadata")
 @JsonRootName (value = "metadata")
 public class DOECodeMetadata implements Serializable {
+
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = -909574677603914304L;
     private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
@@ -228,7 +230,8 @@ public class DOECodeMetadata implements Serializable {
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(Include.NON_NULL);
+            .setSerializationInclusion(Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
 
     //for Gson
     public DOECodeMetadata() {

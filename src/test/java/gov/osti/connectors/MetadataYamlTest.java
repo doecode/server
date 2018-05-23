@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -83,7 +84,8 @@ public class MetadataYamlTest {
         final ObjectMapper mapper = 
                 new ObjectMapper(new YAMLFactory())
                 .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-                .setSerializationInclusion(Include.NON_NULL);
+                .setSerializationInclusion(Include.NON_NULL)
+                .setTimeZone(TimeZone.getDefault());
         
         DOECodeMetadata metadata = mapper.readValue(new FileReader(getPathFor("metadata.yml")), DOECodeMetadata.class);
         

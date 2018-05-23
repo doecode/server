@@ -25,6 +25,7 @@ import gov.osti.search.SolrFacet;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URISyntaxException;
+import java.util.TimeZone;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -95,21 +96,25 @@ public class SearchService {
     protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .addMixIn(Object.class, PropertyFilterMixIn.class);
+            .addMixIn(Object.class, PropertyFilterMixIn.class)
+            .setTimeZone(TimeZone.getDefault());
     protected static final ObjectMapper XML_MAPPER = new XmlMapper()
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .enable(SerializationFeature.INDENT_OUTPUT)
-            .addMixIn(Object.class, PropertyFilterMixIn.class);
+            .addMixIn(Object.class, PropertyFilterMixIn.class)
+            .setTimeZone(TimeZone.getDefault());
     protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .registerModule(module)
-            .addMixIn(Object.class, PropertyFilterMixIn.class);
+            .addMixIn(Object.class, PropertyFilterMixIn.class)
+            .setTimeZone(TimeZone.getDefault());
     protected static final ObjectMapper BIBLIO_WRAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(SerializationFeature.WRAP_ROOT_VALUE, true)
-            .addMixIn(Object.class, PropertyFilterMixIn.class);
+            .addMixIn(Object.class, PropertyFilterMixIn.class)
+            .setTimeZone(TimeZone.getDefault());
     
     // configured location of the search service endpoint
     private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");

@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.http.client.methods.HttpGet;
@@ -90,7 +91,7 @@ public class SourceForge implements ConnectorInterface {
     @Override
     public JsonNode read(String url) {
         DOECodeMetadata md = new DOECodeMetadata();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
         
         // attempt to identify the project name
         String name = getProjectNameFromUrl(url);

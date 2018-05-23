@@ -20,6 +20,7 @@ import gov.osti.indexer.LicenseSerializer;
 import gov.osti.indexer.RelatedIdentifierTypeSerializer;
 import gov.osti.indexer.RelationTypeSerializer;
 import java.util.Arrays;
+import java.util.TimeZone;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Produces;
@@ -44,7 +45,7 @@ public class Types {
     // a Logger
     private static final Logger log = LoggerFactory.getLogger(Types.class);
     // JSON data binder
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
     static {
         // customized serializer module for Agent names consolidation
         SimpleModule module = new SimpleModule()

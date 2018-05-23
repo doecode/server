@@ -12,6 +12,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import gov.osti.entity.DOECodeMetadata;
 import java.io.IOException;
+import java.util.TimeZone;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -35,13 +36,16 @@ public class HttpUtil {
     // jackson mappers
     protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(Include.NON_NULL);
+            .setSerializationInclusion(Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
     protected static final ObjectMapper XML_MAPPER = new XmlMapper()
             .setSerializationInclusion(Include.NON_NULL)
-            .enable(SerializationFeature.INDENT_OUTPUT);
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .setTimeZone(TimeZone.getDefault());
     protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .setTimeZone(TimeZone.getDefault());
     /**
      * Retrieve just the String content from a given HttpGet request.
      * 
