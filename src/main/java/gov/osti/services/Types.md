@@ -150,7 +150,13 @@ Content-Type: application/json
 {"label":"Is Reviewed By","value":"IsReviewedBy"},
 {"label":"Reviews","value":"Reviews"},
 {"label":"Is Derived From","value":"IsDerivedFrom"},
-{"label":"Is Source Of","value":"IsSourceOf"}]}
+{"label":"Is Source Of","value":"IsSourceOf"}]},
+{"label":"Is Described By","value":"IsDescribedBy"}]},
+{"label":"Describes","value":"Describes"}]},
+{"label":"Has Version","value":"HasVersion"}]},
+{"label":"Is Version Of","value":"IsVersionOf"}]},
+{"label":"Is Required By","value":"IsRequiredBy"}]},
+{"label":"Requires","value":"Requires"}]}
 ```
 
 ### relatedidentifiertypes 

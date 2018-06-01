@@ -62,9 +62,15 @@ public class RelatedIdentifier implements Serializable {
         IsReviewedBy("Is Reviewed By"), 
         Reviews("Reviews"), 
         IsDerivedFrom("Is Derived From"), 
-        IsSourceOf("Is Source Of");
+        IsSourceOf("Is Source Of"),
+        IsDescribedBy("Is Described By"),
+        Describes("Describes"),
+        HasVersion("Has Version"),
+        IsVersionOf("Is Version Of"),
+        IsRequiredBy("Is Required By"),
+        Requires("Requires");
         
-        private String label;
+        private final String label;
         
         private RelationType(String label) {
             this.label = label;

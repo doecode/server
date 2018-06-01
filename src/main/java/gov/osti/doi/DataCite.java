@@ -266,7 +266,7 @@ public class DataCite {
         sw.writeDefaultNamespace("http://datacite.org/schema/kernel-4");
         sw.writeNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
         sw.writeAttribute("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation",
-                "http://datacite.org/schema/kernel-4 http://schema.datacite.org/meta/kernel-4/metadata.xsd");
+                "http://datacite.org/schema/kernel-4 http://schema.datacite.org/meta/kernel-4.1/metadata.xsd");
         
         sw.writeStartElement("identifier");
         sw.writeAttribute("identifierType", "DOI");
