@@ -79,7 +79,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.EmailException;
@@ -2020,11 +2019,15 @@ public class Metadata {
                 commit.setCommitMessage(prefix + " Hosted Files: " + detail);
             }
 
+            // override repo link, no matter what
+            if (!StringUtils.isBlank(project.getWebUrl()))
+                md.setRepositoryLink(project.getWebUrl());
+            else
+                throw new Exception("Unable to determine GitLab Repository URL!");
+
             // commit file actions, as needed
             glApi.commitFiles(commit);
 
-            // override repo link, no matter what
-            md.setRepositoryLink(project.getWebUrl());
         } catch ( Exception e ) {
             // replace non-obvious 'name' with 'software_title' for user clarity
             String eMsg = e.getMessage();
