@@ -1021,15 +1021,6 @@ public class Metadata {
             // store it
             store(em, md, user);
 
-            // check validations for Submitted workflow
-            List<String> errors = validateSubmit(md);
-            if ( !errors.isEmpty() ) {
-                // generate a JSONAPI errors object
-                return ErrorResponse
-                        .badRequest(errors)
-                        .build();
-            }
-
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 // re-attach metadata to transaction in order to store the filename
@@ -1044,6 +1035,15 @@ public class Metadata {
                             .internalServerError("File upload failed.")
                             .build();
                 }
+            }
+
+            // check validations for Submitted workflow
+            List<String> errors = validateSubmit(md);
+            if ( !errors.isEmpty() ) {
+                // generate a JSONAPI errors object
+                return ErrorResponse
+                        .badRequest(errors)
+                        .build();
             }
 
             // create OSTI Hosted project, as needed
@@ -1181,6 +1181,14 @@ public class Metadata {
                 }
             }
 
+            // check validations
+            List<String> errors = validateAnnounce(md);
+            if ( !errors.isEmpty() ) {
+                return ErrorResponse
+                        .badRequest(errors)
+                        .build();
+            }
+
             // create OSTI Hosted project, as needed
             try {
                 // process local GitLab, if needed
@@ -1189,14 +1197,6 @@ public class Metadata {
                 log.error("OSTI GitLab failure: " + e.getMessage());
                 return ErrorResponse
                         .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
-                        .build();
-            }
-
-            // check validations
-            List<String> errors = validateAnnounce(md);
-            if ( !errors.isEmpty() ) {
-                return ErrorResponse
-                        .badRequest(errors)
                         .build();
             }
 
