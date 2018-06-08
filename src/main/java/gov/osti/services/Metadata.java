@@ -1021,11 +1021,11 @@ public class Metadata {
             // store it
             store(em, md, user);
 
+            // re-attach metadata to transaction in order to store any changes beyond this point
+            md = em.find(DOECodeMetadata.class, md.getCodeId());
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
-                // re-attach metadata to transaction in order to store the filename
-                md = em.find(DOECodeMetadata.class, md.getCodeId());
-
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
@@ -1165,11 +1165,11 @@ public class Metadata {
             // persist this to the database
             store(em, md, user);
 
+            // re-attach metadata to transaction in order to store any changes beyond this point
+            md = em.find(DOECodeMetadata.class, md.getCodeId());
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
-                // re-attach metadata to transaction in order to store the filename
-                md = em.find(DOECodeMetadata.class, md.getCodeId());
-
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
                     md.setFileName(fileName);
