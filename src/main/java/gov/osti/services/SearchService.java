@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -25,6 +26,8 @@ import gov.osti.search.SolrFacet;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -36,7 +39,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
@@ -115,7 +121,10 @@ public class SearchService {
             .configure(SerializationFeature.WRAP_ROOT_VALUE, true)
             .addMixIn(Object.class, PropertyFilterMixIn.class)
             .setTimeZone(TimeZone.getDefault());
-    
+
+    // a JSON mapper
+    protected static final ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
+
     // configured location of the search service endpoint
     private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
     
@@ -221,10 +230,57 @@ public class SearchService {
             return ErrorResponse.internalServerError("Search error encountered.").build();
         }
     }
-    
+
     /**
      * Translate a SearchData parameter request to SOLR output search results.
-     * 
+     *
+     * @param uriInfo the GET search parameters
+     * @param format the optional output format (YAML/JSON/XML; JSON is default)
+     * @return the output of the SOLR search results, if any
+     */
+    @GET
+    @Produces ({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, "text/yaml"})
+    public Response searchGet(@Context UriInfo uriInfo, @QueryParam("format") String format) {
+        // no search configured, you get nothing
+        if ("".equals(SEARCH_URL))
+            return Response
+                    .status(Response.Status.NO_CONTENT)
+                    .build();
+
+        // get parameters
+        MultivaluedMap<String, String> params = uriInfo.getQueryParameters();
+
+        // map parameters into JSON
+        ObjectNode getParams = mapper.createObjectNode();
+
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue().get(0);
+
+            // if key and value, store in JSON
+            if (!StringUtils.isBlank(key) && !StringUtils.isBlank(value))
+                getParams.put(key, value);
+        }
+
+        // convert JSON to String, as expected for search()
+        String parameters;
+        try {
+            parameters = mapper.writeValueAsString(getParams);
+        } catch (JsonProcessingException e) {
+            log.warn("Unable to process JSON from GET.");
+            log.warn("Message: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("JSON formatting error.")
+                    .build();
+        }
+
+        // call search
+        return search(parameters, format);
+    }
+
+    /**
+     * Translate a SearchData parameter request to SOLR output search results.
+     *
      * @param parameters the JSON SearchData Object of search parameters
      * @param format the optional output format (YAML/JSON/XML; JSON is default)
      * @return the output of the SOLR search results, if any
@@ -232,13 +288,17 @@ public class SearchService {
     @POST
     @Produces ({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, "text/yaml"})
     @Consumes (MediaType.APPLICATION_JSON)
-    public Response search(String parameters, @QueryParam("format") String format) {
+    public Response searchPost(String parameters, @QueryParam("format") String format) {
         // no search configured, you get nothing
         if ("".equals(SEARCH_URL))
             return Response
                     .status(Response.Status.NO_CONTENT)
                     .build();
-        
+
+        return search(parameters, format);
+    }
+
+    private Response search(String parameters, String format) {
         try {
             // get a set of search parameters
             SearchData searchFor = SearchData.parseJson(new StringReader(parameters));

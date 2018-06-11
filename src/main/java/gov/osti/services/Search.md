@@ -15,7 +15,7 @@ HTTP Request Methods
 
 | Method | Description |
 | --- | --- |
-| `GET` | Used to retrieve a single document |
+| `GET` | Used to retrieve a single document or issue search requests |
 | `POST` | Used to issue search requests |
 | `PUT` | *Not currently used* |
 | `DELETE` | *Not currently used* |
@@ -58,12 +58,55 @@ Content-Type: application/json
 {"metadata":{"code_id":234, "software_title":"Sample Record Data", ... } }
 ```
 
-### search request
+### search request (GET)
+
+`GET /doecodeapi/services/search`
+
+Send a search request, defining parameters and search terms in the GET request
+URL.  Valid parameters are listed below.
+
+> Request:
+```html
+GET /doecodeapi/services/search?all_fields=test&rows=10
+```
+```
+> Response:
+```html
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0,
+    "params":{
+      "q":"_text_:(test)",
+      "sort":"",
+      "rows":"10"}},
+  "response":{"numFound":15,"start":0,"docs":[
+      {
+        "codeId":25818,
+        "siteOwnershipCode":"OSTI",
+        "openSource":true,
+        "landingPage":"https://en.wikipedia.org/wiki/Anarchist_Protected_Area",
+        "accessibility":"ON",
+        "accessLimitations":["UNL"],
+        "developers.name":["Last, test "],
+        "_names":["Last, test ",
+          "test, test "],
+        "contributors.name":["test, test "]
+      }
+ ]
+}
+```
+
+### search request (POST)
 
 `POST /doecodeapi/services/search`
 
 Send a search request, defining parameters and search terms in the POST request
-body.  The input JSON may contain any of the following:
+body.  Valid parameters are listed below.
 
 > Request:
 ```html
