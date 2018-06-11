@@ -48,19 +48,28 @@ Parameter | Definition
 --- | ---
 database.driver | the JDBC database driver to use
 database.url | the JDBC URL to access
-database.username | the database user (with create/alter schema permission)
+database.user | the database user (with create/alter schema permission)
 database.password | the user's password
 serviceapi.host | base URL for validation services
 publishing.host | base URL for submitting final metadata to OSTI (via /submit API)
-datacite.username | (optional) DataCite user account name for registering DOIs
+datacite.user | (optional) DataCite user account name for registering DOIs
 datacite.password | (optional) DataCite account password for DOI registration
 datacite.baseurl | (optional) DataCite base URL prefix to use for DOI registration
 datacite.prefix | (optional) DataCite registration DOI prefix value
+datacite.url | (optional) DataCite MDS URL for sending metadata
 index.url | (optional) URL to indexing service (e.g., SOLR, see below)
 search.url | (optional) base URL to searching service (SOLR, see below)
 site.url | base URL of the client front-end services
 email.host | SMTP host name for sending confirmation emails
-email.from | The user name to use for sending above emails
+email.from | the address to use for sending above emails
+email.notification | (optional) the address to use for sending notification emails when projects are submitted/announced
+github.user | (optional) GitHub user account name for using GitHub API without access limitations
+github.apikey | (optional) the GitHub user's API key
+file.uploads | the server path used for saving uploaded files
+archiver.url | (optional) base URL for DOE CODE Archiver API if using it for archiving
+gitlab.osti.baseurl | (optional) base URL for the OSTI Hosted GitLab
+gitlab.osti.token | (optional) GitLab API token for accessing OSTI Hosted GitLab
+gitlab.osti.namespace | (optional) namespace to use when creating projects in OSTI Hosted GitLab
 
 If optional parameters, such as the DataCite settings, are left blank, those features
 will not apply.
