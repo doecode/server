@@ -6,7 +6,7 @@ Introduction
 Access various validation checks for DOE CODE API data.  HTTP verb `GET` performs various
 single value checks, or use HTTP `POST` to send a batch of validation requests at once.
 
-> The API is available based on `/doecodeapi/services/validation` on the DOE CODE server.
+> The API is available based on `/doecodeapi/services/docs/validation` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------

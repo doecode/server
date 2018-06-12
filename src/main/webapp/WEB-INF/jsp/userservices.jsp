@@ -44,7 +44,7 @@
                <div class='left'>
                     <h1>DOE CODE API</h1>
                     <ul>
-                         <li><a href='/doecodeapi/services'>API Services Documentation</a></li>
+                         <li><a href='/doecodeapi/services/docs'>API Services Documentation</a></li>
                          <li><a href='https://github.com/doecode/server'>View on GitHub</a></li>
                          <li><a href='https://github.com/doecode/server/issues'>Issues</a></li>
                     </ul>

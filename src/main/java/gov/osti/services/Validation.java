@@ -37,7 +37,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -384,17 +383,6 @@ public class Validation {
         String baseValue = (value.substring(0, value.length() - 1));
         
         return lastChar.equals(generateCheckDigit(baseValue));
-    }
-
-    /**
-     * View the API documentation.
-     *
-     * @return a Viewable to the documentation
-     */
-    @GET
-    @Produces (MediaType.TEXT_HTML)
-    public Viewable getDocumentation() {
-        return new Viewable ("/validation");
     }
 
     /**

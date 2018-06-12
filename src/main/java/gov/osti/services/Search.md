@@ -8,7 +8,7 @@ the [Apache SOLR](http://lucene.apache.org/solr/) search product.  The HTTP
 verb `GET` is used to retrieve single records, while a `POST` request may be
 issued to perform a general search request.
 
-> The API is available based on `/doecodeapi/services/search` on the DOE CODE server.
+> The API is available based on `/doecodeapi/services/docs/search` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------
@@ -158,7 +158,7 @@ Content-Type: application/json
 | date_earliest | Starting date range for release date |
 | date_latest | Ending date range for release date |
 | accessibility | An array of accessibility types; one or more of "OS", "ON", or "CS" |
-| licenses | An array of matching license values, such as the ones at the following <a href='/doecodeapi/services/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
+| licenses | An array of matching license values, such as the ones at the following <a href='/doecodeapi/services/docs/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
 | orcid | Search developer or contributor ORCID values |
 | sort | Specify a sorting field, e.g., "softwareTitle" or "releaseDate" (relevance is the default) |
 | rows | Desired number of rows to return (default 20) |

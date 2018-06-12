@@ -50,7 +50,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,17 +126,6 @@ public class SearchService {
 
     // configured location of the search service endpoint
     private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
-    
-    /**
-     * Link to API Documentation template.
-     *
-     * @return a Viewable API documentation template
-     */
-    @GET
-    @Produces (MediaType.TEXT_HTML)
-    public Viewable getDocumentation() {
-        return new Viewable("/search");
-    }
     
     /**
      * Acquire information from the searching index if possible.  This endpoint

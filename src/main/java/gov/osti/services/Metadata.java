@@ -104,7 +104,6 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.glassfish.jersey.server.mvc.Viewable;
 
 import gov.osti.connectors.gitlab.Project;
 import java.io.FileInputStream;
@@ -218,17 +217,6 @@ public class Metadata {
         SimpleModule module = new SimpleModule();
         module.addSerializer(Agent.class, new AgentSerializer());
         index_mapper.registerModule(module);
-    }
-
-    /**
-     * Link to API Documentation template.
-     *
-     * @return a Viewable API documentation template
-     */
-    @GET
-    @Produces (MediaType.TEXT_HTML)
-    public Viewable getDocumentation() {
-        return new Viewable("/metadata");
     }
 
     /**

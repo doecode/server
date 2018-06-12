@@ -6,7 +6,7 @@ Introduction
 Description of services provided by the API back end of DOE CODE.  The HTTP `GET` verb is used to retrieve information in various desired formats,
 and the `POST` verb used to send new and updated information to the persistence back end.
 
-> The API is available based on `/doecodeapi/services/site` on the DOE CODE server.
+> The API is available based on `/doecodeapi/services/docs/site` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------

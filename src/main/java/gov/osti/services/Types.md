@@ -6,7 +6,7 @@ Introduction
 Description of services provided by the API back end of DOE CODE.  The HTTP `GET` verb is used to retrieve information about various
 types and lists of acceptable values.
 
-> The API is available based on `/doecodeapi/services/types` on the DOE CODE server.
+> The API is available based on `/doecodeapi/services/docs/types` on the DOE CODE server.
 
 HTTP Request Methods
 --------------------

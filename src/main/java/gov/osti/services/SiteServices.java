@@ -31,7 +31,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PathParam;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
-import org.glassfish.jersey.server.mvc.Viewable;
 
 @Path("site")
 public class SiteServices {
@@ -45,17 +44,6 @@ public class SiteServices {
             .setTimeZone(TimeZone.getDefault());
 
     public SiteServices() {
-    }
-
-    /**
-     * View the API documentation.
-     *
-     * @return a Viewable to the documentation
-     */
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public Viewable getDocumentation() {
-        return new Viewable("/siteservices");
     }
 
     /**

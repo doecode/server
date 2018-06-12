@@ -50,7 +50,6 @@ import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.subject.Subject;
-import org.glassfish.jersey.server.mvc.Viewable;
 
 @Path("user")
 public class UserServices {
@@ -103,17 +102,6 @@ public class UserServices {
         
         // must be OK
         return true;
-    }
-    
-    /**
-     * View the API documentation.
-     * 
-     * @return a Viewable to the documentation
-     */
-    @GET
-    @Produces (MediaType.TEXT_HTML)
-    public Viewable getDocumentation() {
-        return new Viewable ("/userservices");
     }
 
     /**
