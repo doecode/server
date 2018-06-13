@@ -1010,12 +1010,13 @@ public class Metadata {
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
+            String fullFileName = "";
 
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 try {
-                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
-                    md.setFileName(fileName);
+                    fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    md.setFileName(fullFileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1047,7 +1048,7 @@ public class Metadata {
             // send this file upload along to archiver if configured
             try {
                 // if a FILE was sent, create a File Object from it
-                File archiveFile = (null==file) ? null : new File(md.getFileName());
+                File archiveFile = (null==file) ? null : new File(fullFileName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
                     sendToArchiver(md.getCodeId(), null, archiveFile);
@@ -1155,12 +1156,13 @@ public class Metadata {
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
+            String fullFileName = "";
 
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 try {
-                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
-                    md.setFileName(fileName);
+                    fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    md.setFileName(fullFileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1191,7 +1193,7 @@ public class Metadata {
             // send this file upload along to archiver if configured
             try {
                 // if a FILE was sent, create a File Object from it
-                File archiveFile = (null==file) ? null : new File(md.getFileName());
+                File archiveFile = (null==file) ? null : new File(fullFileName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
                     sendToArchiver(md.getCodeId(), null, archiveFile);
@@ -1911,9 +1913,6 @@ public class Metadata {
                 return;
 
             String fileName = md.getFileName();
-
-            // sometimes getFileName returns a full path (this should be addressed overall, but temp fix here for now)
-            fileName = fileName.substring(fileName.lastIndexOf(File.separator)+1);
 
             String codeId = String.valueOf(md.getCodeId());
             java.nio.file.Path uploadedFile = Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);

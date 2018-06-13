@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import java.io.File;
 import java.io.Reader;
 import java.util.List;
 
@@ -662,16 +662,16 @@ public class DOECodeMetadata implements Serializable {
                 owner = owner != null ? owner.toLowerCase() : owner;
 		this.owner = owner;
 	}
-	
+
         /**
          * Set the FILE NAME if any for archive.
-         * 
+         *
          * @param name the ABSOLUTE PATH name to the archive file, if any
          */
         public void setFileName(String name) {
-            this.fileName = name;
+            this.fileName = name == null ? null : name.substring(name.lastIndexOf(File.separator)+1);
         }
-        
+
         /**
          * Get the FILE NAME for this project, if any.
          * 
@@ -681,9 +681,8 @@ public class DOECodeMetadata implements Serializable {
          * @return the FILE NAME
          */
         @Column (length = 500, name = "FILE_NAME")
-        @JsonSerialize (using = FileNameSerializer.class)
         public String getFileName() {
-            return this.fileName;
+            return this.fileName == null ? null : this.fileName.substring(this.fileName.lastIndexOf(File.separator)+1);
         }
         
         /**
