@@ -38,7 +38,8 @@ import javax.persistence.UniqueConstraint;
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
     @NamedQuery (name = "MetadataSnapshot.findByCodeIdAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.codeId=:codeId AND s.snapshotStatus=:status"),
-    @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotStatus=:status")
+    @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotStatus=:status"),
+    @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.codeId=:codeId AND s.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC")
 })
 public class MetadataSnapshot implements Serializable {
     @Id

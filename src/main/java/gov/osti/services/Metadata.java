@@ -484,9 +484,39 @@ public class Metadata {
 
             // get a List of records
             RecordsList records = new RecordsList(query.getResultList());
+            ObjectNode recordsObject = mapper.valueToTree(records);
+
+            // lookup previous Snapshot status info for each item
+            TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdLastNotStatus", MetadataSnapshot.class)
+                    .setParameter("status", DOECodeMetadata.Status.Approved);
+
+            JsonNode recordNode = recordsObject.get("records");
+            if (recordNode.isArray()) {
+                for (JsonNode objNode : recordNode) {
+                    // skip non-approved records
+                    String currentStatus = objNode.get("workflow_status").asText();
+                    if (!currentStatus.equalsIgnoreCase("Approved"))
+                        continue;
+
+                    // get code_id to find Snapshot
+                    long codeId = objNode.get("code_id").asLong();
+                    querySnapshot.setParameter("codeId", codeId);
+
+                    String lastApprovalFor = "";
+                    List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
+                    for ( MetadataSnapshot ms : results ) {
+                        lastApprovalFor = ms.getSnapshotStatus().toString();
+                    }
+
+                    // add "approve as" status indicator to response record, if not blank
+                    if (!StringUtils.isBlank(lastApprovalFor))
+                        ((ObjectNode) objNode).put("approved_as", lastApprovalFor);
+                }
+            }
+
                 return Response
                     .status(Response.Status.OK)
-                    .entity(mapper.valueToTree(records).toString())
+                    .entity(recordsObject.toString())
                     .build();
         } finally {
             em.close();
