@@ -1603,7 +1603,7 @@ public class UserServices {
             email.setSubject("DOE CODE User Account Password Expired");
             email.addTo(userEmail);
             
-            email.setHtmlMsg("<html>Your account password has expired.  Please submit a forgotten password request from DOE CODE in order to change it.  "
+            email.setHtmlMsg("<html>Your account password has expired.  Please submit a <a href='" + SITE_URL + "/forgot-password'>reset password request</a> from DOE CODE in order to change it.  "
                     + "<p>Please contact doecode@osti.gov if you have any questions about this message or trouble processing any requests.</html>");
             email.send();
             
