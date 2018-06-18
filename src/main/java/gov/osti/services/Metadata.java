@@ -484,6 +484,7 @@ public class Metadata {
 
             // get a List of records
             RecordsList records = new RecordsList(query.getResultList());
+            records.setStart(start);
             ObjectNode recordsObject = mapper.valueToTree(records);
 
             // lookup previous Snapshot status info for each item
@@ -492,7 +493,10 @@ public class Metadata {
 
             JsonNode recordNode = recordsObject.get("records");
             if (recordNode.isArray()) {
+                int rowCount = 0;
                 for (JsonNode objNode : recordNode) {
+                    rowCount++;
+
                     // skip non-approved records
                     String currentStatus = objNode.get("workflow_status").asText();
                     if (!currentStatus.equalsIgnoreCase("Approved"))
@@ -512,6 +516,8 @@ public class Metadata {
                     if (!StringUtils.isBlank(lastApprovalFor))
                         ((ObjectNode) objNode).put("approved_as", lastApprovalFor);
                 }
+
+                recordsObject.put("total", rowCount);
             }
 
                 return Response
