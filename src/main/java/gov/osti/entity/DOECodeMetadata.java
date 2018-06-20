@@ -35,6 +35,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
@@ -494,6 +495,7 @@ public class DOECodeMetadata implements Serializable {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     @Valid
+    @OrderColumn(name="ordinal_position")
     public List<Developer> getDevelopers() {
             return developers;
     }
