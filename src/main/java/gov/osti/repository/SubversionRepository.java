@@ -2,7 +2,7 @@
  */
 package gov.osti.repository;
 
-import java.util.Collection;
+import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tmatesoft.svn.core.SVNURL;
@@ -24,15 +24,15 @@ public class SubversionRepository {
      */
     public static boolean isValid(String url) {
         SVNRepository repository = null;
-        
+
         try {
             SVNURL repoUrl = SVNURL.parseURIEncoded(url);
             repository = SVNRepositoryFactory.create(repoUrl);
-            
-            Collection logs = repository.log(new String[] { "" }, null, -1, -1, true, true);
-            
-            // if we have some sort of log entry (even initial import), we are valid
-            return !logs.isEmpty();
+
+            long rev = repository.getDatedRevision(new Date());
+
+            // if we passed the dated revision check, we are valid
+            return true;
         } catch ( Exception e ) {
             log.warn("SVN Error for " + url + ": " + e.getMessage());
             return false;
