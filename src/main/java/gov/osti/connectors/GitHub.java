@@ -126,7 +126,6 @@ public class GitHub implements ConnectorInterface {
         try {
             // try to identify the NAME of the project
             String name = getProjectFromUrl(url);
-            log.info("Project name: " + name);
             if (null==name)
                 return null;
             
