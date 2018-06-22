@@ -56,7 +56,7 @@ public final class GitLabAPI {
     private String GITLAB_OSTI_BASE_URL = "";
     private String GITLAB_OSTI_NAMESPACE = "doecode";
     /** GitLab API base URL * */
-    private static final String GITLAB_BASE_URL = "https://www.gitlab.com";
+    private static final String GITLAB_BASE_URL = "https://gitlab.com";
     private static final String API_PATH = "/api/v4/";
 
     private static final JsonNodeFactory FACTORY_INSTANCE = JsonNodeFactory.instance;
