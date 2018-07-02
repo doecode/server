@@ -1495,16 +1495,12 @@ public class Metadata {
 
             // if approving announced, send this to OSTI
             if (DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus())) {
-
-                OstiMetadata omd = new OstiMetadata();
-                omd.set(md);
-
                 // if configured, post this to OSTI
                 String publishing_host = context.getInitParameter("publishing.host");
                 if (null!=publishing_host) {
                     // set some reasonable default timeouts
                     // create an HTTP client to request through
-                    CloseableHttpClient hc =
+                    try (CloseableHttpClient hc =
                             HttpClientBuilder
                             .create()
                             .setDefaultRequestConfig(RequestConfig
@@ -1513,13 +1509,12 @@ public class Metadata {
                                     .setConnectTimeout(5000)
                                     .setConnectionRequestTimeout(5000)
                                     .build())
-                            .build();
+                            .build()) {
                     HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
                     post.setHeader("Content-Type", "application/json");
                     post.setHeader("Accept", "application/json");
-                    post.setEntity(new StringEntity(omd.toJsonString(), "UTF-8"));
+                    post.setEntity(new StringEntity(mapper.writeValueAsString(md), "UTF-8"));
 
-                    try {
                         HttpResponse response = hc.execute(post);
                         String text = EntityUtils.toString(response.getEntity());
 
@@ -1527,8 +1522,6 @@ public class Metadata {
                             log.warn("OSTI Error: " + text);
                             throw new IOException ("OSTI software publication error");
                         }
-                    } finally {
-                        hc.close();
                     }
                 }
             }
