@@ -50,6 +50,7 @@ database.driver | the JDBC database driver to use
 database.url | the JDBC URL to access
 database.user | the database user (with create/alter schema permission)
 database.password | the user's password
+database.generation | JPA database table command; usually "create-or-extend-tables" or "none"
 serviceapi.host | base URL for validation services
 publishing.host | base URL for submitting final metadata to OSTI (via /submit API)
 datacite.user | (optional) DataCite user account name for registering DOIs

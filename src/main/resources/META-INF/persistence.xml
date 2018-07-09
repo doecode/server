@@ -20,7 +20,7 @@
       <property name="javax.persistence.jdbc.user" value="${database.user}"/>
       <property name="javax.persistence.jdbc.driver" value="${database.driver}"/>
       <property name="javax.persistence.jdbc.password" value="${database.password}"/>
-      <property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>
+      <property name="eclipselink.ddl-generation" value="${database.generation}"/>
     </properties>
   </persistence-unit>
 </persistence>
