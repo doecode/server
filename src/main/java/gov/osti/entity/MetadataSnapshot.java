@@ -3,16 +3,12 @@ package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import gov.osti.entity.DOECodeMetadata.Status;
 import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.Basic;
 import javax.persistence.Column;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
 import javax.persistence.Lob;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
@@ -25,30 +21,24 @@ import javax.persistence.UniqueConstraint;
 
 /**
  * A storage cache Entity for Approved Metadata values.
- * 
+ *
  * @author nensor@gmail.com
  */
 @Entity
-@IdClass (MetadataSnapshotKey.class)
 @Table (name = "metadata_snapshot",
-        uniqueConstraints = { 
+        uniqueConstraints = {
             @UniqueConstraint (columnNames = {"code_id", "snapshot_status"})
         }
         )
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
-    @NamedQuery (name = "MetadataSnapshot.findByCodeIdAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.codeId=:codeId AND s.snapshotStatus=:status"),
-    @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotStatus=:status"),
-    @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.codeId=:codeId AND s.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC")
+    @NamedQuery (name = "MetadataSnapshot.findByCodeIdAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus=:status"),
+    @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.snapshotStatus=:status"),
+    @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC")
 })
 public class MetadataSnapshot implements Serializable {
-    @Id
-    @Column (name = "code_id")
-    private Long codeId;
-    @Id
-    @Enumerated (EnumType.STRING)
-    @Column (name = "snapshot_status")
-    private Status snapshotStatus;
+    @EmbeddedId
+    private MetadataSnapshotKey snapshotKey = new MetadataSnapshotKey();
     @Lob
     @Column (name = "json")
     private String json;
@@ -65,19 +55,19 @@ public class MetadataSnapshot implements Serializable {
     private Date dateRecordUpdated;
 
     /**
-     * Get the CODE ID identifier.
-     * @return the codeId
+     * Get the SnapshotKey of the Metadata Object.
+     * @return a MetadataSnapshotKey object
      */
-    public Long getCodeId() {
-        return codeId;
+    public MetadataSnapshotKey getSnapshotKey() {
+        return snapshotKey;
     }
 
     /**
-     * Set the unique CODE ID value.
-     * @param codeId the codeId to set
+     * Set the SnapshotKey of the Metadata Object.
+     * @param key MetadataSnapshotKey object
      */
-    public void setCodeId(Long codeId) {
-        this.codeId = codeId;
+    public void setSnapshotKey(MetadataSnapshotKey key) {
+        this.snapshotKey = key;
     }
 
     /**
@@ -96,20 +86,6 @@ public class MetadataSnapshot implements Serializable {
         this.json = json;
     }
 
-    /**
-     * @return the snapshotStatus
-     */
-    public Status getSnapshotStatus() {
-        return snapshotStatus;
-    }
-
-    /**
-     * @param snapshotStatus the snapshotStatus to set
-     */
-    public void setSnapshotStatus(Status snapshotStatus) {
-        this.snapshotStatus = snapshotStatus;
-    }
-    
     /**
      * Method called when a record is first created.  Sets dates added and
      * updated.

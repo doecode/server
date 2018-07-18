@@ -5,14 +5,22 @@ package gov.osti.entity;
 import gov.osti.entity.DOECodeMetadata.Status;
 import java.io.Serializable;
 import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 
 /**
  * Implement a primary composite key for the METADATA_SNAPSHOT Entity.
- * 
+ *
  * @author ensornl
  */
+@Embeddable
 public class MetadataSnapshotKey implements Serializable {
+    @Column (name = "code_id")
     private Long codeId;
+    @Enumerated (EnumType.STRING)
+    @Column (name = "snapshot_status")
     private Status snapshotStatus;
 
     /**
@@ -42,14 +50,14 @@ public class MetadataSnapshotKey implements Serializable {
     public void setSnapshotStatus(Status snapshotStatus) {
         this.snapshotStatus = snapshotStatus;
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof MetadataSnapshotKey ) {
             return ((MetadataSnapshotKey)o).getCodeId().equals(getCodeId()) &&
                    ((MetadataSnapshotKey)o).getSnapshotStatus().equals(getSnapshotStatus());
         }
-        
+
         return false;
     }
 

@@ -509,7 +509,7 @@ public class Metadata {
                     String lastApprovalFor = "";
                     List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
                     for ( MetadataSnapshot ms : results ) {
-                        lastApprovalFor = ms.getSnapshotStatus().toString();
+                        lastApprovalFor = ms.getSnapshotKey().getSnapshotStatus().toString();
                     }
 
                     // add "approve as" status indicator to response record, if not blank
@@ -1111,8 +1111,8 @@ public class Metadata {
 
             // store the snapshot copy of Metadata
             MetadataSnapshot snapshot = new MetadataSnapshot();
-            snapshot.setCodeId(md.getCodeId());
-            snapshot.setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.getSnapshotKey().setCodeId(md.getCodeId());
+            snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -1255,8 +1255,8 @@ public class Metadata {
             }
             // store the snapshot copy of Metadata in SPECIAL STATUS
             MetadataSnapshot snapshot = new MetadataSnapshot();
-            snapshot.setCodeId(md.getCodeId());
-            snapshot.setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.getSnapshotKey().setCodeId(md.getCodeId());
+            snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -1535,8 +1535,8 @@ public class Metadata {
 
             // store the snapshot copy of Metadata
             MetadataSnapshot snapshot = new MetadataSnapshot();
-            snapshot.setCodeId(md.getCodeId());
-            snapshot.setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.getSnapshotKey().setCodeId(md.getCodeId());
+            snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
