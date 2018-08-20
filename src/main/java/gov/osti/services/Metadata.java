@@ -1573,7 +1573,7 @@ public class Metadata {
 
             log.warn("Persistence Error: " + e.getMessage());
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error announcing record.")
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error approving record: " + e.getMessage())
                     .build();
         } finally {
             em.close();
