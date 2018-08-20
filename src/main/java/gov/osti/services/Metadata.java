@@ -1738,6 +1738,7 @@ public class Metadata {
      */
     private static void sendStatusNotification(DOECodeMetadata md) {
         HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
 
         // if EMAIL or DESTINATION ADDRESS are not set, abort
@@ -1781,6 +1782,7 @@ public class Metadata {
      */
     private static void sendApprovalNotification(DOECodeMetadata md) {
         HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
 
         // if HOST or record OWNER isn't set, cannot send
@@ -1887,6 +1889,7 @@ public class Metadata {
         for (String pocEmail : emails) {
             try {
                 HtmlEmail email = new HtmlEmail();
+                email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
                 email.setHostName(EMAIL_HOST);
 
                 String lab = site.getLab();

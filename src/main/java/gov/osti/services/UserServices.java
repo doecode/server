@@ -1518,6 +1518,7 @@ public class UserServices {
      */
     private static void sendRegistrationConfirmation(String confirmationCode, String userEmail) {
         HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
 
         try {
@@ -1546,6 +1547,7 @@ public class UserServices {
      */
     private static void sendForgotPassword(String confirmationCode, String userEmail) {
         HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
         
         try {
@@ -1573,6 +1575,7 @@ public class UserServices {
      */
     private static void sendLockedAccountEmail(String userEmail) {
         HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
         
         try {
@@ -1596,6 +1599,7 @@ public class UserServices {
      */
     private static void sendPasswordExpiredEmail(String userEmail) {
         HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
         
         try {
