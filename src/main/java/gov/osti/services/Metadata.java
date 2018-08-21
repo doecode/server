@@ -964,6 +964,9 @@ public class Metadata {
             em.getTransaction().begin();
 
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+
+            removeRiDups(md);
+
             md.setWorkflowStatus(Status.Saved); // default to this
             md.setOwner(user.getEmail()); // this User should OWN it
             md.setSiteOwnershipCode(user.getSiteId());
@@ -1035,6 +1038,8 @@ public class Metadata {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
             em.getTransaction().begin();
+
+            removeRiDups(md);
 
             // set the ownership and workflow status
             md.setOwner(user.getEmail());
@@ -1172,6 +1177,9 @@ public class Metadata {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
             em.getTransaction().begin();
+
+            removeRiDups(md);
+
             // set the OWNER
             md.setOwner(user.getEmail());
             // set the WORKFLOW STATUS
@@ -1577,6 +1585,26 @@ public class Metadata {
                     .build();
         } finally {
             em.close();
+        }
+    }
+
+    /**
+     * Remove duplicate RI entries from metadata.
+     *
+     * @param md the Metadata to evaluate
+     */
+    private void removeRiDups(DOECodeMetadata md) {
+        // remove RI duplicates
+        List<RelatedIdentifier> currentList = md.getRelatedIdentifiers();
+
+        if (currentList != null) {
+            Set<RelatedIdentifier> s = new HashSet<>();
+
+            s.addAll(currentList);
+            currentList.clear();
+            currentList.addAll(s);
+
+            md.setRelatedIdentifiers(currentList);
         }
     }
 

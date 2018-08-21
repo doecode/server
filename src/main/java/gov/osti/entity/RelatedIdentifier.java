@@ -164,5 +164,25 @@ public class RelatedIdentifier implements Serializable {
     public void setRelationType(RelationType relation) {
         this.relationType = relation;
     }
-    
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof RelatedIdentifier ) {
+            return ((RelatedIdentifier)o).getIdentifierType().equals(getIdentifierType()) &&
+                   ((RelatedIdentifier)o).getIdentifierValue().equalsIgnoreCase(getIdentifierValue()) &&
+                   ((RelatedIdentifier)o).getRelationType().equals(getRelationType());
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 83 * hash + Objects.hashCode(this.identifierType);
+        hash = 83 * hash + Objects.hashCode(this.identifierValue);
+        hash = 83 * hash + Objects.hashCode(this.relationType);
+        return hash;
+    }
+
 }
