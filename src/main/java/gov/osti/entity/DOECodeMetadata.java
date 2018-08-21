@@ -51,7 +51,8 @@ import org.slf4j.LoggerFactory;
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
     @NamedQuery (name = "DOECodeMetadata.findByDoi", query = "SELECT m FROM DOECodeMetadata m WHERE m.doi = :doi"),
-    @NamedQuery (name = "DOECodeMetadata.findByStatus", query = "SELECT m FROM DOECodeMetadata m WHERE m.workflowStatus = :status")
+    @NamedQuery (name = "DOECodeMetadata.findByStatus", query = "SELECT m FROM DOECodeMetadata m WHERE m.workflowStatus = :status"),
+    @NamedQuery (name = "DOECodeMetadata.findByDoiAndRi", query = "SELECT m FROM DOECodeMetadata m JOIN m.relatedIdentifiers r WHERE m.doi = :doi AND r.identifierType = :type AND r.identifierValue = :value AND r.relationType = :relType")
 })
 @XmlRootElement (name = "metadata")
 @JsonRootName (value = "metadata")

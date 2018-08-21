@@ -4,6 +4,7 @@ package gov.osti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
+import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.persistence.EnumType;
@@ -17,6 +18,14 @@ import javax.persistence.Enumerated;
 @Embeddable
 @JsonIgnoreProperties ( ignoreUnknown = true )
 public class RelatedIdentifier implements Serializable {
+    /**
+     * Enumeration of valid Backfill Types for an Identifier.
+     */
+    public enum BackfillType{
+        Deletion,
+        Addition
+    }
+
     /**
      * Enumeration of valid Types for an Identifier.
      */
@@ -39,29 +48,29 @@ public class RelatedIdentifier implements Serializable {
      */
     public enum RelationType implements Serializable {
         IsCitedBy("Is Cited By"),
-        Cites("Cites"), 
+        Cites("Cites"),
         IsSupplementTo("Is Supplement To"),
         IsSupplementedBy("Is Supplemented By"),
-        IsContinuedBy("Is Continued By"), 
-        Continues("Continues"), 
-        HasMetadata("Has Metadata"), 
-        IsMetadataFor("Is Metadata For"), 
-        IsNewVersionOf("Is New Version Of"), 
-        IsPreviousVersionOf("Is Previous Version Of"), 
-        IsPartOf("Is Part Of"), 
-        HasPart("Has Part"), 
+        IsContinuedBy("Is Continued By"),
+        Continues("Continues"),
+        HasMetadata("Has Metadata"),
+        IsMetadataFor("Is Metadata For"),
+        IsNewVersionOf("Is New Version Of"),
+        IsPreviousVersionOf("Is Previous Version Of"),
+        IsPartOf("Is Part Of"),
+        HasPart("Has Part"),
         IsReferencedBy("Is Referenced By"),
-        References("References"), 
-        IsDocumentedBy("Is Documented By"), 
-        Documents("Documents"), 
-        IsCompiledBy("Is Compiled By"), 
-        Compiles("Compiles"), 
-        IsVariantFormOf("Is Variant Form Of"), 
-        IsOriginalFormOf("Is Original Form Of"), 
-        IsIdenticalTo("Is Identical To"), 
-        IsReviewedBy("Is Reviewed By"), 
-        Reviews("Reviews"), 
-        IsDerivedFrom("Is Derived From"), 
+        References("References"),
+        IsDocumentedBy("Is Documented By"),
+        Documents("Documents"),
+        IsCompiledBy("Is Compiled By"),
+        Compiles("Compiles"),
+        IsVariantFormOf("Is Variant Form Of"),
+        IsOriginalFormOf("Is Original Form Of"),
+        IsIdenticalTo("Is Identical To"),
+        IsReviewedBy("Is Reviewed By"),
+        Reviews("Reviews"),
+        IsDerivedFrom("Is Derived From"),
         IsSourceOf("Is Source Of"),
         IsDescribedBy("Is Described By"),
         Describes("Describes"),
@@ -69,15 +78,54 @@ public class RelatedIdentifier implements Serializable {
         IsVersionOf("Is Version Of"),
         IsRequiredBy("Is Required By"),
         Requires("Requires");
-        
+
         private final String label;
-        
+        private RelationType inverse;
+
+        static {
+            IsCitedBy.inverse = Cites;
+            Cites.inverse = IsCitedBy;
+            IsSupplementTo.inverse = IsSupplementedBy;
+            IsSupplementedBy.inverse = IsSupplementTo;
+            IsContinuedBy.inverse = Continues;
+            Continues.inverse = IsContinuedBy;
+            HasMetadata.inverse = IsMetadataFor;
+            IsMetadataFor.inverse = HasMetadata;
+            IsNewVersionOf.inverse = IsPreviousVersionOf;
+            IsPreviousVersionOf.inverse = IsNewVersionOf;
+            IsPartOf.inverse = HasPart;
+            HasPart.inverse = IsPartOf;
+            IsReferencedBy.inverse = References;
+            References.inverse = IsReferencedBy;
+            IsDocumentedBy.inverse = Documents;
+            Documents.inverse = IsDocumentedBy;
+            IsCompiledBy.inverse = Compiles;
+            Compiles.inverse = IsCompiledBy;
+            IsVariantFormOf.inverse = IsOriginalFormOf;
+            IsOriginalFormOf.inverse = IsVariantFormOf;
+            IsIdenticalTo.inverse = IsIdenticalTo;
+            IsReviewedBy.inverse = Reviews;
+            Reviews.inverse = IsReviewedBy;
+            IsDerivedFrom.inverse = IsSourceOf;
+            IsSourceOf.inverse = IsDerivedFrom;
+            IsDescribedBy.inverse = Describes;
+            Describes.inverse = IsDescribedBy;
+            HasVersion.inverse = IsVersionOf;
+            IsVersionOf.inverse = HasVersion;
+            IsRequiredBy.inverse = Requires;
+            Requires.inverse = IsRequiredBy;
+        }
+
         private RelationType(String label) {
             this.label = label;
         }
-        
+
         public String label() {
             return this.label;
+        }
+
+        public RelationType inverse() {
+            return this.inverse;
         }
     }
 
@@ -93,14 +141,17 @@ public class RelatedIdentifier implements Serializable {
     public RelatedIdentifier() {
         
     }
-    
+
     public RelatedIdentifier(Type idType, String value, RelationType relType) {
         this.identifierType = idType;
         this.identifierValue = value;
         this.relationType = relType;
     }
-    
-    
+
+    public RelatedIdentifier(RelatedIdentifier ri) {
+        this(ri.getIdentifierType(),ri.getIdentifierValue(),ri.getRelationType());
+    }
+
     /**
      * @return the type
      */

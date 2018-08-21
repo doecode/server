@@ -31,7 +31,6 @@ import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.Developer;
 import gov.osti.entity.DoiReservation;
-import gov.osti.entity.OstiMetadata;
 import gov.osti.entity.ResearchOrganization;
 import gov.osti.entity.Site;
 import gov.osti.entity.SponsoringOrganization;
@@ -106,8 +105,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.osti.connectors.gitlab.Project;
+import gov.osti.entity.RelatedIdentifier;
 import java.io.FileInputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.binary.Base64InputStream;
 
 /**
@@ -896,6 +901,215 @@ public class Metadata {
     }
 
     /**
+     * Get previous snapshot info for use in backfill process that occurs after current snapshot is updated.
+     *
+     * @param md the Metadata to evaluate for RI backfilling
+     * @return List of RelatedIdentifier objects.
+     */
+    private List<RelatedIdentifier> getPreviousRiList(EntityManager em, DOECodeMetadata md) throws IOException {
+        // if current project has no DOI, there is nothing to process later on, so do not pull previous info
+        if (StringUtils.isBlank(md.getDoi()))
+            return null;
+
+        long codeId = md.getCodeId();
+
+        // pull last know Approved info
+        TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Approved);
+
+        List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
+
+        // get previous Approved RI list, if applicable
+        List<RelatedIdentifier> previousList = new ArrayList<>();
+        for ( MetadataSnapshot ms : results ) {
+            try {
+                DOECodeMetadata pmd = DOECodeMetadata.parseJson(new StringReader(ms.getJson()));
+
+                previousList = pmd.getRelatedIdentifiers();
+
+                if (previousList == null)
+                    previousList = new ArrayList<>();
+
+                // filter to targeted RI
+                previousList = previousList.stream().filter(p -> p.getIdentifierType() == RelatedIdentifier.Type.DOI
+                        && (p.getRelationType() == RelatedIdentifier.RelationType.IsNewVersionOf
+                        || p.getRelationType() == RelatedIdentifier.RelationType.IsPreviousVersionOf)
+                ).collect(Collectors.toList());
+
+            } catch (IOException ex) {
+                // unable to parse JSON, but for this process
+                String msg = "Unable to parse previously 'Approved' Snapshot JSON for " + codeId + ": " + ex.getMessage();
+                throw new IOException(msg);
+            }
+            break; // failsafe: there should only ever be one, at most
+        }
+
+        return previousList;
+    }
+
+    /**
+     * Add/Remove backfill RI information.
+     * To modify source items, you must be an OSTI admin, project owner, or site admin.
+     *
+     * @param em the EntityManager to control commits.
+     * @param md the Metadata to evaluate for RI updating.
+     * @param previousList the RelatedIdentifiers from previous Approval.
+     */
+    private void backfillProjects(EntityManager em, DOECodeMetadata md, List<RelatedIdentifier> previousList) throws IllegalAccessException, IOException {
+        // if current project has no DOI, there is nothing to process
+        if (StringUtils.isBlank(md.getDoi()))
+            return;
+
+        // get current list of RI info, for backfill additions
+        List<RelatedIdentifier> additionList = md.getRelatedIdentifiers();
+
+        if (additionList == null)
+            additionList = new ArrayList<>();
+
+        // filter additions to targeted RI
+        additionList = additionList.stream().filter(p -> p.getIdentifierType() == RelatedIdentifier.Type.DOI
+                && (p.getRelationType() == RelatedIdentifier.RelationType.IsNewVersionOf
+                || p.getRelationType() == RelatedIdentifier.RelationType.IsPreviousVersionOf)
+        ).collect(Collectors.toList());
+
+        if (previousList == null)
+            previousList = new ArrayList<>();
+
+        // previous relations no longer defined must be removed
+        previousList.removeAll(additionList);
+
+        // store details about what will need sent to OSTI and re-indexed
+        Map<Long, DOECodeMetadata> backfillSendToIndex = new HashMap<>();
+        Map<Long, DOECodeMetadata> backfillSendToOsti = new HashMap<>();
+
+        // define needed queries
+        TypedQuery<DOECodeMetadata> deleteQuery = em.createNamedQuery("DOECodeMetadata.findByDoiAndRi", DOECodeMetadata.class);
+        TypedQuery<DOECodeMetadata> addQuery = em.createNamedQuery("DOECodeMetadata.findByDoi", DOECodeMetadata.class);
+        TypedQuery<MetadataSnapshot> snapshotQuery = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class);
+        TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdLastNotStatus", MetadataSnapshot.class)
+                .setParameter("status", DOECodeMetadata.Status.Approved);
+
+        List<RelatedIdentifier> backfillSourceList;
+
+        // for each BackfillType, perform actions:  delete obsolete previous info / add new info
+        for (RelatedIdentifier.BackfillType backfillType : RelatedIdentifier.BackfillType.values()) {
+            // previous relations no longer defined must be removed, current relations need to be added
+            backfillSourceList = backfillType == RelatedIdentifier.BackfillType.Deletion ? previousList : additionList;
+
+            // if there is no list to process, skip
+            if (backfillSourceList == null || backfillSourceList.isEmpty())
+                continue;
+
+            for (RelatedIdentifier ri : backfillSourceList) {
+                // get inverse relation
+                RelatedIdentifier inverseRelation = new RelatedIdentifier(ri);
+                inverseRelation.setRelationType(ri.getRelationType().inverse());
+                inverseRelation.setIdentifierValue(md.getDoi());
+
+                List<RelatedIdentifier> targetedList = Arrays.asList(inverseRelation);
+
+                List<DOECodeMetadata> results = new ArrayList<>();
+                List<MetadataSnapshot> snapshotResults;
+
+                if (backfillType == RelatedIdentifier.BackfillType.Deletion) {
+                    // check for the existance of the inverse relation
+                    deleteQuery.setParameter("doi", ri.getIdentifierValue())
+                            .setParameter("type", inverseRelation.getIdentifierType())
+                            .setParameter("value", inverseRelation.getIdentifierValue())
+                            .setParameter("relType", inverseRelation.getRelationType());
+
+                    results = deleteQuery.getResultList();
+                }
+                else if (backfillType == RelatedIdentifier.BackfillType.Addition) {
+                    // lookup target DOI
+                    addQuery.setParameter("doi", ri.getIdentifierValue());
+
+                    results = addQuery.getResultList();
+                }
+
+                // update RI where needed
+                for ( DOECodeMetadata bmd : results ) {
+                    // target CODE ID and Workflow Status
+                    Long codeId = bmd.getCodeId();
+                    DOECodeMetadata.Status status = bmd.getWorkflowStatus();
+
+                     // update metadata RI info
+                    List<RelatedIdentifier> updateList = bmd.getRelatedIdentifiers();
+                    updateList.removeAll(targetedList); // always remove
+                    if (backfillType == RelatedIdentifier.BackfillType.Addition)
+                        updateList.addAll(targetedList); // add back, if needed
+
+                    // save changes
+                    bmd.setRelatedIdentifiers(updateList);
+
+                    // update snapshot metadata
+                    snapshotQuery.setParameter("codeId", codeId)
+                            .setParameter("status", status);
+
+                    snapshotResults = snapshotQuery.getResultList();
+
+                    // update snapshot RI, for same status, where needed
+                    for ( MetadataSnapshot ms : snapshotResults ) {
+                        try {
+                            DOECodeMetadata smd = DOECodeMetadata.parseJson(new StringReader(ms.getJson()));
+
+                            List<RelatedIdentifier> snapshotList = smd.getRelatedIdentifiers();
+
+                            if (snapshotList == null)
+                                snapshotList = new ArrayList<>();
+
+                            // update snapshot RI info, if needed
+                            snapshotList.removeAll(targetedList); // always remove
+                            if (backfillType == RelatedIdentifier.BackfillType.Addition)
+                                snapshotList.addAll(targetedList); // add back, if needed
+
+                            // save changes to Snapshot
+                            smd.setRelatedIdentifiers(snapshotList);
+                            ms.setJson(smd.toJson().toString());
+
+                            // log updated, Approved snapshot info for post-backfill actions
+                            if (status == DOECodeMetadata.Status.Approved) {
+                                // log for re-indexing
+                                backfillSendToIndex.put(codeId, smd);
+
+
+                                // lookup snapshot status info, prior to Approval
+                                querySnapshot.setParameter("codeId", codeId);
+
+                                List<MetadataSnapshot> previousResults = querySnapshot.setMaxResults(1).getResultList();
+                                for ( MetadataSnapshot pms : previousResults ) {
+                                    DOECodeMetadata.Status lastApprovalFor = pms.getSnapshotKey().getSnapshotStatus();
+
+                                    // if Approved for Announcement, log for OSTI
+                                    if (lastApprovalFor == DOECodeMetadata.Status.Announced)
+                                        backfillSendToOsti.put(codeId, smd);
+
+                                    break; // failsafe, but should only be at most one item returned
+                                }
+                            }
+                        } catch (IOException ex) {
+                            // unable to parse JSON, but for this process
+                            String msg = "Unable to parse '" + ms.getSnapshotKey().getSnapshotStatus() + "' Snapshot JSON for " + ms.getSnapshotKey().getCodeId() + ": " + ex.getMessage();
+                            throw new IOException(msg);
+                        }
+                    }
+                }
+            }
+        }
+
+        // update OSTI, as needed
+        for (Map.Entry<Long, DOECodeMetadata> entry : backfillSendToOsti.entrySet()) {
+            sendToOsti(entry.getValue());
+        }
+
+        // update Index, as needed
+        for (Map.Entry<Long, DOECodeMetadata> entry : backfillSendToIndex.entrySet()) {
+            sendToIndex(entry.getValue());
+        }
+    }
+
+    /**
      * Attempt to send this Metadata information to the indexing service configured.
      * If no service is configured, do nothing.
      *
@@ -1513,6 +1727,9 @@ public class Metadata {
             // persist this to the database, as validations should already be complete at this stage.
             store(em, md, user);
 
+            // prior to updating snapshot, gather RI List for backfilling
+            List<RelatedIdentifier> previousRiList = getPreviousRiList(em, md);
+
             // store the snapshot copy of Metadata
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
@@ -1520,6 +1737,9 @@ public class Metadata {
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
+
+            // perform RI backfilling
+            backfillProjects(em, md, previousRiList);
 
             // if we make it this far, go ahead and commit the transaction
             em.getTransaction().commit();
