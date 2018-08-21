@@ -1503,35 +1503,7 @@ public class Metadata {
 
             // if approving announced, send this to OSTI
             if (DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus())) {
-                // if configured, post this to OSTI
-                String publishing_host = context.getInitParameter("publishing.host");
-                if (null!=publishing_host) {
-                    // set some reasonable default timeouts
-                    // create an HTTP client to request through
-                    try (CloseableHttpClient hc =
-                            HttpClientBuilder
-                            .create()
-                            .setDefaultRequestConfig(RequestConfig
-                                    .custom()
-                                    .setSocketTimeout(5000)
-                                    .setConnectTimeout(5000)
-                                    .setConnectionRequestTimeout(5000)
-                                    .build())
-                            .build()) {
-                    HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
-                    post.setHeader("Content-Type", "application/json");
-                    post.setHeader("Accept", "application/json");
-                    post.setEntity(new StringEntity(mapper.writeValueAsString(md), "UTF-8"));
-
-                        HttpResponse response = hc.execute(post);
-                        String text = EntityUtils.toString(response.getEntity());
-
-                        if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode()) {
-                            log.warn("OSTI Error: " + text);
-                            throw new IOException ("OSTI software publication error");
-                        }
-                    }
-                }
+                sendToOsti(md);
             }
 
             em.getTransaction().begin();
@@ -1585,6 +1557,43 @@ public class Metadata {
                     .build();
         } finally {
             em.close();
+        }
+    }
+
+    /**
+     * Send metadata JSON to OSTI.
+     *
+     * @param md the Metadata to send to OSTI
+     */
+    private void sendToOsti(DOECodeMetadata md) throws IOException {
+        // if configured, post this to OSTI
+        String publishing_host = context.getInitParameter("publishing.host");
+        if (null!=publishing_host) {
+            // set some reasonable default timeouts
+            // create an HTTP client to request through
+            try (CloseableHttpClient hc =
+                    HttpClientBuilder
+                    .create()
+                    .setDefaultRequestConfig(RequestConfig
+                            .custom()
+                            .setSocketTimeout(5000)
+                            .setConnectTimeout(5000)
+                            .setConnectionRequestTimeout(5000)
+                            .build())
+                    .build()) {
+            HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
+            post.setHeader("Content-Type", "application/json");
+            post.setHeader("Accept", "application/json");
+            post.setEntity(new StringEntity(mapper.writeValueAsString(md), "UTF-8"));
+
+                HttpResponse response = hc.execute(post);
+                String text = EntityUtils.toString(response.getEntity());
+
+                if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode()) {
+                    log.warn("OSTI Error: " + text);
+                    throw new IOException ("OSTI software publication error for " + md.getCodeId());
+                }
+            }
         }
     }
 
