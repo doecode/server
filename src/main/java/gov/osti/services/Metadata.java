@@ -901,6 +901,70 @@ public class Metadata {
     }
 
     /**
+     * Remove non-indexable New/Previous RI from metadata.
+     *
+     * @param em the EntityManager to control commits.
+     * @param md the Metadata to evaluate.
+     * @return Updated DOECodeMetadata object.
+     */
+    private static DOECodeMetadata removeNonIndexableRi(EntityManager em, DOECodeMetadata md) throws IOException {
+        // need a detached copy of the RI data
+        DOECodeMetadata alteredMd = new DOECodeMetadata();
+        BeanUtilsBean bean = new BeanUtilsBean();
+
+        try {
+            bean.copyProperties(alteredMd, md);
+        } catch (IllegalAccessException | InvocationTargetException ex) {
+            // log issue, swallow error
+            String msg = "NonIndexable RI Removal Bean Error: " + ex.getMessage();
+            throw new IOException(msg);
+        }
+
+        TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByDoiAndStatus", MetadataSnapshot.class)
+                .setParameter("status", DOECodeMetadata.Status.Approved);
+
+        // get detached list of RI to check
+        List<RelatedIdentifier> riList = new ArrayList<>();
+        riList.addAll(alteredMd.getRelatedIdentifiers());
+
+        // filter to targeted RI
+        List<RelatedIdentifier> filteredRiList = riList.stream().filter(p -> p.getIdentifierType() == RelatedIdentifier.Type.DOI
+                && (p.getRelationType() == RelatedIdentifier.RelationType.IsNewVersionOf
+                || p.getRelationType() == RelatedIdentifier.RelationType.IsPreviousVersionOf)
+        ).collect(Collectors.toList());
+
+        // track removals
+        List<RelatedIdentifier> removalList = new ArrayList<>();
+
+        for ( RelatedIdentifier ri : filteredRiList ) {
+            // lookup by Snapshot by current DOI
+            querySnapshot.setParameter("doi", ri.getIdentifierValue());
+
+            List<MetadataSnapshot> results = querySnapshot.getResultList();
+
+            // if no results, keep, otherwise remove unless there is a minted version found
+            boolean remove = !results.isEmpty();
+            for ( MetadataSnapshot ms : results ) {
+                    if (ms.getDoiIsMinted()) {
+                        remove = false;
+                        break;
+                    }
+            }
+
+            if (remove)
+                removalList.add(ri);
+        }
+
+        // perform removals, as needed, and update
+        if (!removalList.isEmpty()) {
+            riList.removeAll(removalList);
+            alteredMd.setRelatedIdentifiers(riList);
+        }
+
+        return alteredMd;
+    }
+
+    /**
      * Get previous snapshot info for use in backfill process that occurs after current snapshot is updated.
      *
      * @param em the EntityManager to control commits.
@@ -1101,12 +1165,12 @@ public class Metadata {
 
         // update OSTI, as needed
         for (Map.Entry<Long, DOECodeMetadata> entry : backfillSendToOsti.entrySet()) {
-            sendToOsti(entry.getValue());
+            sendToOsti(em, entry.getValue());
         }
 
         // update Index, as needed
         for (Map.Entry<Long, DOECodeMetadata> entry : backfillSendToIndex.entrySet()) {
-            sendToIndex(entry.getValue());
+            sendToIndex(em, entry.getValue());
         }
     }
 
@@ -1114,9 +1178,10 @@ public class Metadata {
      * Attempt to send this Metadata information to the indexing service configured.
      * If no service is configured, do nothing.
      *
+     * @param em the related EntityManager
      * @param md the Metadata to send
      */
-    private static void sendToIndex(DOECodeMetadata md) {
+    private static void sendToIndex(EntityManager em, DOECodeMetadata md) {
         // if indexing is not configured, skip this step
         if ("".equals(INDEX_URL))
             return;
@@ -1135,13 +1200,16 @@ public class Metadata {
                 .setDefaultRequestConfig(rc)
                 .build();
         try {
+            // do not index DOE CODE New/Previous DOI related identifiers if Approved without a Release Date
+            DOECodeMetadata indexableMd = removeNonIndexableRi(em, md);
+
             // construct a POST submission to the indexer service
             HttpPost post = new HttpPost(INDEX_URL);
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
             // add JSON String to index for later display/search
-            ObjectNode node = (ObjectNode)index_mapper.valueToTree(md);
-            node.put("json", md.toJson().toString());
+            ObjectNode node = (ObjectNode)index_mapper.valueToTree(indexableMd);
+            node.put("json", indexableMd.toJson().toString());
             post.setEntity(new StringEntity(node.toString(), "UTF-8"));
 
             HttpResponse response = hc.execute(post);
@@ -1333,6 +1401,8 @@ public class Metadata {
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
             snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.setDoi(md.getDoi());
+            snapshot.setDoiIsMinted(md.getReleaseDate() != null);
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -1480,6 +1550,8 @@ public class Metadata {
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
             snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.setDoi(md.getDoi());
+            snapshot.setDoiIsMinted(md.getReleaseDate() != null);
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -1668,7 +1740,7 @@ public class Metadata {
             for ( MetadataSnapshot amd : results ) {
                 DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(amd.getJson()));
 
-                sendToIndex(md);
+                sendToIndex(em, md);
                 ++records;
             }
 
@@ -1718,7 +1790,7 @@ public class Metadata {
 
             // if approving announced, send this to OSTI
             if (DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus())) {
-                sendToOsti(md);
+                sendToOsti(em, md);
             }
 
             em.getTransaction().begin();
@@ -1735,6 +1807,8 @@ public class Metadata {
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
             snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
+            snapshot.setDoi(md.getDoi());
+            snapshot.setDoiIsMinted(md.getReleaseDate() != null);
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -1746,7 +1820,7 @@ public class Metadata {
             em.getTransaction().commit();
 
             // send it to the indexer
-            sendToIndex(md);
+            sendToIndex(em, md);
 
             // send APPROVAL NOTIFICATION to OWNER
             sendApprovalNotification(md);
@@ -1784,12 +1858,16 @@ public class Metadata {
     /**
      * Send metadata JSON to OSTI.
      *
+     * @param em the related EntityManager
      * @param md the Metadata to send to OSTI
      */
-    private void sendToOsti(DOECodeMetadata md) throws IOException {
+    private void sendToOsti(EntityManager em, DOECodeMetadata md) throws IOException {
         // if configured, post this to OSTI
         String publishing_host = context.getInitParameter("publishing.host");
         if (null!=publishing_host) {
+            // do not index DOE CODE New/Previous DOI related identifiers if Approved without a Release Date
+            DOECodeMetadata indexableMd = removeNonIndexableRi(em, md);
+
             // set some reasonable default timeouts
             // create an HTTP client to request through
             try (CloseableHttpClient hc =
@@ -1805,7 +1883,7 @@ public class Metadata {
             HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
-            post.setEntity(new StringEntity(mapper.writeValueAsString(md), "UTF-8"));
+            post.setEntity(new StringEntity(mapper.writeValueAsString(indexableMd), "UTF-8"));
 
                 HttpResponse response = hc.execute(post);
                 String text = EntityUtils.toString(response.getEntity());

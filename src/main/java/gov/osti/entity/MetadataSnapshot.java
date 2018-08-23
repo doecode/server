@@ -34,11 +34,16 @@ import javax.persistence.UniqueConstraint;
 @NamedQueries ({
     @NamedQuery (name = "MetadataSnapshot.findByCodeIdAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus=:status"),
     @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.snapshotStatus=:status"),
-    @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC")
+    @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC"),
+    @NamedQuery (name = "MetadataSnapshot.findByDoiAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.doi=:doi AND s.snapshotKey.snapshotStatus=:status")
 })
 public class MetadataSnapshot implements Serializable {
     @EmbeddedId
     private MetadataSnapshotKey snapshotKey = new MetadataSnapshotKey();
+    @Column (name = "doi")
+    private String doi;
+    @Column (name = "doi_is_minted", nullable = false)
+    private boolean doiIsMinted = false;
     @Lob
     @Column (name = "json")
     private String json;
@@ -68,6 +73,38 @@ public class MetadataSnapshot implements Serializable {
      */
     public void setSnapshotKey(MetadataSnapshotKey key) {
         this.snapshotKey = key;
+    }
+
+    /**
+     * Get the DOI of the Snapshot Object.
+     * @return a String representing the DOI for this state
+     */
+    public String getDoi() {
+        return doi;
+    }
+
+    /**
+     * Set the DOI of the Snapshot Object.
+     * @param doi DOI value
+     */
+    public void setDoi(String doi) {
+        this.doi = doi;
+    }
+
+    /**
+     * Get the Minted state of the DOI for the Snapshot Object.
+     * @return a boolean representing the DOI Minted state
+     */
+    public boolean getDoiIsMinted() {
+        return doiIsMinted;
+    }
+
+    /**
+     * Set the Minted state of the DOI for the Snapshot Object.
+     * @param isMinted boolean state of the Minted condition of the DOI for this Snapshot
+     */
+    public void setDoiIsMinted(boolean isMinted) {
+        this.doiIsMinted = isMinted;
     }
 
     /**
@@ -119,7 +156,7 @@ public class MetadataSnapshot implements Serializable {
     public void setDateRecordAdded(Date dateRecordAdded) {
         this.dateRecordAdded = dateRecordAdded;
     }
-    
+
     /**
      * Set the DATE ADDED to now.
      */
@@ -140,7 +177,7 @@ public class MetadataSnapshot implements Serializable {
     public void setDateRecordUpdated(Date dateRecordUpdated) {
         this.dateRecordUpdated = dateRecordUpdated;
     }
-    
+
     /**
      * Set DATE UPDATED to now.
      */
