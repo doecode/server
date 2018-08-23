@@ -903,7 +903,8 @@ public class Metadata {
     /**
      * Get previous snapshot info for use in backfill process that occurs after current snapshot is updated.
      *
-     * @param md the Metadata to evaluate for RI backfilling
+     * @param em the EntityManager to control commits.
+     * @param md the Metadata to evaluate for RI backfilling.
      * @return List of RelatedIdentifier objects.
      */
     private List<RelatedIdentifier> getPreviousRiList(EntityManager em, DOECodeMetadata md) throws IOException {
