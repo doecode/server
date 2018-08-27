@@ -768,6 +768,21 @@ public class Metadata {
                      Status.Approved.equals(emd.getWorkflowStatus())))
                     md.setDoi(emd.getDoi());
 
+                // do not modify AutoBackfill RI info
+                List<RelatedIdentifier> originalList = emd.getRelatedIdentifiers();
+                if (originalList != null && !originalList.isEmpty()) {
+                    // get AutoBackfill data
+                    List<RelatedIdentifier> autoRIList = getSourceRi(originalList, RelatedIdentifier.Source.AutoBackfill);
+
+                    List<RelatedIdentifier> newList = md.getRelatedIdentifiers();
+
+                    // restore any modified Auto data
+                    newList.removeAll(autoRIList); // always remove match
+                    newList.addAll(autoRIList); // add back, if needed
+
+                    md.setRelatedIdentifiers(newList);
+                }
+
                 // perform length validations on Bean
                 Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
                 if (!violations.isEmpty()) {
