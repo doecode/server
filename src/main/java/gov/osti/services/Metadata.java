@@ -1071,6 +1071,7 @@ public class Metadata {
                 RelatedIdentifier inverseRelation = new RelatedIdentifier(ri);
                 inverseRelation.setRelationType(ri.getRelationType().inverse());
                 inverseRelation.setIdentifierValue(md.getDoi());
+                inverseRelation.setSource(RelatedIdentifier.Source.AutoBackfill);
 
                 List<RelatedIdentifier> targetedList = Arrays.asList(inverseRelation);
 

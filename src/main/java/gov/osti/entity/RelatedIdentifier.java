@@ -27,6 +27,24 @@ public class RelatedIdentifier implements Serializable {
     }
 
     /**
+     * Enumeration of valid Source Types for an Identifier.
+     */
+    public enum Source {
+        User("User"),
+        AutoBackfill("Auto Backfill");
+
+        private final String label;
+
+        private Source(String label) {
+            this.label =label;
+        }
+
+        public String label() {
+            return this.label;
+        }
+    }
+
+    /**
      * Enumeration of valid Types for an Identifier.
      */
     public enum Type implements Serializable {
@@ -131,15 +149,15 @@ public class RelatedIdentifier implements Serializable {
 
     // the specific Type of the Identifier
     private Type identifierType;
-    // optional String description of this Identifier
-    private String description;
     // the value of the Identifier
     private String identifierValue;
     // the Relationship Type (if any) for this Identifier
     private RelationType relationType;
+    // source of entry for this Identifier
+    private Source source = Source.User;
 
     public RelatedIdentifier() {
-        
+
     }
 
     public RelatedIdentifier(Type idType, String value, RelationType relType) {
@@ -167,22 +185,24 @@ public class RelatedIdentifier implements Serializable {
     public void setIdentifierType(Type type) {
         this.identifierType = type;
     }
-    
+
     /**
-     * Get the Description for this Identifier
-     * @return the Description
+     * Get the Source for this Identifier
+     * @return the Source
      */
-    @Column (length = 500, name="DESCRIPTION")
-    public String getDescription() {
-        return this.description;
+    //@Convert(converter = RelatedIdentifierSourceConverter.class)
+    @Enumerated (EnumType.STRING)
+    @Column (length = 25, name="SOURCE", nullable = false)
+    public Source getSource() {
+        return this.source;
     }
-    
+
     /**
-     * Add a description (optional) for this Identifier
-     * @param d the Description to use
+     * Add a Source for this Identifier
+     * @param s the Source to use
      */
-    public void setDescription(String d) {
-        this.description = d;
+    public void setSource(Source s) {
+        this.source = s;
     }
 
     /**
