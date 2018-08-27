@@ -901,6 +901,24 @@ public class Metadata {
     }
 
     /**
+     * Get specific Source RI from metadata.
+     *
+     * @param md the Metadata to evaluate.
+     * @return Updated DOECodeMetadata object.
+     */
+    private static List<RelatedIdentifier> getSourceRi(List<RelatedIdentifier> list, RelatedIdentifier.Source source) {
+        // get detached list of RI to check
+        List<RelatedIdentifier> riList = new ArrayList<>();
+        riList.addAll(list);
+
+        // filter to targeted RI
+        riList = riList.stream().filter(p -> p.getSource() == source
+        ).collect(Collectors.toList());
+
+        return riList;
+    }
+
+    /**
      * Remove non-indexable New/Previous RI from metadata.
      *
      * @param em the EntityManager to control commits.
@@ -1100,11 +1118,22 @@ public class Metadata {
                     Long codeId = bmd.getCodeId();
                     DOECodeMetadata.Status status = bmd.getWorkflowStatus();
 
-                     // update metadata RI info
                     List<RelatedIdentifier> updateList = bmd.getRelatedIdentifiers();
-                    updateList.removeAll(targetedList); // always remove
+
+                    if (updateList == null)
+                        updateList = new ArrayList<>();
+
+                    // get User data
+                    List<RelatedIdentifier> userRIList = getSourceRi(updateList, RelatedIdentifier.Source.User);
+
+                     // update metadata RI info
+                    updateList.removeAll(targetedList); // always remove match
                     if (backfillType == RelatedIdentifier.BackfillType.Addition)
                         updateList.addAll(targetedList); // add back, if needed
+
+                    // restore any modified User data
+                    updateList.removeAll(userRIList); // always remove match
+                    updateList.addAll(userRIList); // add back, if needed
 
                     // save changes
                     bmd.setRelatedIdentifiers(updateList);
@@ -1125,10 +1154,17 @@ public class Metadata {
                             if (snapshotList == null)
                                 snapshotList = new ArrayList<>();
 
+                            // get User data
+                            userRIList = getSourceRi(snapshotList, RelatedIdentifier.Source.User);
+
                             // update snapshot RI info, if needed
-                            snapshotList.removeAll(targetedList); // always remove
+                            snapshotList.removeAll(targetedList); // always remove match
                             if (backfillType == RelatedIdentifier.BackfillType.Addition)
                                 snapshotList.addAll(targetedList); // add back, if needed
+
+                            // restore any modified User data
+                            snapshotList.removeAll(userRIList); // always remove match
+                            snapshotList.addAll(userRIList); // add back, if needed
 
                             // save changes to Snapshot
                             smd.setRelatedIdentifiers(snapshotList);
