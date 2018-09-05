@@ -219,6 +219,7 @@ public class DOECodeMetadata implements Serializable {
     private Status workflowStatus = null;
 
     private String fileName = null;
+    private String containerName = null;
 
     // administrative dates
     @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
@@ -688,7 +689,27 @@ public class DOECodeMetadata implements Serializable {
         return this.fileName == null ? null : this.fileName.substring(this.fileName.lastIndexOf(File.separator) + 1);
     }
 
+    /**
+     * Set the CONTAINER NAME if any for archive.
+     *
+     * @param name the ABSOLUTE PATH name to the archive file, if any
+     */
+    public void setContainerName(String name) {
+        this.containerName = name == null ? null : name.substring(name.lastIndexOf(File.separator) + 1);
+    }
 
+    /**
+     * Get the CONTAINER NAME for this project, if any.
+     *
+     * For serialization purposes, DO NOT show the full path name, only the
+     * base container name.
+     *
+     * @return the CONTAINER NAME
+     */
+    @Column(length = 500, name = "CONTAINER_NAME")
+    public String getContainerName() {
+        return this.containerName == null ? null : this.containerName.substring(this.containerName.lastIndexOf(File.separator) + 1);
+    }
 
     /**
      * @return the dateRecordAdded

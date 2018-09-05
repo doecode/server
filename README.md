@@ -67,6 +67,7 @@ email.notification | (optional) the address to use for sending notification emai
 github.user | (optional) GitHub user account name for using GitHub API without access limitations
 github.apikey | (optional) the GitHub user's API key
 file.uploads | the server path used for saving uploaded files
+file.containers | the server path used for saving uploaded container images
 archiver.url | (optional) base URL for DOE CODE Archiver API if using it for archiving
 gitlab.osti.baseurl | (optional) base URL for the OSTI Hosted GitLab
 gitlab.osti.token | (optional) GitLab API token for accessing OSTI Hosted GitLab

@@ -151,6 +151,8 @@ public class Metadata {
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
     // absolute filesystem location to store uploaded files, if any
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
+    // absolute filesystem location to store uploaded container images, if any
+    private static String CONTAINER_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.containers");
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     // get the SITE URL base for applications
@@ -1286,11 +1288,14 @@ public class Metadata {
      *
      * @param json the JSON String containing the metadata to SAVE
      * @param file a FILE associated with this record if any
-     * @param fileInfo file disposition of information if any
+     * @param fileInfo the FILE disposition information if any
+     * @param container a CONTAINER IMAGE associated with this record if any
+     * @param containerInfo the CONTAINER IMAGE disposition of information if any
      * @return a Response containing the JSON of the saved record if successful,
      * or error information if not
      */
-    private Response doSave(String json, InputStream file, FormDataContentDisposition fileInfo) {
+    private Response doSave(String json, InputStream file, FormDataContentDisposition fileInfo
+            , InputStream container, FormDataContentDisposition containerInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -1308,18 +1313,31 @@ public class Metadata {
 
             store(em, md, user);
 
+            // re-attach metadata to transaction in order to store any changes beyond this point
+            md = em.find(DOECodeMetadata.class, md.getCodeId());
+
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
-                // re-attach metadata to transaction in order to store the filename
-                md = em.find(DOECodeMetadata.class, md.getCodeId());
-
                 try {
-                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
                     md.setFileName(fileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
                             .internalServerError("File upload failed.")
+                            .build();
+                }
+            }
+
+            // if there's a CONTAINER IMAGE associated here, store it
+            if ( null!=container && null!=containerInfo ) {
+                try {
+                    String containerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
+                    md.setContainerName(containerName);
+                } catch ( IOException e ) {
+                    log.error ("Container Image Upload Failed: " + e.getMessage());
+                    return ErrorResponse
+                            .internalServerError("Container Image upload failed.")
                             .build();
                 }
             }
@@ -1362,9 +1380,12 @@ public class Metadata {
      * @param json JSON String containing the METADATA object to SUBMIT
      * @param file (optional) a FILE associated with this METADATA
      * @param fileInfo (optional) the FILE disposition information, if any
+     * @param container (optional) a CONTAINER IMAGE associated with this METADATA
+     * @param containerInfo (optional) the CONTAINER IMAGE disposition information, if any
      * @return an appropriate Response object to the caller
      */
-    private Response doSubmit(String json, InputStream file, FormDataContentDisposition fileInfo) {
+    private Response doSubmit(String json, InputStream file, FormDataContentDisposition fileInfo
+            , InputStream container, FormDataContentDisposition containerInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -1391,7 +1412,7 @@ public class Metadata {
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 try {
-                    fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
                     md.setFileName(fullFileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
@@ -1400,6 +1421,20 @@ public class Metadata {
                             .build();
                 }
             }
+
+            // if there's a CONTAINER IMAGE associated here, store it
+            if ( null!=container && null!=containerInfo ) {
+                try {
+                    String containerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
+                    md.setContainerName(containerName);
+                } catch ( IOException e ) {
+                    log.error ("Container Image Upload Failed: " + e.getMessage());
+                    return ErrorResponse
+                            .internalServerError("Container Image upload failed.")
+                            .build();
+                }
+            }
+
 
             // check validations for Submitted workflow
             List<String> errors = validateSubmit(md);
@@ -1505,7 +1540,8 @@ public class Metadata {
      * @return a Response containing the JSON of the submitted record if successful, or
      * error information if not
      */
-    private Response doAnnounce(String json, InputStream file, FormDataContentDisposition fileInfo) {
+    private Response doAnnounce(String json, InputStream file, FormDataContentDisposition fileInfo
+            , InputStream container, FormDataContentDisposition containerInfo) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();
         User user = (User) subject.getPrincipal();
@@ -1542,12 +1578,25 @@ public class Metadata {
             // if there's a FILE associated here, store it
             if ( null!=file && null!=fileInfo ) {
                 try {
-                    fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName());
+                    fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
                     md.setFileName(fullFileName);
                 } catch ( IOException e ) {
                     log.error ("File Upload Failed: " + e.getMessage());
                     return ErrorResponse
                             .internalServerError("File upload failed.")
+                            .build();
+                }
+            }
+
+            // if there's a CONTAINER IMAGE associated here, store it
+            if ( null!=container && null!=containerInfo ) {
+                try {
+                    String containerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
+                    md.setContainerName(containerName);
+                } catch ( IOException e ) {
+                    log.error ("Container Image Upload Failed: " + e.getMessage());
+                    return ErrorResponse
+                            .internalServerError("Container Image upload failed.")
                             .build();
                 }
             }
@@ -1658,6 +1707,8 @@ public class Metadata {
      * @param metadata contains the JSON of the record metadata information
      * @param file the uploaded file to attach
      * @param fileInfo disposition information for the file name
+     * @param container the uploaded container image to attach
+     * @param containerInfo disposition information for the container image name
      * @return a Response appropriate to the request status
      */
     @POST
@@ -1667,8 +1718,10 @@ public class Metadata {
     @RequiresAuthentication
     public Response submitFile(@FormDataParam("metadata") String metadata,
             @FormDataParam("file") InputStream file,
-            @FormDataParam("file") FormDataContentDisposition fileInfo) {
-        return doSubmit(metadata, file, fileInfo);
+            @FormDataParam("file") FormDataContentDisposition fileInfo,
+            @FormDataParam("container") InputStream container,
+            @FormDataParam("container") FormDataContentDisposition containerInfo) {
+        return doSubmit(metadata, file, fileInfo, container, containerInfo);
     }
 
 
@@ -1688,7 +1741,7 @@ public class Metadata {
     @Path ("/submit")
     @RequiresAuthentication
     public Response submit(String object) {
-        return doSubmit(object, null, null);
+        return doSubmit(object, null, null, null, null);
     }
 
     /**
@@ -1709,7 +1762,7 @@ public class Metadata {
     @Path ("/announce")
     @RequiresAuthentication
     public Response announce(String object) {
-        return doAnnounce(object, null, null);
+        return doAnnounce(object, null, null, null, null);
     }
 
     /**
@@ -1725,6 +1778,8 @@ public class Metadata {
      * @param metadata the METADATA to ANNOUNCE (send to OSTI)
      * @param file a FILE to associate with this METADATA
      * @param fileInfo file disposition information for the FILE
+     * @param container a CONTAINER IMAGE to associate with this METADATA
+     * @param containerInfo file disposition information for the CONTAINER IMAGE
      * @return a Response containing the metadata, or error information
      */
     @POST
@@ -1734,8 +1789,10 @@ public class Metadata {
     @RequiresAuthentication
     public Response announceFile(@FormDataParam("metadata") String metadata,
             @FormDataParam("file") InputStream file,
-            @FormDataParam("file") FormDataContentDisposition fileInfo) {
-        return doAnnounce(metadata, file, fileInfo);
+            @FormDataParam("file") FormDataContentDisposition fileInfo,
+            @FormDataParam("container") InputStream container,
+            @FormDataParam("container") FormDataContentDisposition containerInfo) {
+        return doAnnounce(metadata, file, fileInfo, container, containerInfo);
     }
 
     /**
@@ -1752,7 +1809,7 @@ public class Metadata {
     @RequiresAuthentication
     @Path ("/save")
     public Response save(String object) {
-        return doSave(object, null, null);
+        return doSave(object, null, null, null, null);
     }
 
     /**
@@ -1761,6 +1818,8 @@ public class Metadata {
      * @param metadata the JSON containing the Metadata information
      * @param file a FILE associated with this record
      * @param fileInfo file disposition information for the FILE
+     * @param container a CONTAINER IMAGE associated with this record
+     * @param containerInfo file disposition information for the CONTAINER IMAGE
      * @return a Response containing the JSON of the metadata if successful, or
      * error information if not
      */
@@ -1771,8 +1830,10 @@ public class Metadata {
     @Path ("/save")
     public Response save(@FormDataParam("metadata") String metadata,
             @FormDataParam("file") InputStream file,
-            @FormDataParam("file") FormDataContentDisposition fileInfo) {
-        return doSave(metadata, file, fileInfo);
+            @FormDataParam("file") FormDataContentDisposition fileInfo,
+            @FormDataParam("container") InputStream container,
+            @FormDataParam("container") FormDataContentDisposition containerInfo) {
+        return doSave(metadata, file, fileInfo, container, containerInfo);
     }
 
     @GET
@@ -1975,13 +2036,14 @@ public class Metadata {
      * @param in the InputStream containing the file content
      * @param codeId the CODE ID associated with this file content
      * @param fileName the base file name of the file
+     * @param basePath the base path destination for the file content
      * @return the absolute filesystem path to the file
      * @throws IOException on IO errors
      */
-    private static String writeFile(InputStream in, Long codeId, String fileName) throws IOException {
+    private static String writeFile(InputStream in, Long codeId, String fileName, String basePath) throws IOException {
         // store this file in a designated base path
         java.nio.file.Path destination =
-                Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
+                Paths.get(basePath, String.valueOf(codeId), fileName);
         // make intervening folders if needed
         Files.createDirectories(destination.getParent());
         // save it (CLOBBER existing, if one there)
