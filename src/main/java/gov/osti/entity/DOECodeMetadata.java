@@ -666,119 +666,121 @@ public class DOECodeMetadata implements Serializable {
 		this.owner = owner;
 	}
 
-        /**
-         * Set the FILE NAME if any for archive.
-         *
-         * @param name the ABSOLUTE PATH name to the archive file, if any
-         */
-        public void setFileName(String name) {
-            this.fileName = name == null ? null : name.substring(name.lastIndexOf(File.separator)+1);
-        }
+    /**
+     * Set the FILE NAME if any for archive.
+     *
+     * @param name the ABSOLUTE PATH name to the archive file, if any
+     */
+    public void setFileName(String name) {
+        this.fileName = name == null ? null : name.substring(name.lastIndexOf(File.separator) + 1);
+    }
 
-        /**
-         * Get the FILE NAME for this project, if any.
-         * 
-         * For serialization purposes, DO NOT show the full path name, only the
-         * base file name.
-         * 
-         * @return the FILE NAME
-         */
-        @Column (length = 500, name = "FILE_NAME")
-        public String getFileName() {
-            return this.fileName == null ? null : this.fileName.substring(this.fileName.lastIndexOf(File.separator)+1);
-        }
-        
-        /**
-         * @return the dateRecordAdded
-         */
-        @Basic(optional = false)
-        @Column(name = "date_record_added", insertable = true, updatable = false)
-        @Temporal(TemporalType.TIMESTAMP)
-        public Date getDateRecordAdded() {
-            return dateRecordAdded;
-        }
+    /**
+     * Get the FILE NAME for this project, if any.
+     *
+     * For serialization purposes, DO NOT show the full path name, only the
+     * base file name.
+     *
+     * @return the FILE NAME
+     */
+    @Column(length = 500, name = "FILE_NAME")
+    public String getFileName() {
+        return this.fileName == null ? null : this.fileName.substring(this.fileName.lastIndexOf(File.separator) + 1);
+    }
 
-        /**
-         * @param dateRecordAdded the dateRecordAdded to set
-         */
-        public void setDateRecordAdded(Date dateRecordAdded) {
-            this.dateRecordAdded = dateRecordAdded;
-        }
 
-        public void setDateRecordAdded () {
-            setDateRecordAdded(new Date());
-        }
 
-        /**
-         * @return the dateRecordUpdated
-         */
-        @Basic(optional = false)
-        @Column(name = "date_record_updated", insertable = true, updatable = true)
-        @Temporal(TemporalType.TIMESTAMP)
-        public Date getDateRecordUpdated() {
-            return dateRecordUpdated;
-        }
+    /**
+     * @return the dateRecordAdded
+     */
+    @Basic(optional = false)
+    @Column(name = "date_record_added", insertable = true, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    public Date getDateRecordAdded() {
+        return dateRecordAdded;
+    }
 
-        /**
-         * @param dateRecordUpdated the dateRecordUpdated to set
-         */
-        public void setDateRecordUpdated(Date dateRecordUpdated) {
-            this.dateRecordUpdated = dateRecordUpdated;
-        }
+    /**
+     * @param dateRecordAdded the dateRecordAdded to set
+     */
+    public void setDateRecordAdded(Date dateRecordAdded) {
+        this.dateRecordAdded = dateRecordAdded;
+    }
 
-        public void setDateRecordUpdated() {
-            setDateRecordUpdated(new Date());
-        }
+    public void setDateRecordAdded() {
+        setDateRecordAdded(new Date());
+    }
 
-        /**
-         * Method called when a record is first created.  Sets dates added and
-         * updated.
-         */
-        @PrePersist
-        void createdAt() {
-            setDateRecordAdded();
-            setDateRecordUpdated();
-        }
+    /**
+     * @return the dateRecordUpdated
+     */
+    @Basic(optional = false)
+    @Column(name = "date_record_updated", insertable = true, updatable = true)
+    @Temporal(TemporalType.TIMESTAMP)
+    public Date getDateRecordUpdated() {
+        return dateRecordUpdated;
+    }
 
-        /**
-         * Method called when the record is updated.
-         */
-        @PreUpdate
-        void updatedAt() {
-            setDateRecordUpdated();
-        }
-        
-        /**
-         * Determine whether or not the RELEASE DATE was changed (possibly to null).
-         * Prevents Bean utilities from "losing" the changed release date if it gets
-         * "unset".
-         * 
-         * @return true if setReleaseDate() has been called, false if not
-         */
-        @JsonIgnore
-        public boolean hasSetReleaseDate() {
-            return hasSetReleaseDate;
-        }
-        
-        /**
-         * Obtain the SOFTWARE TYPE: one of Type.S (scientific) or Type.B (Business)
-         * 
-         * @return the type the SOFTWARE TYPE
-         */
-        @Basic (optional = false)
-        @Valid
-        @Column (name = "SOFTWARE_TYPE")
-        @Enumerated (EnumType.STRING)
-        public Type getSoftwareType() {
-            return softwareType;
-        }
+    /**
+     * @param dateRecordUpdated the dateRecordUpdated to set
+     */
+    public void setDateRecordUpdated(Date dateRecordUpdated) {
+        this.dateRecordUpdated = dateRecordUpdated;
+    }
 
-        /**
-         * Set the SOFTWARE TYPE value.
-         * 
-         * @param type the type to set
-         */
-        public void setSoftwareType(Type type) {
-            this.softwareType = type;
-        }
+    public void setDateRecordUpdated() {
+        setDateRecordUpdated(new Date());
+    }
+
+    /**
+     * Method called when a record is first created. Sets dates added and
+     * updated.
+     */
+    @PrePersist
+    void createdAt() {
+        setDateRecordAdded();
+        setDateRecordUpdated();
+    }
+
+    /**
+     * Method called when the record is updated.
+     */
+    @PreUpdate
+    void updatedAt() {
+        setDateRecordUpdated();
+    }
+
+    /**
+     * Determine whether or not the RELEASE DATE was changed (possibly to null).
+     * Prevents Bean utilities from "losing" the changed release date if it gets
+     * "unset".
+     *
+     * @return true if setReleaseDate() has been called, false if not
+     */
+    @JsonIgnore
+    public boolean hasSetReleaseDate() {
+        return hasSetReleaseDate;
+    }
+
+    /**
+     * Obtain the SOFTWARE TYPE: one of Type.S (scientific) or Type.B (Business)
+     *
+     * @return the type the SOFTWARE TYPE
+     */
+    @Basic(optional = false)
+    @Valid
+    @Column(name = "SOFTWARE_TYPE")
+    @Enumerated(EnumType.STRING)
+    public Type getSoftwareType() {
+        return softwareType;
+    }
+
+    /**
+     * Set the SOFTWARE TYPE value.
+     *
+     * @param type the type to set
+     */
+    public void setSoftwareType(Type type) {
+        this.softwareType = type;
+    }
 }
