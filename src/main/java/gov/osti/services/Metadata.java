@@ -64,6 +64,7 @@ import javax.servlet.ServletContext;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import javax.validation.ValidationException;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.Consumes;
@@ -112,6 +113,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.binary.Base64InputStream;
 
@@ -918,6 +921,32 @@ public class Metadata {
     }
 
     /**
+     * Validate accepted file types.
+     *
+     * @param fileName the uploaded filename to evaluate.
+     * @param containerName the uploaded container image filename to evaluate.
+     */
+    private static void validateUploads(FormDataContentDisposition fileInfo, FormDataContentDisposition containerInfo) {
+        // evaluate file upload
+        if (fileInfo != null && !StringUtils.isBlank(fileInfo.getFileName())) {
+            String fileName = fileInfo.getFileName();
+            Pattern filePattern = Pattern.compile("[.](?:zip|tar(?:[.](?:gz|bz2))?)$");
+            Matcher m = filePattern.matcher(fileName);
+            if (!m.find())
+                throw new ValidationException("File upload failed!  File must be of type: .zip, .tar, .tar.gz, .tar.bz2");
+        }
+
+        // evaluate container upload
+        if (containerInfo != null  && !StringUtils.isBlank(containerInfo.getFileName())) {
+            String fileName = containerInfo.getFileName();
+            Pattern containerPattern = Pattern.compile("[.](?:simg|tar(?:[.]gz)?)$");
+            Matcher m = containerPattern.matcher(fileName);
+            if (!m.find())
+                throw new ValidationException("Container image upload failed!  File must be of type: .tar, .tar.gz, .simg");
+        }
+    }
+
+    /**
      * Get specific Source RI from metadata.
      *
      * @param md the Metadata to evaluate.
@@ -1301,9 +1330,11 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-            em.getTransaction().begin();
+            validateUploads(fileInfo, containerInfo);
 
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+
+            em.getTransaction().begin();
 
             removeRiDups(md);
 
@@ -1361,6 +1392,11 @@ public class Metadata {
             return ErrorResponse
                     .forbidden("Unable to persist update for indicated record.")
                     .build();
+        } catch ( ValidationException e ) {
+            log.warn("Validation Error: " + e.getMessage());
+            return ErrorResponse
+                    .badRequest(e.getMessage())
+                    .build();
         } catch ( IOException | InvocationTargetException e ) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
@@ -1391,6 +1427,8 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
+            validateUploads(fileInfo, containerInfo);
+
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
             em.getTransaction().begin();
@@ -1518,6 +1556,11 @@ public class Metadata {
             return ErrorResponse
                     .forbidden("Logged in User is not allowed to modify this record.")
                     .build();
+        } catch ( ValidationException e ) {
+            log.warn("Validation Error: " + e.getMessage());
+            return ErrorResponse
+                    .badRequest(e.getMessage())
+                    .build();
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
                 em.getTransaction().rollback();
@@ -1547,6 +1590,8 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
+            validateUploads(fileInfo, containerInfo);
+
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
             em.getTransaction().begin();
@@ -1680,6 +1725,11 @@ public class Metadata {
             log.warn("Message: " + e.getMessage());
             return ErrorResponse
                     .forbidden("Invalid Access: Unable to edit indicated record.")
+                    .build();
+        } catch ( ValidationException e ) {
+            log.warn("Validation Error: " + e.getMessage());
+            return ErrorResponse
+                    .badRequest(e.getMessage())
                     .build();
         } catch ( IOException | InvocationTargetException e ) {
             if ( em.getTransaction().isActive())
