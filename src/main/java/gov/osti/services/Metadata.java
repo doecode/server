@@ -858,14 +858,15 @@ public class Metadata {
      * @param codeId the CODE ID for this METADATA
      * @param repositoryLink (optional) the REPOSITORY LINK value, or null if none
      * @param archiveFile (optional) the File recently uploaded to ARCHIVE, or null if none
+     * @param archiveContainer (optional) the Container recently uploaded to ARCHIVE, or null if none
      * @throws IOException on IO transmission errors
      */
-    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile) throws IOException {
+    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer) throws IOException {
         if ( "".equals(ARCHIVER_URL) )
             return;
 
         // Nothing sent?
-        if (StringUtils.isBlank(repositoryLink) && null==archiveFile)
+        if (StringUtils.isBlank(repositoryLink) && null==archiveFile && null==archiveContainer)
             return;
 
         // set up a connection
@@ -888,18 +889,24 @@ public class Metadata {
             request.put("repository_link", repositoryLink);
 
             // determine if there's a file to send or not
-            if (null==archiveFile) {
+            if (null==archiveFile && null==archiveContainer) {
                 post.setHeader("Content-Type", "application/json");
                 post.setHeader("Accept", "application/json");
 
                 post.setEntity(new StringEntity(request.toString(), "UTF-8"));
             } else {
-                post.setEntity(MultipartEntityBuilder
+                MultipartEntityBuilder mpe = MultipartEntityBuilder
                         .create()
                         .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
-                        .addPart("file", new FileBody(archiveFile, ContentType.DEFAULT_BINARY))
-                        .addPart("project", new StringBody(request.toString(), ContentType.APPLICATION_JSON))
-                        .build());
+                        .addPart("project", new StringBody(request.toString(), ContentType.APPLICATION_JSON));
+
+                if (archiveFile != null)
+                    mpe.addPart("file", new FileBody(archiveFile, ContentType.DEFAULT_BINARY));
+
+                if (archiveContainer != null)
+                    mpe.addPart("container", new FileBody(archiveContainer, ContentType.DEFAULT_BINARY));
+
+                post.setEntity(mpe.build());
             }
             HttpResponse response = hc.execute(post);
 
@@ -1445,9 +1452,9 @@ public class Metadata {
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
-            String fullFileName = "";
 
             // if there's a FILE associated here, store it
+            String fullFileName = "";
             if ( null!=file && null!=fileInfo ) {
                 try {
                     fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
@@ -1461,10 +1468,11 @@ public class Metadata {
             }
 
             // if there's a CONTAINER IMAGE associated here, store it
+            String fullContainerName = "";
             if ( null!=container && null!=containerInfo ) {
                 try {
-                    String containerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
-                    md.setContainerName(containerName);
+                    fullContainerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
+                    md.setContainerName(fullContainerName);
                 } catch ( IOException e ) {
                     log.error ("Container Image Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1496,13 +1504,14 @@ public class Metadata {
 
             // send this file upload along to archiver if configured
             try {
-                // if a FILE was sent, create a File Object from it
+                // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
+                File archiveContainer = (null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile);
+                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
                 else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
@@ -1618,9 +1627,9 @@ public class Metadata {
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
-            String fullFileName = "";
 
             // if there's a FILE associated here, store it
+            String fullFileName = "";
             if ( null!=file && null!=fileInfo ) {
                 try {
                     fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
@@ -1634,10 +1643,11 @@ public class Metadata {
             }
 
             // if there's a CONTAINER IMAGE associated here, store it
+            String fullContainerName = "";
             if ( null!=container && null!=containerInfo ) {
                 try {
-                    String containerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
-                    md.setContainerName(containerName);
+                    fullContainerName = writeFile(container, md.getCodeId(), containerInfo.getFileName(), CONTAINER_UPLOADS);
+                    md.setContainerName(fullContainerName);
                 } catch ( IOException e ) {
                     log.error ("Container Image Upload Failed: " + e.getMessage());
                     return ErrorResponse
@@ -1667,13 +1677,14 @@ public class Metadata {
 
             // send this file upload along to archiver if configured
             try {
-                // if a FILE was sent, create a File Object from it
+                // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
+                File archiveContainer = (null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile);
+                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
                 else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile);
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
