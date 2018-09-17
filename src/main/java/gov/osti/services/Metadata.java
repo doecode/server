@@ -1528,8 +1528,9 @@ public class Metadata {
                     DataCite.register(md);
                 } catch ( IOException e ) {
                     // tell why the DataCite registration failed
+                    log.warn("DataCite ERROR: " + e.getMessage());
                     return ErrorResponse
-                            .internalServerError("DOI registration failed: " + e.getMessage())
+                            .internalServerError("DOI registration failed. Please try again later.")
                             .build();
                 }
             }
@@ -1701,8 +1702,9 @@ public class Metadata {
                     DataCite.register(md);
                 } catch ( IOException e ) {
                     // if DataCite registration failed, say why
+                    log.warn("DataCite ERROR: " + e.getMessage());
                     return ErrorResponse
-                            .internalServerError("DOI registration failed: " + e.getMessage())
+                            .internalServerError("DOI registration failed. Please try again later.")
                             .build();
                 }
             }
