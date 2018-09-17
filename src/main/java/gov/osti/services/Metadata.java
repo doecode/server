@@ -117,6 +117,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.binary.Base64InputStream;
+import static java.nio.file.StandardCopyOption.*;
 
 /**
  * REST Web Service for Metadata.
@@ -156,6 +157,8 @@ public class Metadata {
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     // absolute filesystem location to store uploaded container images, if any
     private static String CONTAINER_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.containers");
+    // absolute filesystem location to store uploaded container images, if any
+    private static String CONTAINER_UPLOADS_APPROVED = DoeServletContextListener.getConfigurationProperty("file.containers.approved");
     // API path to archiver services if available
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     // get the SITE URL base for applications
@@ -1962,6 +1965,16 @@ public class Metadata {
                         .badRequest("Metadata is not in the Submitted/Announced workflow state.")
                         .build();
 
+            // move Approved Container to downloadable path
+            try {
+                approveContainerUpload(md);
+            } catch ( IOException e ) {
+                log.error("Container move failure: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError(e.getMessage())
+                        .build();
+            }
+
             // if approving announced, send this to OSTI
             if (DOECodeMetadata.Status.Announced.equals(md.getWorkflowStatus())) {
                 sendToOsti(em, md);
@@ -2566,6 +2579,37 @@ public class Metadata {
             String eMsg = e.getMessage();
             eMsg = eMsg.replaceFirst("'name'", "'software_title'");
             throw new Exception(eMsg);
+        }
+    }
+
+    /**
+     * As needed, move Container Uploads to download location.
+     *
+     * @param md the METADATA to process Container Approval for
+     */
+    private static void approveContainerUpload(DOECodeMetadata md) throws IOException {
+        String containerName = md.getContainerName();
+
+        String codeId = String.valueOf(md.getCodeId());
+        java.nio.file.Path uploadedFile = Paths.get(CONTAINER_UPLOADS, String.valueOf(codeId), containerName);
+        java.nio.file.Path approvedFile = Paths.get(CONTAINER_UPLOADS_APPROVED, String.valueOf(codeId), containerName);
+
+        // if file already moved to approval, skip
+        if (!Files.exists(uploadedFile) && Files.exists(approvedFile))
+            return;
+
+        // if file is missing, fail
+        if (!Files.exists(uploadedFile))
+            throw new IOException("Container not found in containers directory during Approval! [" + uploadedFile.toString() + "]");
+
+        // make intervening folders if needed
+        Files.createDirectories(approvedFile.getParent());
+
+        try {
+            Files.move(uploadedFile, approvedFile, REPLACE_EXISTING, ATOMIC_MOVE);
+        } catch ( IOException e ) {
+            String eMsg = "Failed to move Container during Approval: " + e.getMessage();
+            throw new IOException(eMsg);
         }
     }
 }
