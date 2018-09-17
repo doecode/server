@@ -2590,6 +2590,10 @@ public class Metadata {
     private static void approveContainerUpload(DOECodeMetadata md) throws IOException {
         String containerName = md.getContainerName();
 
+        // if nothing to move, return
+        if (StringUtils.isBlank(containerName))
+            return;
+
         String codeId = String.valueOf(md.getCodeId());
         java.nio.file.Path uploadedFile = Paths.get(CONTAINER_UPLOADS, String.valueOf(codeId), containerName);
         java.nio.file.Path approvedFile = Paths.get(CONTAINER_UPLOADS_APPROVED, String.valueOf(codeId), containerName);
