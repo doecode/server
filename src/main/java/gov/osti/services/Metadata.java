@@ -1441,6 +1441,15 @@ public class Metadata {
 
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
+            Long currentCodeId = md.getCodeId();
+            boolean previouslySaved = false;
+            if (currentCodeId != null) {
+                DOECodeMetadata emd = em.find(DOECodeMetadata.class, currentCodeId);
+
+                if (emd != null)
+                    previouslySaved = Status.Saved.equals(emd.getWorkflowStatus());
+            }
+
             em.getTransaction().begin();
 
             removeRiDups(md);
@@ -1507,6 +1516,20 @@ public class Metadata {
 
             // send this file upload along to archiver if configured
             try {
+                // if no file/container, but previously Saved with a file/container, we need to attach to those streams and send to Archiver
+                if (previouslySaved) {
+                    if (null==file && !StringUtils.isBlank(md.getFileName())) {
+                        java.nio.file.Path destination = Paths.get(FILE_UPLOADS, String.valueOf(md.getCodeId()), md.getFileName());
+                        fullFileName = destination.toString();
+                        file = Files.newInputStream(destination);
+                    }
+                    if (null==container && !StringUtils.isBlank(md.getContainerName())) {
+                        java.nio.file.Path destination = Paths.get(CONTAINER_UPLOADS, String.valueOf(md.getCodeId()), md.getContainerName());
+                        fullContainerName = destination.toString();
+                        container = Files.newInputStream(destination);
+                    }
+                }
+
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
                 File archiveContainer = (null==container) ? null : new File(fullContainerName);
@@ -1607,6 +1630,15 @@ public class Metadata {
 
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
+            Long currentCodeId = md.getCodeId();
+            boolean previouslySaved = false;
+            if (currentCodeId != null) {
+                DOECodeMetadata emd = em.find(DOECodeMetadata.class, currentCodeId);
+
+                if (emd != null)
+                    previouslySaved = Status.Saved.equals(emd.getWorkflowStatus());
+            }
+
             em.getTransaction().begin();
 
             removeRiDups(md);
@@ -1681,6 +1713,20 @@ public class Metadata {
 
             // send this file upload along to archiver if configured
             try {
+                // if no file/container, but previously Saved with a file/container, we need to attach to those streams and send to Archiver
+                if (previouslySaved) {
+                    if (null==file && !StringUtils.isBlank(md.getFileName())) {
+                        java.nio.file.Path destination = Paths.get(FILE_UPLOADS, String.valueOf(md.getCodeId()), md.getFileName());
+                        fullFileName = destination.toString();
+                        file = Files.newInputStream(destination);
+                    }
+                    if (null==container && !StringUtils.isBlank(md.getContainerName())) {
+                        java.nio.file.Path destination = Paths.get(CONTAINER_UPLOADS, String.valueOf(md.getCodeId()), md.getContainerName());
+                        fullContainerName = destination.toString();
+                        container = Files.newInputStream(destination);
+                    }
+                }
+
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
                 File archiveContainer = (null==container) ? null : new File(fullContainerName);
