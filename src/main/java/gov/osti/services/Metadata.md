@@ -75,9 +75,6 @@ JSON is the default output format.  Authenticated user must be either the owner 
 Requires authenticated login.  Retrieve all metadata projects owned by the current logged-in user account in JSON format. Administrative accounts
 will see ALL PROJECTS, while Site Administrator users will see all projects from their SITE.
 
-If pagination is desired, specify the starting row number as the query parameter "start", and the desired number of rows as "rows".  If rows is
-specified, it is capped at 100.
-
 > Request:
 > ```html
 > GET /doecodeapi/services/metadata/projects
@@ -92,6 +89,11 @@ specified, it is capped at 100.
 > ```json
 > { "records":[{"code_id":234,"software_title":"Test Project", ...}, ... ] }
 > ```
+
+<p id='metadata-project-pagination'>
+If pagination is desired, specify the starting row number as the query parameter "start", and the desired number of rows as "rows".  If rows is
+specified, it is capped at 100.
+</p>
 
 ### projects pending
 
@@ -172,9 +174,21 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > ```html
 > POST /doecodeapi/services/metadata/save
 > Content-Type: application/json
+> Authorization: Basic user-api-key
 > ```
 > ```json
 > { "software_title" : "Sample Data", ... }
+> ```
+> > Request with Upload:
+> ```html
+> POST /doecodeapi/services/metadata/save
+> Content-Type: multipart/form-data
+> Authorization: Basic user-api-key
+> ```
+> ```json
+> -F metadata={ "code_id":123, "software_title" : "Sample Data", ... }
+> -F file=@uploadedFile.tar
+> -F container=@uploadedContainer.tar
 > ```
 > Response:
 > ```html
@@ -193,6 +207,10 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > { "status" : 500, "errors" : ["Error saving record for \"Sample Data\": database failure." ] }
 > ```
 
+<p id='metadata-save-upload-via-api'>
+*When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
+</p>
+
 ### submit
 
 `POST /doecodeapi/services/metadata/submit`
@@ -208,6 +226,17 @@ this operation will be returned.
 > ```
 > ```json
 > { "code_id":123, "software_title":"Sample Data", ... }
+> ```
+> > Request with Upload:
+> ```html
+> POST /doecodeapi/services/metadata/submit
+> Content-Type: multipart/form-data
+> Authorization: Basic user-api-key
+> ```
+> ```json
+> -F metadata={ "code_id":123, "software_title" : "Sample Data", ... }
+> -F file=@uploadedFile.tar
+> -F container=@uploadedContainer.tar
 > ```
 > Response:
 > ```html
@@ -244,7 +273,7 @@ Validation rules are:
 * software type is required:
   * "S" (Scientific)
   * "B" (Business), also requires at least one sponsoring organization
-* If project type is Closed Source, OSTI Hosted ("CO"), a file upload is required. *When submitting a file via the API, it must be provided as a "file" multipart form data parameter*
+* If project type is Closed Source, OSTI Hosted ("CO"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
 
 
 
@@ -264,6 +293,17 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
 > ```json
 > { "code_id":123, "software_title":"Sample Data", ... }
 > ```
+> > Request with Upload:
+> ```html
+> POST /doecodeapi/services/metadata/announce
+> Content-Type: multipart/form-data
+> Authorization: Basic user-api-key
+> ```
+> ```json
+> -F metadata={ "code_id":123, "software_title" : "Sample Data", ... }
+> -F file=@uploadedFile.tar
+> -F container=@uploadedContainer.tar
+> ```
 > Response:
 > ```html
 > HTTP/1.1 200 OK
@@ -281,9 +321,8 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
 > { "status" : 400, "errors":[ "Title is required", "Developers are required", "Provided email address is invalid" ] }
 > ```
 
-<p id='metadata-services-announce'>&nbsp;</p>
+<p id='metadata-services-announce'>All above Submitted validations apply, plus:</p>
 
-* All above Submitted validations apply
 * A release date is required
 * At least one sponsoring organization is required
   * each organization must have a name
@@ -294,7 +333,7 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
   * email must be valid
   * phone number must be valid
   * organization name is required
-* If project type is not Open Source ("OS"), a file upload is required. *When submitting a file via the API, it must be provided as a "file" multipart form data parameter*
+* If project type is not Open Source ("OS"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
 
 
 
@@ -327,6 +366,11 @@ code ID value of the Submitted record in order to approve access.  Approved reco
 > ```json
 > { "status" : 400, "errors":[ "Metadata is not in the Submitted workflow state." ] }
 > ```
+
+
+<p id='metadata-services-approve-newprev'>
+Upon approval, any DOI related identifiers of the type "IsNewVersionOf" or "IsPreviousVersionOf" will be matched, by DOI, to existing DOE CODE projects.  Those projects will automatically be associated with the Approved project via new Related Identifier information.
+</p>
 
 DOE CODE Metadata
 ===============

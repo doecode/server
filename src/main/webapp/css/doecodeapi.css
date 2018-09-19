@@ -17,17 +17,29 @@ table{
     margin-top:-130px;
 }
 
+#metadata-project-pagination{
+    margin-top:-170px;
+}
+
+#metadata-save-upload-via-api{
+    margin-top:-515px;
+}
+
 #metadata-validation-rules-are{
-    margin-top:-350px;
+    margin-top:-480px;
 }
 #metadata-validation-rules-are + ul{
-    margin-top:-320px;
+    margin-top:-450px;
 }
 
 #metadata-services-announce {
-    margin-top: -350px;
+    margin-top: -480px;
 }
 
 #metadata-services-announce + ul{
-    margin-top: -325px;
+    margin-top: -450px;
+}
+
+#metadata-services-approve-newprev{
+    margin-top:-275px;
 }
