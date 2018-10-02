@@ -163,6 +163,11 @@ public class Metadata {
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     // get the SITE URL base for applications
     private static String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
+    // get the SITE URL base for applications
+    private static String PM_NAME = DoeServletContextListener.getConfigurationProperty("project.manager.name");
+    // get the SITE URL base for applications
+    private static String PM_EMAIL = DoeServletContextListener.getConfigurationProperty("project.manager.email");
+
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
         try {
@@ -2357,10 +2362,11 @@ public class Metadata {
         email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
         email.setHostName(EMAIL_HOST);
 
-        // if HOST or record OWNER isn't set, cannot send
+        // if HOST or record OWNER or PROJECT MANAGER NAME isn't set, cannot send
         if (StringUtils.isEmpty(EMAIL_HOST) ||
             null==md ||
-            StringUtils.isEmpty(md.getOwner()))
+            StringUtils.isEmpty(md.getOwner()) ||
+            StringUtils.isEmpty(PM_NAME))
             return;
         // only has meaning for APPROVED records
         if (!Status.Approved.equals(md.getWorkflowStatus()))
@@ -2377,6 +2383,10 @@ public class Metadata {
             email.setFrom(EMAIL_FROM);
             email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + md.getSoftwareTitle());
             email.addTo(md.getOwner());
+
+            // if email is provided, BCC the Project Manager
+            if (!StringUtils.isEmpty(PM_EMAIL))
+                email.addBcc(PM_EMAIL, PM_NAME);
 
             StringBuilder msg = new StringBuilder();
 
@@ -2411,7 +2421,7 @@ public class Metadata {
                .append("/faq\">DOE CODE FAQs</a>.</P>");
             msg.append("<P>If we can be of assistance, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
             msg.append("<P>Sincerely,</P>");
-            msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+            msg.append("<P>"+PM_NAME+"<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
 
             msg.append("</html>");
 
@@ -2430,9 +2440,10 @@ public class Metadata {
      * @param md the METADATA to send notification for
      */
     private static void sendPOCNotification(DOECodeMetadata md) {
-        // if HOST or MD isn't set, cannot send
+        // if HOST or MD or PROJECT MANAGER NAME isn't set, cannot send
         if (StringUtils.isEmpty(EMAIL_HOST) ||
-            null == md)
+            null == md ||
+            StringUtils.isEmpty(PM_NAME))
             return;
 
         Long codeId = md.getCodeId();
@@ -2455,10 +2466,10 @@ public class Metadata {
             return;
         }
 
-            List<String> emails = site.getPocEmails();
+        List<String> emails = site.getPocEmails();
 
         // if POC is setup
-        for (String pocEmail : emails) {
+        if (emails != null && !emails.isEmpty()) {
             try {
                 HtmlEmail email = new HtmlEmail();
                 email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
@@ -2469,7 +2480,13 @@ public class Metadata {
 
                 email.setFrom(EMAIL_FROM);
                 email.setSubject("POC Notification -- " + workflowStatus + " -- DOE CODE ID: " + codeId + ", " + md.getSoftwareTitle());
-                email.addTo(pocEmail);
+
+                for (String pocEmail : emails)
+                    email.addTo(pocEmail);
+
+                // if email is provided, BCC the Project Manager
+                if (!StringUtils.isEmpty(PM_EMAIL))
+                    email.addBcc(PM_EMAIL, PM_NAME);
 
                 StringBuilder msg = new StringBuilder();
 
@@ -2491,7 +2508,7 @@ public class Metadata {
 
                 msg.append("<P>If you have any questions, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
                 msg.append("<P>Sincerely,</P>");
-                msg.append("<P>Lynn Davis<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+                msg.append("<P>"+PM_NAME+"<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
 
                 msg.append("</html>");
 
@@ -2499,7 +2516,7 @@ public class Metadata {
 
                 email.send();
             } catch ( EmailException e ) {
-                log.error("Unable to send POC notification to " + pocEmail + " for #" + md.getCodeId());
+                log.error("Unable to send POC notification to " + Arrays.toString(emails.toArray()) + " for #" + md.getCodeId());
                 log.error("Message: " + e.getMessage());
             }
         }

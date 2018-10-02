@@ -73,6 +73,8 @@ archiver.url | (optional) base URL for DOE CODE Archiver API if using it for arc
 gitlab.osti.baseurl | (optional) base URL for the OSTI Hosted GitLab
 gitlab.osti.token | (optional) GitLab API token for accessing OSTI Hosted GitLab
 gitlab.osti.namespace | (optional) namespace to use when creating projects in OSTI Hosted GitLab
+project.manager.name | Display name for use in Project Manager emails.
+project.manager.email | (optional) Email address for BCC use when sending Project Manager emails.
 
 If optional parameters, such as the DataCite settings, are left blank, those features
 will not apply.
