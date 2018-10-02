@@ -29,6 +29,7 @@ import java.util.TimeZone;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.POST;
 import javax.ws.rs.PathParam;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -256,8 +257,13 @@ public class SiteServices {
          * @param emails associated to a siteCode
          */
         public void setPocEmails(List<String> pocEmails) {
-            for (int i = 0; i < pocEmails.size(); i++)
-                pocEmails.set(i, pocEmails.get(i).toLowerCase());
+            for (int i = pocEmails.size() - 1; i >= 0; i--) {
+                // do not allow empty strings
+                if (StringUtils.isBlank(pocEmails.get(i)))
+                    pocEmails.remove(i);
+                else
+                    pocEmails.set(i, pocEmails.get(i).toLowerCase());
+            }
 
             this.pocEmails = pocEmails;
         }
