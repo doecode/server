@@ -1578,7 +1578,6 @@ public class Metadata {
 
             // send NOTIFICATION if configured to do so
             sendStatusNotification(md);
-            sendPOCNotification(md);
 
             // we are done here
             return Response
@@ -1774,7 +1773,6 @@ public class Metadata {
 
             // send NOTIFICATION if configured
             sendStatusNotification(md);
-            sendPOCNotification(md);
 
             // and we're happy
             return Response
@@ -2064,6 +2062,7 @@ public class Metadata {
 
             // send APPROVAL NOTIFICATION to OWNER
             sendApprovalNotification(md);
+            sendPOCNotification(md);
 
             // and we're happy
             return Response
@@ -2454,9 +2453,8 @@ public class Metadata {
         if (StringUtils.isEmpty(siteCode))
             return;
 
-        // only applicable to SUBMITTED or ANNOUNCED records
-        if (!Status.Announced.equals(workflowStatus) &&
-            !Status.Submitted.equals(workflowStatus))
+        // only applicable to APPROVED records
+        if (!Status.Approved.equals(workflowStatus))
             return;
 
         // get the SITE information
@@ -2464,6 +2462,18 @@ public class Metadata {
         if (null == site) {
             log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
             return;
+        }
+
+        // lookup previous Snapshot status info for item
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdLastNotStatus", MetadataSnapshot.class)
+                .setParameter("status", DOECodeMetadata.Status.Approved)
+                .setParameter("codeId", codeId);
+
+        String lastApprovalFor = "submitted/announced";
+        List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
+        for ( MetadataSnapshot ms : results ) {
+            lastApprovalFor = ms.getSnapshotKey().getSnapshotStatus().toString().toLowerCase();
         }
 
         List<String> emails = site.getPocEmails();
@@ -2493,22 +2503,24 @@ public class Metadata {
                 msg.append("<html>");
                 msg.append("Dear Sir or Madam:");
 
-                msg.append("<P>As a Point of Contact for ").append(lab).append(", we wanted to inform you that a project was ")
-                   .append(workflowStatus)
-                   .append(" and assigned DOE CODE ID: <a href=\"")
-                   .append(SITE_URL)
-                   .append("/biblio/")
+                String biblioLink = SITE_URL + "/biblio/" + codeId;
+
+                msg.append("<p>As a point of contact for ").append(lab).append(", we wanted to inform you that a software project, titled ")
+                   .append(md.getSoftwareTitle())
+                   .append(", associated with your organization was ").append(lastApprovalFor).append(" to DOE CODE and assigned DOE CODE ID: ")
                    .append(codeId)
+                   .append(".  This project record is discoverable in <a href=\"")
+                   .append(SITE_URL)
+                   .append("\">DOE CODE</a>, e.g. searching by the project title or DOE CODE ID #, and can be found here: <a href=\"")
+                   .append(biblioLink)
                    .append("\">")
-                   .append(codeId)
-                   .append("</a>.  Once approved, it will be <a href=\"")
-                   .append(SITE_URL)
-                   .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
+                   .append(biblioLink)
+                   .append("</a></p>");
 
 
-                msg.append("<P>If you have any questions, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
-                msg.append("<P>Sincerely,</P>");
-                msg.append("<P>"+PM_NAME+"<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+                msg.append("<p>If you have any questions, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</p>");
+                msg.append("<p>Sincerely,</p>");
+                msg.append("<p>"+PM_NAME+"<br/>Product Manager for DOE CODE<br/>USDOE/OSTI</p>");
 
                 msg.append("</html>");
 
