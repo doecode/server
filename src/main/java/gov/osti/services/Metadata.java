@@ -1558,7 +1558,7 @@ public class Metadata {
                     // tell why the DataCite registration failed
                     log.warn("DataCite ERROR: " + e.getMessage());
                     return ErrorResponse
-                            .internalServerError("DOI registration failed. Please try again later.")
+                            .internalServerError("The DOI registration service is currently unavailable, please try to submit your record later. If the issue persists, please contact doecode@osti.gov.")
                             .build();
                 }
             }
@@ -1754,7 +1754,7 @@ public class Metadata {
                     // if DataCite registration failed, say why
                     log.warn("DataCite ERROR: " + e.getMessage());
                     return ErrorResponse
-                            .internalServerError("DOI registration failed. Please try again later.")
+                            .internalServerError("The DOI registration service is currently unavailable, please try to submit your record later. If the issue persists, please contact doecode@osti.gov.")
                             .build();
                 }
             }
