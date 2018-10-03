@@ -2381,10 +2381,12 @@ public class Metadata {
                 return;
             }
 
+            Long codeId = md.getCodeId();
+
             String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
 
             email.setFrom(EMAIL_FROM);
-            email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + softwareTitle);
+            email.setSubject("Approved -- DOE CODE ID: " + codeId + ", " + softwareTitle);
             email.addTo(md.getOwner());
 
             // if email is provided, BCC the Project Manager
@@ -2403,9 +2405,9 @@ public class Metadata {
             msg.append("<P>Thank you -- your submitted project, DOE CODE ID: <a href=\"")
                .append(SITE_URL)
                .append("/biblio/")
-               .append(md.getCodeId())
+               .append(codeId)
                .append("\">")
-               .append(md.getCodeId())
+               .append(codeId)
                .append("</a>, has been approved.  It is now <a href=\"")
                .append(SITE_URL)
                .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
