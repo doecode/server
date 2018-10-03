@@ -2383,6 +2383,18 @@ public class Metadata {
 
             Long codeId = md.getCodeId();
 
+            // lookup previous Snapshot status info for item
+            EntityManager em = DoeServletContextListener.createEntityManager();
+            TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdLastNotStatus", MetadataSnapshot.class)
+                    .setParameter("status", DOECodeMetadata.Status.Approved)
+                    .setParameter("codeId", codeId);
+
+            String lastApprovalFor = "submitted/announced";
+            List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
+            for ( MetadataSnapshot ms : results ) {
+                lastApprovalFor = ms.getSnapshotKey().getSnapshotStatus().toString().toLowerCase();
+            }
+
             String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
 
             email.setFrom(EMAIL_FROM);
@@ -2402,7 +2414,7 @@ public class Metadata {
                .append(owner.getLastName())
                .append(":");
 
-            msg.append("<P>Thank you -- your submitted project, DOE CODE ID: <a href=\"")
+            msg.append("<P>Thank you -- your ").append(lastApprovalFor).append(" project, DOE CODE ID: <a href=\"")
                .append(SITE_URL)
                .append("/biblio/")
                .append(codeId)
@@ -2412,8 +2424,8 @@ public class Metadata {
                .append(SITE_URL)
                .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
 
-            // OMIT the following for BUSINESS TYPE software
-            if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType())) {
+            // OMIT the following for BUSINESS TYPE software, or last ANNOUNCED software
+            if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType()) && !lastApprovalFor.equalsIgnoreCase("announced")) {
                 msg.append("<P>You may need to continue editing your project to announce it to the Department of Energy ")
                    .append("to ensure announcement and dissemination in accordance with DOE statutory responsibilities. For more information please see ")
                    .append("<a href=\"")
