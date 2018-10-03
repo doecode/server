@@ -2424,7 +2424,7 @@ public class Metadata {
                .append("/faq\">DOE CODE FAQs</a>.</P>");
             msg.append("<P>If we can be of assistance, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</P>");
             msg.append("<P>Sincerely,</P>");
-            msg.append("<P>"+PM_NAME+"<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
+            msg.append("<P>").append(PM_NAME).append("<BR/>Product Manager for DOE CODE<BR/>USDOE/OSTI</P>");
 
             msg.append("</html>");
 
@@ -2526,7 +2526,7 @@ public class Metadata {
 
                 msg.append("<p>If you have any questions, please do not hesitate to <a href=\"mailto:doecode@osti.gov\">Contact Us</a>.</p>");
                 msg.append("<p>Sincerely,</p>");
-                msg.append("<p>"+PM_NAME+"<br/>Product Manager for DOE CODE<br/>USDOE/OSTI</p>");
+                msg.append("<p>").append(PM_NAME).append("<br/>Product Manager for DOE CODE<br/>USDOE/OSTI</p>");
 
                 msg.append("</html>");
 
