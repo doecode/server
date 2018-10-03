@@ -2332,6 +2332,8 @@ public class Metadata {
             email.setSubject("DOE CODE Record " + md.getWorkflowStatus().toString());
             email.addTo(EMAIL_SUBMISSION);
 
+            String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
+
             StringBuilder msg = new StringBuilder();
             msg.append("<html>");
             msg.append("A new DOE CODE record has been ")
@@ -2339,7 +2341,7 @@ public class Metadata {
                .append(" and is awaiting approval:");
 
             msg.append("<P>Code ID: ").append(md.getCodeId());
-            msg.append("<BR>Software Title: ").append(md.getSoftwareTitle());
+            msg.append("<BR>Software Title: ").append(softwareTitle);
             msg.append("</html>");
 
             email.setHtmlMsg(msg.toString());
@@ -2379,8 +2381,10 @@ public class Metadata {
                 return;
             }
 
+            String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
+
             email.setFrom(EMAIL_FROM);
-            email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + md.getSoftwareTitle());
+            email.setSubject("Approved -- DOE CODE ID: " + md.getCodeId() + ", " + softwareTitle);
             email.addTo(md.getOwner());
 
             // if email is provided, BCC the Project Manager
@@ -2488,8 +2492,10 @@ public class Metadata {
                 String lab = site.getLab();
                 lab = lab.isEmpty() ? siteCode : lab;
 
+                String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
+
                 email.setFrom(EMAIL_FROM);
-                email.setSubject("POC Notification -- " + workflowStatus + " -- DOE CODE ID: " + codeId + ", " + md.getSoftwareTitle());
+                email.setSubject("POC Notification -- " + workflowStatus + " -- DOE CODE ID: " + codeId + ", " + softwareTitle);
 
                 for (String pocEmail : emails)
                     email.addTo(pocEmail);
@@ -2506,7 +2512,7 @@ public class Metadata {
                 String biblioLink = SITE_URL + "/biblio/" + codeId;
 
                 msg.append("<p>As a point of contact for ").append(lab).append(", we wanted to inform you that a software project, titled ")
-                   .append(md.getSoftwareTitle())
+                   .append(softwareTitle)
                    .append(", associated with your organization was ").append(lastApprovalFor).append(" to DOE CODE and assigned DOE CODE ID: ")
                    .append(codeId)
                    .append(".  This project record is discoverable in <a href=\"")
