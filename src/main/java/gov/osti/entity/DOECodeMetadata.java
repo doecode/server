@@ -577,7 +577,7 @@ public class DOECodeMetadata implements Serializable {
             this.recipientOrg = recipientOrg;
     }
 
-    @Size (max = 255, message = "Accession number is limited to 255 characters.")
+    @Size (max = 25, message = "Site Accession number is limited to 25 characters.")
     @Column (name="SITE_ACCESSION_NUMBER")
     public String getSiteAccessionNumber() {
             return siteAccessionNumber;
