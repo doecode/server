@@ -157,7 +157,7 @@ Content-Type: application/json
 | identifiers | Search within identifying numbers |
 | date_earliest | Starting date range for release date |
 | date_latest | Ending date range for release date |
-| accessibility | An array of accessibility types; one or more of "OS", "ON", or "CS" |
+| accessibility | An array of accessibility types; one or more of "OS", "ON", "CS", or "CO" |
 | licenses | An array of matching license values, such as the ones at the following <a href='/doecodeapi/services/docs/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
 | orcid | Search developer or contributor ORCID values |
 | sort | Specify a sorting field, e.g., "softwareTitle" or "releaseDate" (relevance is the default) |
