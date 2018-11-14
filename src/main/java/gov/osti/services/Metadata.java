@@ -783,11 +783,11 @@ public class Metadata {
 
                 // do not modify AutoBackfill RI info
                 List<RelatedIdentifier> originalList = emd.getRelatedIdentifiers();
-                if (originalList != null && !originalList.isEmpty()) {
+                List<RelatedIdentifier> newList = md.getRelatedIdentifiers();
+                // if there is a New List and a non-empty Original List, then process RI info
+                if (newList != null && originalList != null && !originalList.isEmpty()) {
                     // get AutoBackfill data
                     List<RelatedIdentifier> autoRIList = getSourceRi(originalList, RelatedIdentifier.Source.AutoBackfill);
-
-                    List<RelatedIdentifier> newList = md.getRelatedIdentifiers();
 
                     // restore any modified Auto data
                     newList.removeAll(autoRIList); // always remove match
