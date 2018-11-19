@@ -142,13 +142,13 @@ public class SearchData implements Serializable {
 		this.sponsoringOrganization = sponsoringOrganization;
 	}
 
-  public void setOrcid(String orcid) {
-      this.orcid = orcid;
-  }
+    public void setOrcid(String orcid) {
+        this.orcid = orcid;
+    }
 
-  public String getOrcid() {
-      return this.orcid;
-  }
+    public String getOrcid() {
+        return this.orcid;
+    }
 
 	public String getSort() {
             return (null==sort) ? "" : sort;
