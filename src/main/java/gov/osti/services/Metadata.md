@@ -393,6 +393,7 @@ A full JSON example is [provided below.](#json_example)
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
 | description | An abstract about the software project. |
 | programming_languages | (Array) Any programming language used on the software project. |
+| keywords | Words or phrases that describe the project as summarized in the report/product. Keywords aide in the online search and discovery of information about the project. |
 | version_number | The version of the software project. |
 | documentation_url | URL providing available documentation for the software project. |
 | licenses | Any software licenses or rights information about the software project, may have multiple values, such as the ones at the following <a href='/doecodeapi/services/docs/types#doecode-types-api-valid-types-information-licenses'>endpoint</a>. |
