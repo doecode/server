@@ -461,14 +461,14 @@
   <field name="contributors.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="countryOfOrigin" type="text_en" indexed="true" stored="true"/>
   <field name="description" type="text_en" indexed="true" stored="true"/>
-  <field name="programmingLanguages" type="string" multiValued="true" indexed="true" stored="true"/>
+  <field name="programmingLanguages" type="text_general" multiValued="true" indexed="true" stored="true"/>
   <field name="versionNumber" type="text_en" indexed="true" stored="true"/>
   <field name="documentationUrl" type="text_en" indexed="true" stored="true"/>
   <field name="developers.name" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="developers.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="doi" type="string"/>
   <field name="doiStatus" type="string" indexed="true" stored="true"/>
-  <field name="keywords" type="string"/>
+  <field name="keywords" type="text_general" indexed="true"/>
   <field name="licenses" type="string" multiValued="true" indexed="true" stored="true"/>
   <field name="openSource" type="boolean" default="false" indexed="true" stored="true"/>
   <field name="otherSpecialRequirements" type="strings"/>
