@@ -43,6 +43,7 @@ public class SearchData implements Serializable {
     private Date dateLatest = null;
     private String[] accessibility = null;
     private String[] programmingLanguages;
+    private String keywords;
     private String[] licenses;
     private String[] researchOrganization = null;
     private String[] sponsoringOrganization = null;
@@ -230,6 +231,10 @@ public class SearchData implements Serializable {
                 q.append("(").append(values.toString()).append(")");
             }
         }
+        if (!StringUtils.isEmpty(getKeywords())) {
+            if (q.length()>0) q.append(" ");
+            q.append("keywords:(").append(escape(getKeywords())).append(")");
+        }
         if (null!=getLicenses()) {
             StringBuilder values = new StringBuilder();
             for ( String license : getLicenses() ) {
@@ -369,6 +374,14 @@ public class SearchData implements Serializable {
      */
     public void setProgrammingLanguages(String[] programmingLanguages) {
         this.programmingLanguages = programmingLanguages;
+    }
+
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
+    }
+
+    public String getKeywords() {
+        return this.keywords;
     }
 
     /**
