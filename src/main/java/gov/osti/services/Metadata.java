@@ -744,6 +744,11 @@ public class Metadata {
         ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
         Validator validator = validators.getValidator();
 
+        // must be OSTI user in order to add/update PROJECT KEYWORDS
+        List<String> projectKeywords = md.getProjectKeywords();
+        if (projectKeywords != null && !projectKeywords.isEmpty() && !user.hasRole("OSTI"))
+            throw new ValidationException("Project Keywords can only be set by authorized users.");
+
         // if there's a CODE ID, attempt to look up the record first and
         // copy attributes into it
         if ( null==md.getCodeId() || 0==md.getCodeId()) {

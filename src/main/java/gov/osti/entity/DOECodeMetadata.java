@@ -202,6 +202,11 @@ public class DOECodeMetadata implements Serializable {
     private String documentationUrl = null;
     private String countryOfOrigin = null;
     private String keywords = null;
+
+    @JacksonXmlElementWrapper (localName = "projectKeywords")
+    @JacksonXmlProperty (localName = "projectKeyword")
+    private List<String> projectKeywords;
+
     private String disclaimers = null;
 
     @JacksonXmlElementWrapper (localName = "licenses")
@@ -458,6 +463,20 @@ public class DOECodeMetadata implements Serializable {
     public void setKeywords(String keywords) {
             this.keywords = keywords;
     }
+
+    @ElementCollection
+    @CollectionTable(
+            name = "PROJECT_KEYWORDS",
+            joinColumns=@JoinColumn(name="CODE_ID")
+    )
+    @Column (name = "PROJECT_KEYWORD")
+    public List<String> getProjectKeywords() {
+            return projectKeywords;
+    }
+    public void setProjectKeywords(List<String> projectKeywords) {
+            this.projectKeywords = projectKeywords;
+    }
+
     @Size (max = 3000, message = "Disclaimers are limited to 3000 characters.")
     @Column (length = 3000)
     public String getDisclaimers() {

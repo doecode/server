@@ -469,6 +469,7 @@
   <field name="doi" type="string"/>
   <field name="doiStatus" type="string" indexed="true" stored="true"/>
   <field name="keywords" type="text_general" indexed="true"/>
+  <field name="projectKeywords" type="text_general" multiValued="true" indexed="true" stored="true"/>
   <field name="licenses" type="string" multiValued="true" indexed="true" stored="true"/>
   <field name="openSource" type="boolean" default="false" indexed="true" stored="true"/>
   <field name="otherSpecialRequirements" type="strings"/>

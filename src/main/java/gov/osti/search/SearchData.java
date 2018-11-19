@@ -44,6 +44,7 @@ public class SearchData implements Serializable {
     private String[] accessibility = null;
     private String[] programmingLanguages;
     private String keywords;
+    private String[] projectKeywords;
     private String[] licenses;
     private String[] researchOrganization = null;
     private String[] sponsoringOrganization = null;
@@ -235,6 +236,17 @@ public class SearchData implements Serializable {
             if (q.length()>0) q.append(" ");
             q.append("keywords:(").append(escape(getKeywords())).append(")");
         }
+        if (null!=getProjectKeywords()) {
+            StringBuilder values = new StringBuilder();
+            for ( String projectKeyword : getProjectKeywords() ) {
+                if (values.length()>0) values.append(" OR ");
+                values.append("projectKeywords:\"").append(escapeToken(projectKeyword)).append("\"");
+            }
+            if (values.length()>0) {
+                if (q.length()>0) q.append(" ");
+                q.append("(").append(values.toString()).append(")");
+            }
+        }
         if (null!=getLicenses()) {
             StringBuilder values = new StringBuilder();
             for ( String license : getLicenses() ) {
@@ -382,6 +394,20 @@ public class SearchData implements Serializable {
 
     public String getKeywords() {
         return this.keywords;
+    }
+
+    /**
+     * @return the project keywords
+     */
+    public String[] getProjectKeywords() {
+        return projectKeywords;
+    }
+
+    /**
+     * @param projectKeywords the project keywords to set
+     */
+    public void setProjectKeywords(String[] projectKeywords) {
+        this.projectKeywords = projectKeywords;
     }
 
     /**
