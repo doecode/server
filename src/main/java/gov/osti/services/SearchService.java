@@ -5,10 +5,12 @@ package gov.osti.services;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -25,10 +27,14 @@ import gov.osti.search.SearchResponse;
 import gov.osti.search.SolrFacet;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -241,12 +247,62 @@ public class SearchService {
         // map parameters into JSON
         ObjectNode getParams = mapper.createObjectNode();
 
+        SearchData so = new SearchData();
+        List<String> arrayFields = new ArrayList<>();
+        // determine string array parameters from the target object
+        for (Field field : so.getClass().getDeclaredFields()) {
+            if (field.getType().getSimpleName().equalsIgnoreCase("string[]"))
+                arrayFields.add(field.getName());
+        }
+
         for (Map.Entry<String, List<String>> entry : params.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue().get(0);
 
-            // if key and value, store in JSON
-            if (!StringUtils.isBlank(key) && !StringUtils.isBlank(value))
+            // if no key/value skip
+            if (StringUtils.isBlank(key) || StringUtils.isBlank(value))
+                continue;
+
+            // convert snake_case input into camelCase for reflection matching
+            String keyCamelCase =
+                Arrays.stream(key.split("_"))
+                    .map(String::toLowerCase)
+                    .map(s -> s.substring(0, 1).toUpperCase() + s.substring(1))
+                    .collect(Collectors.joining());
+            keyCamelCase = keyCamelCase.substring(0, 1).toLowerCase() + keyCamelCase.substring(1);
+
+            // determine if field or value indicate an array
+            boolean isArrayField = false;
+            boolean isArrayValue = value.startsWith("[") && value.endsWith("]");
+            if (arrayFields.contains(keyCamelCase))
+                isArrayField = true;
+
+            // convert input into JSON format
+            if (isArrayField) {
+                // array field requires special formatting for JSON mapper
+                ArrayNode values = mapper.createArrayNode();
+
+                // input is already in JSON array format, map it
+                if (isArrayValue) {
+                    try {
+                        values = mapper.readValue(value, new TypeReference<ArrayNode>(){});
+                    } catch (IOException ex) {
+                        log.warn("Unable to process JSON ARRAY from GET parameter.");
+                        log.warn("Message: " + ex.getMessage());
+                        return ErrorResponse
+                                .internalServerError("JSON ARRAY parameter formatting error.")
+                                .build();
+                    }
+                }
+                // input is a normal string, add it to array node
+                else
+                    values.add(value);
+
+                // set key with string array value
+                getParams.set(key, values);
+            }
+            else
+                // set key with string value
                 getParams.put(key, value);
         }
 
@@ -283,6 +339,7 @@ public class SearchService {
                     .status(Response.Status.NO_CONTENT)
                     .build();
 
+        // call search
         return search(parameters, format);
     }
 
