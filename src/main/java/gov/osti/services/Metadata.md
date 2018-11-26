@@ -208,7 +208,7 @@ Send JSON metadata to be persisted in the back-end.  This service persists the d
 > ```
 
 <p id='metadata-save-upload-via-api'>
-*When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
+*When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tgz, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
 </p>
 
 ### submit
@@ -273,7 +273,7 @@ Validation rules are:
 * software type is required:
   * "S" (Scientific)
   * "B" (Business), also requires at least one sponsoring organization
-* If project type is Closed Source, OSTI Hosted ("CO"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
+* If project type is Closed Source, OSTI Hosted ("CO"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tgz, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
 
 
 
@@ -333,7 +333,7 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
   * email must be valid
   * phone number must be valid
   * organization name is required
-* If project type is not Open Source ("OS"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
+* If project type is not Open Source ("OS"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tgz, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
 
 
 

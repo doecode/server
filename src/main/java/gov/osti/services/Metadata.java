@@ -950,10 +950,10 @@ public class Metadata {
         // evaluate file upload
         if (fileInfo != null && !StringUtils.isBlank(fileInfo.getFileName())) {
             String fileName = fileInfo.getFileName();
-            Pattern filePattern = Pattern.compile("[.](?:zip|tar(?:[.](?:gz|bz2))?)$");
+            Pattern filePattern = Pattern.compile("[.](?:zip|tgz|tar(?:[.](?:gz|bz2))?)$");
             Matcher m = filePattern.matcher(fileName);
             if (!m.find())
-                throw new ValidationException("File upload failed!  File must be of type: .zip, .tar, .tar.gz, .tar.bz2");
+                throw new ValidationException("File upload failed!  File must be of type: .zip, .tar, .tgz, .tar.gz, .tar.bz2");
         }
 
         // evaluate container upload
