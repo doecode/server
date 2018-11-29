@@ -959,10 +959,10 @@ public class Metadata {
         // evaluate container upload
         if (containerInfo != null  && !StringUtils.isBlank(containerInfo.getFileName())) {
             String fileName = containerInfo.getFileName();
-            Pattern containerPattern = Pattern.compile("[.](?:simg|tar(?:[.]gz)?)$");
+            Pattern containerPattern = Pattern.compile("[.](?:simg|tgz|tar(?:[.]gz)?)$");
             Matcher m = containerPattern.matcher(fileName);
             if (!m.find())
-                throw new ValidationException("Container image upload failed!  File must be of type: .tar, .tar.gz, .simg");
+                throw new ValidationException("Container image upload failed!  File must be of type: .tar, .tgz, .tar.gz, .simg");
         }
     }
 
