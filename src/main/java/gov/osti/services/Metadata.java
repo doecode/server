@@ -2332,6 +2332,16 @@ public class Metadata {
             !Status.Submitted.equals(md.getWorkflowStatus()))
             return;
 
+        // get the SITE information
+        String siteCode = md.getSiteOwnershipCode();
+        Site site = SiteServices.findSiteBySiteCode(siteCode);
+        if (null == site) {
+            log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
+            return;
+        }
+        String lab = site.getLab();
+        lab = lab.isEmpty() ? siteCode : lab;
+
         try {
             email.setFrom(EMAIL_FROM);
             email.setSubject("DOE CODE Record " + md.getWorkflowStatus().toString());
@@ -2343,6 +2353,8 @@ public class Metadata {
             msg.append("<html>");
             msg.append("A new DOE CODE record has been ")
                .append(md.getWorkflowStatus())
+               .append(" for ")
+               .append(lab)
                .append(" and is awaiting approval:");
 
             msg.append("<P>Code ID: ").append(md.getCodeId());
