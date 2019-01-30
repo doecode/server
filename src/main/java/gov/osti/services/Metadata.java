@@ -168,6 +168,9 @@ public class Metadata {
     // get the SITE URL base for applications
     private static String PM_EMAIL = DoeServletContextListener.getConfigurationProperty("project.manager.email");
 
+    // set pattern for DOI normalization
+    private static final Pattern DOI_TRIM_PATTERN = Pattern.compile("(10.\\d{4,9}\\/[-._;()\\/:A-Za-z0-9]+)$");
+
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
         try {
@@ -2145,19 +2148,50 @@ public class Metadata {
      *
      * @param md the Metadata to evaluate
      */
-    private void removeRiDups(DOECodeMetadata md) {
-        // remove RI duplicates
+    private void normalizeRelatedIdentifiers(DOECodeMetadata md) {
         List<RelatedIdentifier> currentList = md.getRelatedIdentifiers();
 
-        if (currentList != null) {
-            Set<RelatedIdentifier> s = new HashSet<>();
+        // nothing to process
+        if (currentList == null || currentList.isEmpty())
+            return;
 
-            s.addAll(currentList);
-            currentList.clear();
-            currentList.addAll(s);
+        // trim DOI values
+        for(RelatedIdentifier ri : currentList)
+            if (RelatedIdentifier.Type.DOI.equals(ri.getIdentifierType()))
+                ri.setIdentifierValue(trimDoi(ri.getIdentifierValue()));
 
-            md.setRelatedIdentifiers(currentList);
+        // remove RI duplicates
+        Set<RelatedIdentifier> s = new HashSet<>();
+        s.addAll(currentList);
+        currentList.clear();
+        currentList.addAll(s);
+        md.setRelatedIdentifiers(currentList);
+    }
+
+    /**
+     * Trim away unneeded DOI prefixes, etc.
+     *
+     * @param doi the DOI to trim
+     */
+    private String trimDoi(String doi) {
+        // trim DOI down to 10.* variation
+        if (!StringUtils.isBlank(doi)) {
+            doi = doi.trim();
+            Matcher m = DOI_TRIM_PATTERN.matcher(doi);
+            if (m.find())
+                doi = m.group(1);
         }
+        return doi;
+    }
+
+    /**
+     * Normalize any DOI information.
+     *
+     * @param md the Metadata to evaluate
+     */
+    private void normalizeDois(DOECodeMetadata md) {
+        // trim main DOI
+        md.setDoi(trimDoi(md.getDoi()));
     }
 
     /**
@@ -2166,7 +2200,8 @@ public class Metadata {
      * @param md the Metadata to normalize
      */
     private void performDataNormalization(DOECodeMetadata md) {
-        removeRiDups(md);
+        normalizeDois(md);
+        normalizeRelatedIdentifiers(md);
     }
 
     /**
