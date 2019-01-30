@@ -271,7 +271,7 @@ public class Validation {
     public static boolean isValidUrl(String value) {
         return ( null==value ) ?
                 false :
-                URL_PATTERN.matcher(value).matches();
+                URL_PATTERN.matcher(value.trim()).matches();
     }
 
     /**
@@ -350,8 +350,8 @@ public class Validation {
             return false;
 
         // check what we consider "valid" for repository info
-        return (GitRepository.isValid(value) || 
-                SubversionRepository.isValid(value));
+        return (GitRepository.isValid(value.trim())) ||
+                SubversionRepository.isValid(value.trim());
     }
 
     /**
@@ -363,7 +363,7 @@ public class Validation {
      */
     public static boolean isValidDoi(String value) {
         // make sure the value, if present, conforms to DOI pattern.
-        return (null==value) ? false : DOI_PATTERN.matcher(value).find();
+        return (null==value) ? false : DOI_PATTERN.matcher(value.trim()).find();
     }
 
     /**
