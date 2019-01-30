@@ -339,7 +339,7 @@ public class Validation {
     /**
      * Determine whether or not the passed-in value is a VALID repository link.
      *
-     * Supports: git and subversion repository types that are publically
+     * Supports: git and subversion repository types that are publicly
      * available via HTTP(s).
      *
      * @param value the repository link/URL to check
