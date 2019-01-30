@@ -1356,7 +1356,7 @@ public class Metadata {
 
             em.getTransaction().begin();
 
-            removeRiDups(md);
+            performDataNormalization(md);
 
             md.setWorkflowStatus(Status.Saved); // default to this
             md.setOwner(user.getEmail()); // this User should OWN it
@@ -1462,7 +1462,7 @@ public class Metadata {
 
             em.getTransaction().begin();
 
-            removeRiDups(md);
+            performDataNormalization(md);
 
             // set the ownership and workflow status
             md.setOwner(user.getEmail());
@@ -1650,7 +1650,7 @@ public class Metadata {
 
             em.getTransaction().begin();
 
-            removeRiDups(md);
+            performDataNormalization(md);
 
             // set the OWNER
             md.setOwner(user.getEmail());
@@ -2158,6 +2158,15 @@ public class Metadata {
 
             md.setRelatedIdentifiers(currentList);
         }
+    }
+
+    /**
+     * Normalize certain aspects of the data prior to storage.
+     *
+     * @param md the Metadata to normalize
+     */
+    private void performDataNormalization(DOECodeMetadata md) {
+        removeRiDups(md);
     }
 
     /**
