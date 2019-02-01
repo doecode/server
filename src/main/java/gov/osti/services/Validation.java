@@ -608,7 +608,7 @@ public class Validation {
               msg = "Please include a correctly associated prefix with the URL (e.g., \"http://\" or \"https://\").";
          else {
               if (type.equalsIgnoreCase("repositorylink"))
-                   msg = "Not a valid repository link.";
+                   msg = "Not a valid repository link.  Please use the primary or base URL for your repository. DOE CODE does not currently support the submission of individual branch URL paths.";
               else
                    msg = safeUrl + " is not a valid URL.";
          }
