@@ -81,7 +81,7 @@ connect to the URL.
 
 `GET /doecodeapi/services/validation/repositorylink?value=*value-to-check*`
 
-Check to see if the indicated value is a valid, accessible git repository.
+Check to see if the indicated value is a valid, accessible git repository.  DOE CODE does not currently support the submission of individual branch URL paths, so this must be a primary or base URL for the repository. 
 
 ### doi
 
