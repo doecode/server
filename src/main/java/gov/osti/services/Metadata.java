@@ -170,6 +170,7 @@ public class Metadata {
 
     // set pattern for DOI normalization
     private static final Pattern DOI_TRIM_PATTERN = Pattern.compile("(10.\\d{4,9}\\/[-._;()\\/:A-Za-z0-9]+)$");
+    private static final Pattern URL_TRIM_PATTERN = Pattern.compile("^(.*)(?<!\\/)\\/?$");
 
     // create and start a ConnectorFactory for use by "autopopulate" service
     static {
@@ -2144,7 +2145,7 @@ public class Metadata {
     }
 
     /**
-     * Remove duplicate RI entries from metadata.
+     * Remove duplicate RI entries and normalize values.
      *
      * @param md the Metadata to evaluate
      */
@@ -2155,10 +2156,12 @@ public class Metadata {
         if (currentList == null || currentList.isEmpty())
             return;
 
-        // trim DOI values
+        // trim DOI and URL values
         for(RelatedIdentifier ri : currentList)
             if (RelatedIdentifier.Type.DOI.equals(ri.getIdentifierType()))
                 ri.setIdentifierValue(trimDoi(ri.getIdentifierValue()));
+            else if (RelatedIdentifier.Type.URL.equals(ri.getIdentifierType()))
+                ri.setIdentifierValue(trimUrl(ri.getIdentifierValue()));
 
         // remove RI duplicates
         Set<RelatedIdentifier> s = new HashSet<>();
@@ -2185,13 +2188,35 @@ public class Metadata {
     }
 
     /**
-     * Normalize any DOI information.
+     * Trim away unneeded URL characters, etc.
+     *
+     * @param url the URL to trim
+     */
+    private String trimUrl(String url) {
+        // remove extra spaces and single trailing slash, if exist
+        if (!StringUtils.isBlank(url)) {
+            url = url.trim();
+            Matcher m = URL_TRIM_PATTERN.matcher(url);
+            if (m.find())
+                url = m.group(1);
+        }
+        return url;
+    }
+
+    /**
+     * Normalize metadata information.
      *
      * @param md the Metadata to evaluate
      */
-    private void normalizeDois(DOECodeMetadata md) {
+    private void normalizeMetadata(DOECodeMetadata md) {
         // trim main DOI
         md.setDoi(trimDoi(md.getDoi()));
+
+        // trim main URLs
+        md.setRepositoryLink(trimUrl(md.getRepositoryLink()));
+        md.setLandingPage(trimUrl(md.getLandingPage()));
+        md.setProprietaryUrl(trimUrl(md.getProprietaryUrl()));
+        md.setDocumentationUrl(trimUrl(md.getDocumentationUrl()));
     }
 
     /**
@@ -2200,7 +2225,7 @@ public class Metadata {
      * @param md the Metadata to normalize
      */
     private void performDataNormalization(DOECodeMetadata md) {
-        normalizeDois(md);
+        normalizeMetadata(md);
         normalizeRelatedIdentifiers(md);
     }
 
