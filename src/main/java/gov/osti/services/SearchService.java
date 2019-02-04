@@ -185,6 +185,10 @@ public class SearchService {
                 // convert it to a POJO
                 DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(doc.getJson()));
 
+                // if no release date, don't return the DOI for display in search results.
+                if (!StringUtils.isBlank(md.getDoi()) && md.getReleaseDate() == null)
+                    md.setDoi(null);
+
                 // if YAML is requested, return that; otherwise, default to JSON
                 if ("yaml".equals(format)) {
                     // return the YAML
@@ -376,7 +380,14 @@ public class SearchService {
                 // if there are matched documents, load them in
                 if ( null!=result.getSearchResponse().getDocuments() ) {
                     for ( SolrDocument doc : result.getSearchResponse().getDocuments() ) {
-                        query.add(JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class));
+                        // convert it to a POJO
+                        DOECodeMetadata md = JSON_MAPPER.readValue(doc.getJson(), DOECodeMetadata.class);
+
+                        // if no release date, don't return the DOI for display in search results.
+                        if (!StringUtils.isBlank(md.getDoi()) && md.getReleaseDate() == null)
+                            md.setDoi(null);
+
+                        query.add(md);
                     }
                     // check out the FACETS
                     query.setFacets(result.getSolrFacet().getValues());
