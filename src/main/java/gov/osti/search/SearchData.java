@@ -31,6 +31,8 @@ public class SearchData implements Serializable {
 
     // set of special characters to be escaped before sending to SOLR
     protected static Pattern TEXT_REGEX_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
+    // set of special characters to be escaped before sending to SOLR - allow SOLR wildcards
+    protected static Pattern STRING_REGEX_CHARACTERS = Pattern.compile("[{}()\\[\\].+^$\\\\|]");
     // set of special characters applying to TOKENS in SOLR
     protected static Pattern TOKEN_REGEX_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|\"]");
 
@@ -167,11 +169,15 @@ public class SearchData implements Serializable {
          * @return the String with any special characters escaped
          */
         protected static String escape(String in) {
+            return escape(in, false);
+        }
+        protected static String escape(String in, boolean allowWildcards) {
+            Pattern targetPattern = allowWildcards ? STRING_REGEX_CHARACTERS : TEXT_REGEX_CHARACTERS;
             return (null==in) ?
                     "" :
-                    TEXT_REGEX_CHARACTERS.matcher(in).replaceAll("\\\\$0");
+                    targetPattern.matcher(in).replaceAll("\\\\$0");
         }
-        
+
         /**
          * Escape SOLR special characters in TOKEN expressions.
          * 
@@ -196,7 +202,7 @@ public class SearchData implements Serializable {
 
         if (!StringUtils.isEmpty(getAllFields())) {
             if (q.length()>0) q.append(" ");
-            q.append("_text_:(").append(escape(getAllFields())).append(")");
+            q.append("_text_:(").append(escape(getAllFields(), true)).append(")");
         }
         if (null!=getAccessibility()) {
             StringBuilder codes = new StringBuilder();
@@ -234,7 +240,7 @@ public class SearchData implements Serializable {
         }
         if (!StringUtils.isEmpty(getKeywords())) {
             if (q.length()>0) q.append(" ");
-            q.append("keywords:(").append(escape(getKeywords())).append(")");
+            q.append("keywords:(").append(escape(getKeywords(), true)).append(")");
         }
         if (null!=getProjectKeywords()) {
             StringBuilder values = new StringBuilder();
@@ -260,7 +266,7 @@ public class SearchData implements Serializable {
         }
         if (!StringUtils.isEmpty(getBiblioData())) {
             if (q.length()>0) q.append(" ");
-            q.append("_text_:(").append(escape(getBiblioData())).append(")");
+            q.append("_text_:(").append(escape(getBiblioData(), true)).append(")");
         }
         if (!StringUtils.isEmpty(getOrcid())) {
             if (q.length()>0) q.append(" ");
@@ -268,7 +274,7 @@ public class SearchData implements Serializable {
         }
         if (!StringUtils.isEmpty(getDevelopersContributors())) {
             if (q.length()>0) q.append(" ");
-            q.append("_names:(").append(escape(getDevelopersContributors())).append(")");
+            q.append("_names:(").append(escape(getDevelopersContributors(), true)).append(")");
         }
         if (!StringUtils.isEmpty(getIdentifiers())) {
             if (q.length()>0) q.append(" ");
@@ -298,7 +304,7 @@ public class SearchData implements Serializable {
         }
         if (!StringUtils.isEmpty(getSoftwareTitle())) {
             if (q.length()>0) q.append(" ");
-            q.append("softwareTitle:(").append(escape(getSoftwareTitle())).append(")");
+            q.append("softwareTitle:(").append(escape(getSoftwareTitle(), true)).append(")");
         }
         if (null!=getDateEarliest()) {
             if (q.length()>0) q.append(" ");
