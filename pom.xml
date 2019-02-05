@@ -10,8 +10,8 @@
 
 	<properties>
 		<jdk.version>1.8</jdk.version>
-        <jersey.version>2.22.2</jersey.version>
-        <httpclient.version>4.5.2</httpclient.version>
+        <jersey.version>2.25</jersey.version>
+        <httpclient.version>4.5.6</httpclient.version>
         <jackson.version>2.9.8</jackson.version>
 		<commons-io.version>2.6</commons-io.version>
         <projectName>doecodeapi</projectName>
@@ -29,7 +29,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.11</version>
+			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -42,34 +42,34 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-dbcp2</artifactId>
-			<version>2.1.1</version>
+			<version>2.5.0</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.5</version>
+			<version>3.8.1</version>
 		</dependency>
 
                 <dependency> 
                   <groupId>org.slf4j</groupId>
                   <artifactId>slf4j-log4j12</artifactId>
-                  <version>1.7.22</version>
+                  <version>1.7.25</version>
                 </dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>9.4.1212</version>
+			<version>42.2.5</version>
 		</dependency>
                 
                 <!-- for COUNTRY CODE and name conversions based on ISO-3166-1 standard -->
                 <dependency>
                     <groupId>com.neovisionaries</groupId>
                     <artifactId>nv-i18n</artifactId>
-                    <version>1.22</version>
+                    <version>1.23</version>
                 </dependency>
                 
                 <!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
@@ -77,7 +77,7 @@
                 <dependency>
                     <groupId>com.googlecode.libphonenumber</groupId>
                     <artifactId>libphonenumber</artifactId>
-                    <version>8.7.1</version>
+                    <version>8.10.4</version>
                 </dependency>
 
                 
@@ -133,7 +133,7 @@
 	        <dependency>
 	          <groupId>javax.ws.rs</groupId>
 	          <artifactId>javax.ws.rs-api</artifactId>
-	          <version>2.0.1</version>
+	          <version>2.1.1</version>
 	          <type>jar</type>
 	        </dependency>
  
@@ -177,13 +177,18 @@
 	        
 	 <dependency>
 	  <groupId>org.eclipse.persistence</groupId>
-	  <artifactId>eclipselink</artifactId>
-	  <version>2.6.0</version>
+	  <artifactId>org.eclipse.persistence.jpa</artifactId>
+	  <version>2.7.4</version>
+	 </dependency>
+	 <dependency>
+	  <groupId>org.eclipse.persistence</groupId>
+	  <artifactId>org.eclipse.persistence.moxy</artifactId>
+	  <version>2.7.4</version>
 	 </dependency>
 	 <dependency>
 	  <groupId>commons-beanutils</groupId>
 	  <artifactId>commons-beanutils</artifactId>
-	  <version>1.9.2</version>
+	  <version>1.9.3</version>
 	  <type>jar</type>
 	 </dependency>
 
@@ -191,32 +196,32 @@
          <dependency>
              <groupId>javax.validation</groupId>
              <artifactId>validation-api</artifactId>
-             <version>2.0.0.Final</version>
+             <version>2.0.1.Final</version>
          </dependency>
 
          <!-- Java Bean validation libraries from Hibernate -->
          <dependency>
              <groupId>org.hibernate.validator</groupId>
              <artifactId>hibernate-validator</artifactId>
-             <version>6.0.2.Final</version>
+             <version>6.0.14.Final</version>
          </dependency>
          <dependency>
              <groupId>org.hibernate.validator</groupId>
              <artifactId>hibernate-validator-annotation-processor</artifactId>
-             <version>6.0.2.Final</version>
+             <version>6.0.14.Final</version>
          </dependency>
 	 
         <!-- apache shiro authentication layer -->
 	<dependency>
     		<groupId>org.apache.shiro</groupId>
     		<artifactId>shiro-core</artifactId>
-     		<version>1.3.2</version>
+     		<version>1.4.0</version>
 	</dependency>
 
             <dependency>
                     <groupId>org.apache.shiro</groupId>
                     <artifactId>shiro-web</artifactId>
-                    <version>1.3.2</version>
+                    <version>1.4.0</version>
             </dependency>
 
             <dependency>
@@ -228,27 +233,27 @@
             <dependency>
             <groupId>io.jsonwebtoken</groupId>
                     <artifactId>jjwt</artifactId>
-            <version>0.7.0</version>
+            <version>0.9.1</version>
             </dependency>
 
 
             <dependency>
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-email</artifactId>
-                    <version>1.4</version>
+                    <version>1.5</version>
             </dependency>
             <!-- git support -->
             <dependency>
               <groupId>org.eclipse.jgit</groupId>
               <artifactId>org.eclipse.jgit</artifactId>
-              <version>5.2.0.201812061821-r</version>
+              <version>5.2.1.201812262042-r</version>
               <type>jar</type>
             </dependency>
             <!-- SVN support -->
             <dependency>
               <groupId>org.tmatesoft.svnkit</groupId>
               <artifactId>svnkit</artifactId>
-              <version>1.9.0</version>
+              <version>1.9.3</version>
               <type>jar</type>
              </dependency>
 
@@ -269,6 +274,15 @@
             </resources>
 
 		<plugins>
+            <!-- support checking for latest versions -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.7</version>
+                <configuration>
+                    <rulesUri>file:///${project.basedir}/plugin_rules.xml</rulesUri>
+                </configuration>
+            </plugin>
                     <!-- support shared resources properties files -->
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -291,7 +305,7 @@
                   <plugin>
                       <groupId>org.apache.maven.plugins</groupId>
                       <artifactId>maven-surefire-plugin</artifactId>
-                      <version>2.16</version>
+                      <version>2.22.1</version>
                       <configuration>
                         <systemPropertyVariables>
                           <!-- to fool logging -->
@@ -306,7 +320,7 @@
                     <plugin>
                             <groupId>org.eclipse.jetty</groupId>
                             <artifactId>jetty-maven-plugin</artifactId>
-                            <version>9.4.2.v20170220</version>
+                            <version>9.4.14.v20181114</version>
                             <configuration>
                               <scanIntervalSeconds>10</scanIntervalSeconds>
                               <webApp>
@@ -333,7 +347,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>2.5.1</version>
 				<configuration>
 					<source>${jdk.version}</source>
 					<target>${jdk.version}</target>
@@ -345,7 +359,7 @@
                         <plugin>
                             <groupId>org.apache.maven.plugins</groupId>
                             <artifactId>maven-war-plugin</artifactId>
-                            <version>3.2.0</version>
+                            <version>3.2.2</version>
                             <configuration>
                                 <webResources>
                                     <resource>
@@ -363,7 +377,7 @@
 		 <plugin>
 		  <groupId>org.apache.maven.plugins</groupId>
 		  <artifactId>maven-resources-plugin</artifactId>
-		  <version>2.4.3</version>
+		  <version>2.6</version>
 		  <configuration>
 		   <encoding>${project.build.sourceEncoding}</encoding>
 		  </configuration>
