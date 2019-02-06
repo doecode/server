@@ -303,9 +303,9 @@ public class Validation {
     public static boolean isValidAwardNumber(String value) {
         RequestConfig rc = RequestConfig
                 .custom()
-                .setSocketTimeout(5000)
-                .setConnectTimeout(5000)
-                .setConnectionRequestTimeout(5000)
+                .setSocketTimeout(60000)
+                .setConnectTimeout(60000)
+                .setConnectionRequestTimeout(60000)
                 .build();
         CloseableHttpClient hc = HttpClientBuilder
                 .create()

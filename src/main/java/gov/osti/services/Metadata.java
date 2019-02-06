@@ -892,9 +892,9 @@ public class Metadata {
                 .create()
                 .setDefaultRequestConfig(RequestConfig
                         .custom()
-                        .setSocketTimeout(5000)
-                        .setConnectTimeout(5000)
-                        .setConnectionRequestTimeout(5000)
+                        .setSocketTimeout(300000)
+                        .setConnectTimeout(300000)
+                        .setConnectionRequestTimeout(300000)
                         .build())
                 .build();
 
@@ -1296,9 +1296,9 @@ public class Metadata {
         // set some reasonable default timeouts
         RequestConfig rc = RequestConfig
                 .custom()
-                .setSocketTimeout(5000)
-                .setConnectTimeout(5000)
-                .setConnectionRequestTimeout(5000)
+                .setSocketTimeout(60000)
+                .setConnectTimeout(60000)
+                .setConnectionRequestTimeout(60000)
                 .build();
         // create an HTTP client to request through
         CloseableHttpClient hc =
@@ -2123,9 +2123,9 @@ public class Metadata {
                     .create()
                     .setDefaultRequestConfig(RequestConfig
                             .custom()
-                            .setSocketTimeout(5000)
-                            .setConnectTimeout(5000)
-                            .setConnectionRequestTimeout(5000)
+                            .setSocketTimeout(60000)
+                            .setConnectTimeout(60000)
+                            .setConnectionRequestTimeout(60000)
                             .build())
                     .build()) {
             HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");

@@ -346,9 +346,9 @@ public class DataCite {
                 .create()
                 .setDefaultRequestConfig(RequestConfig
                     .custom()
-                    .setSocketTimeout(5000)
-                    .setConnectTimeout(5000)
-                    .setConnectionRequestTimeout(5000)
+                    .setSocketTimeout(60000)
+                    .setConnectTimeout(60000)
+                    .setConnectionRequestTimeout(60000)
                     .build())
                 .build();
         
@@ -395,9 +395,9 @@ public class DataCite {
                 .create()
                 .setDefaultRequestConfig(RequestConfig
                         .custom()
-                        .setSocketTimeout(5000)
-                        .setConnectTimeout(5000)
-                        .setConnectionRequestTimeout(5000)
+                        .setSocketTimeout(60000)
+                        .setConnectTimeout(60000)
+                        .setConnectionRequestTimeout(60000)
                         .build())
                 .build();
         
