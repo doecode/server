@@ -1546,7 +1546,7 @@ public class Metadata {
 
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
-                File archiveContainer = (null==container) ? null : new File(fullContainerName);
+                File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
                     sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
@@ -1742,7 +1742,7 @@ public class Metadata {
 
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
-                File archiveContainer = (null==container) ? null : new File(fullContainerName);
+                File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
                     sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
