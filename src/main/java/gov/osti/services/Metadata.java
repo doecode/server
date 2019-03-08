@@ -600,7 +600,7 @@ public class Metadata {
             Expression<String> workflowStatus = md.get("workflowStatus");
             Expression<String> siteOwnershipCode = md.get("siteOwnershipCode");
 
-            // default requested STATE; take Submitted as the default value if not supplied
+            // default requested STATE; take Submitted and Announced as the default values if not supplied
             List<DOECodeMetadata.Status> requestedStates = new ArrayList();
             String queryState = (StringUtils.isEmpty(state)) ? "" : state.toLowerCase();
             switch ( queryState ) {
