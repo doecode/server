@@ -513,6 +513,10 @@ public class Metadata {
             TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdLastNotStatus", MetadataSnapshot.class)
                     .setParameter("status", DOECodeMetadata.Status.Approved);
 
+            // lookup system Snapshot status info for each item
+            TypedQuery<MetadataSnapshot> querySystemSnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAsSystemStatus", MetadataSnapshot.class)
+                    .setParameter("status", DOECodeMetadata.Status.Approved);
+
             JsonNode recordNode = recordsObject.get("records");
             if (recordNode.isArray()) {
                 int rowCount = 0;
@@ -527,6 +531,7 @@ public class Metadata {
                     // get code_id to find Snapshot
                     long codeId = objNode.get("code_id").asLong();
                     querySnapshot.setParameter("codeId", codeId);
+                    querySystemSnapshot.setParameter("codeId", codeId);
 
                     String lastApprovalFor = "";
                     List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
@@ -537,6 +542,16 @@ public class Metadata {
                     // add "approve as" status indicator to response record, if not blank
                     if (!StringUtils.isBlank(lastApprovalFor))
                         ((ObjectNode) objNode).put("approved_as", lastApprovalFor);
+
+                    String systemStatus = "";
+                    List<MetadataSnapshot> resultsSystem = querySystemSnapshot.setMaxResults(1).getResultList();
+                    for ( MetadataSnapshot ms : resultsSystem ) {
+                        systemStatus = ms.getSnapshotKey().getSnapshotStatus().toString();
+                    }
+
+                    // add "system status" indicator to response record, if not blank
+                    if (!StringUtils.isBlank(lastApprovalFor))
+                        ((ObjectNode) objNode).put("system_status", systemStatus);
                 }
 
                 recordsObject.put("total", rowCount);
@@ -1462,6 +1477,19 @@ public class Metadata {
 
                 if (emd != null)
                     previouslySaved = Status.Saved.equals(emd.getWorkflowStatus());
+            }
+
+            // lookup Announced Snapshot status
+            TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                    .setParameter("codeId", currentCodeId)
+                    .setParameter("status", DOECodeMetadata.Status.Announced);
+
+            List<MetadataSnapshot> results = querySnapshot.setMaxResults(1).getResultList();
+            if (results.size() > 0) {
+                log.error ("Cannot Submit, Previously Announced: " + currentCodeId);
+                return ErrorResponse
+                        .internalServerError("This record was previously Announced to E-Link, if you need to update the metadata, please change your endpoint to \"/announce.\"")
+                        .build();
             }
 
             em.getTransaction().begin();
