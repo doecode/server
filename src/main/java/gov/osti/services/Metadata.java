@@ -2018,6 +2018,27 @@ public class Metadata {
         }
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/refresh")
+    @RequiresAuthentication
+    @RequiresRoles("OSTI")
+    public Response refresh() throws Exception {
+        try {
+            DoeServletContextListener.refreshCaches();
+
+            return Response
+                    .ok()
+                    .entity(mapper.createObjectNode().put("refreshed", "true").toString())
+                    .build();
+        } catch (Exception e) {
+            log.warn("Refresh Error: " + e.getMessage());
+            return ErrorResponse
+                    .internalServerError("Error refreshing caches.")
+                    .build();
+        }
+    }
+
     /**
      * APPROVE endpoint; sends the Metadata of a targeted project to Index.
      *
