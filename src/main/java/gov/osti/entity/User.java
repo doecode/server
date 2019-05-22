@@ -36,16 +36,16 @@ public class User implements Serializable {
     }
 
     public User(String email, String password, String apiKey, String confirmationCode) {
-            this.password = password;
-            this.apiKey = apiKey;
-            this.setEmail(email);
-            this.confirmationCode = confirmationCode;
-            // new users are blank slate
-            this.failedCount = 0;
-            this.active = false;
-            this.verified = false;
+        this.password = password;
+        this.apiKey = apiKey;
+        this.email = formatEmail(email);
+        this.confirmationCode = confirmationCode;
+        // new users are blank slate
+        this.failedCount = 0;
+        this.active = false;
+        this.verified = false;
     }
-    
+
     // email address is primary key for Users
     @Id
     private String email = null;
@@ -125,8 +125,11 @@ public class User implements Serializable {
     }
 
     public void setEmail(String email) {
-            email = email != null ? email.toLowerCase() : email;
-            this.email = email;
+        this.email = formatEmail(email);
+    }
+
+    private String formatEmail(String email) {
+        return email != null ? email.toLowerCase() : email;
     }
 
     public String getSiteId() {
