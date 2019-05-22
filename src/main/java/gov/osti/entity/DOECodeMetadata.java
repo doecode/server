@@ -333,6 +333,7 @@ public class DOECodeMetadata implements Serializable {
     @OneToMany (cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn (name="OWNER_ID", referencedColumnName = "CODE_ID")
     @Valid
+    @OrderColumn(name="ordinal_position")
     public List<Contributor> getContributors() {
         return this.contributors;
     }
