@@ -41,6 +41,7 @@ public class SearchData implements Serializable {
     private String developersContributors = null;
     private String biblioData = null;
     private String identifiers = null;
+    private String siteOwnershipCode = null;
     private Date dateEarliest = null;
     private Date dateLatest = null;
     private String[] accessibility = null;
@@ -104,6 +105,14 @@ public class SearchData implements Serializable {
 
 	public void setIdentifiers(String identifiers) {
 		this.identifiers = identifiers;
+	}
+
+	public String getSiteOwnershipCode() {
+		return siteOwnershipCode;
+	}
+
+	public void setSiteOwnershipCode(String siteCode) {
+		this.siteOwnershipCode = siteCode;
 	}
 
 	public Date getDateEarliest() {
@@ -241,6 +250,10 @@ public class SearchData implements Serializable {
         if (!StringUtils.isEmpty(getKeywords())) {
             if (q.length()>0) q.append(" ");
             q.append("keywords:(").append(escape(getKeywords(), true)).append(")");
+        }
+        if (!StringUtils.isEmpty(getSiteOwnershipCode())) {
+            if (q.length()>0) q.append(" ");
+            q.append("siteOwnershipCode:(").append(escape(getSiteOwnershipCode(), true)).append(")");
         }
         if (null!=getProjectKeywords()) {
             StringBuilder values = new StringBuilder();

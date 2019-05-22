@@ -487,7 +487,7 @@
   <field name="landingPage" type="text_en" indexed="true" stored="true"/>
   <field name="researchOrganizations.organizationName" type="text_en" multiValued="true" indexed="true" stored="true"/>
   <field name="siteAccessionNumber" type="string"/>
-  <field name="siteOwnershipCode" type="string"/>
+  <field name="siteOwnershipCode" type="string" indexed="true"/>
   <field name="softwareTitle" type="text_en" indexed="true" stored="true"/>
   <field name="sponsoringOrganizations.organizationName" 
    type="text_en" multiValued="true" indexed="true" stored="true"/>
