@@ -1,279 +1,279 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>gov.osti</groupId>
-	<artifactId>doecode</artifactId>
-	<packaging>war</packaging>
-	<version>1.10.0</version>
-	<name>DOE CODE Web Application (Server)</name>
-	<url>http://maven.apache.org</url>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>gov.osti</groupId>
+    <artifactId>doecode</artifactId>
+    <packaging>war</packaging>
+    <version>1.10.0</version>
+    <name>DOE CODE Web Application (Server)</name>
+    <url>http://maven.apache.org</url>
 
-	<properties>
-		<jdk.version>1.8</jdk.version>
+    <properties>
+        <jdk.version>1.8</jdk.version>
         <jersey.version>2.25</jersey.version>
         <httpclient.version>4.5.8</httpclient.version>
         <jackson.version>2.9.9</jackson.version>
-		<commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.6</commons-io.version>
         <projectName>doecodeapi</projectName>
         <datacite.url>https://mds.test.datacite.org/</datacite.url>
         <environment>development</environment>
-	 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>${commons-io.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
-			<version>2.5</version>
-			<scope>provided</scope>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>2.5</version>
+            <scope>provided</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-dbcp2</artifactId>
-			<version>2.6.0</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>2.6.0</version>
+        </dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.9</version>
-		</dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.9</version>
+        </dependency>
 
-                <dependency> 
-                  <groupId>org.slf4j</groupId>
-                  <artifactId>slf4j-log4j12</artifactId>
-                  <version>1.7.26</version>
-                </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.26</version>
+        </dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>42.2.5</version>
-		</dependency>
-                
-                <!-- for COUNTRY CODE and name conversions based on ISO-3166-1 standard -->
-                <dependency>
-                    <groupId>com.neovisionaries</groupId>
-                    <artifactId>nv-i18n</artifactId>
-                    <version>1.25</version>
-                </dependency>
-                
-                <!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
-                <!-- for phone number validation, including international -->
-                <dependency>
-                    <groupId>com.googlecode.libphonenumber</groupId>
-                    <artifactId>libphonenumber</artifactId>
-                    <version>8.10.12</version>
-                </dependency>
+        <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.2.5</version>
+        </dependency>
 
-                
-                <!-- Apache HTTP components for connector communication -->
-                <dependency>
-                  <groupId>org.apache.httpcomponents</groupId>
-                  <artifactId>httpclient</artifactId>
-                  <version>${httpclient.version}</version>
-                  <type>jar</type>
-                </dependency>
-                
-                <!-- Apache HTTP multipart form upload -->
-                <dependency>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpmime</artifactId>
-                    <version>${httpclient.version}</version>
-                    <type>jar</type>
-                </dependency>
+        <!-- for COUNTRY CODE and name conversions based on ISO-3166-1 standard -->
+        <dependency>
+            <groupId>com.neovisionaries</groupId>
+            <artifactId>nv-i18n</artifactId>
+            <version>1.25</version>
+        </dependency>
 
-                <!-- Jackson XML/JSON libraries -->
-	        <dependency>
-	          <groupId>com.fasterxml.jackson.core</groupId>
-	          <artifactId>jackson-annotations</artifactId>
-	          <version>${jackson.version}</version>
-	          <type>jar</type>
-	        </dependency>
-	        <dependency>
-	          <groupId>com.fasterxml.jackson.core</groupId>
-	          <artifactId>jackson-databind</artifactId>
-	          <version>${jackson.version}</version>
-	          <type>jar</type>
-	        </dependency>
-	        <dependency>
-	          <groupId>com.fasterxml.jackson.dataformat</groupId>
-	          <artifactId>jackson-dataformat-yaml</artifactId>
-	          <version>${jackson.version}</version>
-	          <type>jar</type>
-	        </dependency>
-                <dependency>
-                  <groupId>com.fasterxml.jackson.dataformat</groupId>
-                  <artifactId>jackson-dataformat-xml</artifactId>
-                  <version>${jackson.version}</version>
-                  <type>jar</type>
-                </dependency>
-                <dependency>
-                     <groupId>com.fasterxml.jackson.dataformat</groupId>
-                     <artifactId>jackson-dataformat-csv</artifactId>
-                     <version>${jackson.version}</version>
-                     <type>jar</type>
-                </dependency>
- 
-                <!-- JAX/RS web services -->
-	        <dependency>
-	          <groupId>javax.ws.rs</groupId>
-	          <artifactId>javax.ws.rs-api</artifactId>
-	          <version>2.1.1</version>
-	          <type>jar</type>
-	        </dependency>
- 
-                <!-- Jersey JAX/RS implementation -->
-	        <dependency>
-	          <groupId>org.glassfish.jersey.containers</groupId>
-	          <artifactId>jersey-container-servlet</artifactId>
-	          <version>${jersey.version}</version>
-	        </dependency>
-	        <dependency>
-	          <groupId>org.glassfish.jersey.core</groupId>
-	          <artifactId>jersey-client</artifactId>
-	          <version>${jersey.version}</version>
-	        </dependency>
-                <dependency>
-                    <groupId>org.glassfish.jersey.ext</groupId>
-                    <artifactId>jersey-mvc-jsp</artifactId>
-                    <version>${jersey.version}</version>
-                </dependency>
-	        <dependency>
-	          <groupId>org.glassfish.jersey.media</groupId>
-	          <artifactId>jersey-media-moxy</artifactId>
-	          <version>${jersey.version}</version>
-	            <exclusions>
-	                <exclusion>
-	                    <groupId>org.eclipse.persistence</groupId>
-	                    <artifactId>org.eclipse.persistence.moxy</artifactId>
-	                </exclusion>
-	                <exclusion>
-	                    <groupId>org.eclipse.persistence</groupId>
-	                    <artifactId>org.eclipse.persistence.antlr</artifactId>
-	                </exclusion>
-	            </exclusions>
-	        </dependency>
-                <dependency>
-                  <groupId>org.glassfish.jersey.media</groupId>
-                  <artifactId>jersey-media-multipart</artifactId>
-                  <version>${jersey.version}</version>
-                  <type>jar</type>
-                 </dependency>
-	        
-	 <dependency>
-	  <groupId>org.eclipse.persistence</groupId>
-	  <artifactId>org.eclipse.persistence.jpa</artifactId>
-	  <version>2.7.4</version>
-	 </dependency>
-	 <dependency>
-	  <groupId>org.eclipse.persistence</groupId>
-	  <artifactId>org.eclipse.persistence.moxy</artifactId>
-	  <version>2.7.4</version>
-	 </dependency>
-	 <dependency>
-	  <groupId>commons-beanutils</groupId>
-	  <artifactId>commons-beanutils</artifactId>
-	  <version>1.9.3</version>
-	  <type>jar</type>
-	 </dependency>
+        <!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
+        <!-- for phone number validation, including international -->
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>8.10.12</version>
+        </dependency>
 
-         <!-- javax bean validation reference spec -->
-         <dependency>
-             <groupId>javax.validation</groupId>
-             <artifactId>validation-api</artifactId>
-             <version>2.0.1.Final</version>
-         </dependency>
 
-         <!-- Java Bean validation libraries from Hibernate -->
-         <dependency>
-             <groupId>org.hibernate.validator</groupId>
-             <artifactId>hibernate-validator</artifactId>
-             <version>6.0.16.Final</version>
-         </dependency>
-         <dependency>
-             <groupId>org.hibernate.validator</groupId>
-             <artifactId>hibernate-validator-annotation-processor</artifactId>
-             <version>6.0.16.Final</version>
-         </dependency>
-	 
+        <!-- Apache HTTP components for connector communication -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpclient.version}</version>
+            <type>jar</type>
+        </dependency>
+
+        <!-- Apache HTTP multipart form upload -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>${httpclient.version}</version>
+            <type>jar</type>
+        </dependency>
+
+        <!-- Jackson XML/JSON libraries -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>${jackson.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-csv</artifactId>
+            <version>${jackson.version}</version>
+            <type>jar</type>
+        </dependency>
+
+        <!-- JAX/RS web services -->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
+            <type>jar</type>
+        </dependency>
+
+        <!-- Jersey JAX/RS implementation -->
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-mvc-jsp</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-moxy</artifactId>
+            <version>${jersey.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.persistence</groupId>
+                    <artifactId>org.eclipse.persistence.moxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.persistence</groupId>
+                    <artifactId>org.eclipse.persistence.antlr</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>
+            <version>${jersey.version}</version>
+            <type>jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.persistence</groupId>
+            <artifactId>org.eclipse.persistence.jpa</artifactId>
+            <version>2.7.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.persistence</groupId>
+            <artifactId>org.eclipse.persistence.moxy</artifactId>
+            <version>2.7.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.3</version>
+            <type>jar</type>
+        </dependency>
+
+        <!-- javax bean validation reference spec -->
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <version>2.0.1.Final</version>
+        </dependency>
+
+        <!-- Java Bean validation libraries from Hibernate -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>6.0.16.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator-annotation-processor</artifactId>
+            <version>6.0.16.Final</version>
+        </dependency>
+
         <!-- apache shiro authentication layer -->
-	<dependency>
-    		<groupId>org.apache.shiro</groupId>
-    		<artifactId>shiro-core</artifactId>
-     		<version>1.4.1</version>
-	</dependency>
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-core</artifactId>
+            <version>1.4.1</version>
+        </dependency>
 
-            <dependency>
-                    <groupId>org.apache.shiro</groupId>
-                    <artifactId>shiro-web</artifactId>
-                    <version>1.4.1</version>
-            </dependency>
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-web</artifactId>
+            <version>1.4.1</version>
+        </dependency>
 
-            <dependency>
-                    <groupId>org.secnod.shiro</groupId>
-                    <artifactId>shiro-jersey</artifactId>
-                    <version>0.2.0</version>
-            </dependency>
+        <dependency>
+            <groupId>org.secnod.shiro</groupId>
+            <artifactId>shiro-jersey</artifactId>
+            <version>0.2.0</version>
+        </dependency>
 
-            <dependency>
+        <dependency>
             <groupId>io.jsonwebtoken</groupId>
-                    <artifactId>jjwt</artifactId>
+            <artifactId>jjwt</artifactId>
             <version>0.9.1</version>
-            </dependency>
+        </dependency>
 
 
-            <dependency>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-email</artifactId>
-                    <version>1.5</version>
-            </dependency>
-            <!-- git support -->
-            <dependency>
-              <groupId>org.eclipse.jgit</groupId>
-              <artifactId>org.eclipse.jgit</artifactId>
-              <version>5.3.1.201904271842-r</version>
-              <type>jar</type>
-            </dependency>
-            <!-- SVN support -->
-            <dependency>
-              <groupId>org.tmatesoft.svnkit</groupId>
-              <artifactId>svnkit</artifactId>
-              <version>1.9.3</version>
-              <type>jar</type>
-             </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-email</artifactId>
+            <version>1.5</version>
+        </dependency>
+        <!-- git support -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>5.3.1.201904271842-r</version>
+            <type>jar</type>
+        </dependency>
+        <!-- SVN support -->
+        <dependency>
+            <groupId>org.tmatesoft.svnkit</groupId>
+            <artifactId>svnkit</artifactId>
+            <version>1.9.3</version>
+            <type>jar</type>
+        </dependency>
 
-       </dependencies>
+    </dependencies>
 
-	<build>
-            <finalName>${projectName}</finalName>
-            <resources>
-                <resource>
-                    <directory>src/main/resources</directory>
-                    <filtering>true</filtering>
-                </resource>
-                <resource>
-                    <directory>src/main/webapp</directory>
-                    <filtering>true</filtering>
-                    <targetPath>../filtered-resources</targetPath>
-                </resource>
-            </resources>
+    <build>
+        <finalName>${projectName}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/webapp</directory>
+                <filtering>true</filtering>
+                <targetPath>../filtered-resources</targetPath>
+            </resource>
+        </resources>
 
-		<plugins>
+        <plugins>
             <!-- enforce min version -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -304,105 +304,105 @@
                     <rulesUri>file:///${project.basedir}/plugin_rules.xml</rulesUri>
                 </configuration>
             </plugin>
-                    <!-- support shared resources properties files -->
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>properties-maven-plugin</artifactId>
-                    <version>1.0.0</version>
-                    <executions>
-                      <execution>
+            <!-- support shared resources properties files -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <execution>
                         <phase>initialize</phase>
                         <goals>
-                          <goal>read-project-properties</goal>
+                            <goal>read-project-properties</goal>
                         </goals>
                         <configuration>
-                          <files>
-                            <file>${user.home}/shared-resources/doecode/${environment}.properties</file>
-                          </files>
+                            <files>
+                                <file>${user.home}/shared-resources/doecode/${environment}.properties</file>
+                            </files>
                         </configuration>
-                      </execution>
-                    </executions>
-                  </plugin>
-                  <plugin>
-                      <groupId>org.apache.maven.plugins</groupId>
-                      <artifactId>maven-surefire-plugin</artifactId>
-                      <version>2.22.1</version>
-                      <configuration>
-                        <systemPropertyVariables>
-                          <!-- to fool logging -->
-                          <catalina.base>target</catalina.base>
-                        </systemPropertyVariables>
-                        <testFailureIgnore>true</testFailureIgnore>
-                      </configuration>
-                    </plugin>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.1</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- to fool logging -->
+                        <catalina.base>target</catalina.base>
+                    </systemPropertyVariables>
+                    <testFailureIgnore>true</testFailureIgnore>
+                </configuration>
+            </plugin>
 
- <!-- The Jetty plugin allows us to easily test the development build by
-      running jetty:run on the command line. -->
-                    <plugin>
-                            <groupId>org.eclipse.jetty</groupId>
-                            <artifactId>jetty-maven-plugin</artifactId>
-                            <version>9.4.14.v20181114</version>
-                            <configuration>
-                              <scanIntervalSeconds>10</scanIntervalSeconds>
-                              <webApp>
-                                <contextPath>/${projectName}</contextPath>
-                                <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
-                                  <resourcesAsCSV>target/filtered-resources</resourcesAsCSV>
-                                </baseResource>
-                              </webApp>
-                            </configuration>
-                    </plugin>
- 
-                    <!-- tomcat deployment -->
-                    <plugin>
-                        <groupId>org.apache.tomcat.maven</groupId>
-                        <artifactId>tomcat7-maven-plugin</artifactId>
-                        <version>2.2</version>
-                       <configuration>
-                         <server>${server}</server>
-                         <url>http://${host}:${port}/manager/text</url>
-                         <path>/${projectName}</path>
-                       </configuration>
-                    </plugin>
+            <!-- The Jetty plugin allows us to easily test the development build by
+            running jetty:run on the command line. -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>9.4.14.v20181114</version>
+                <configuration>
+                    <scanIntervalSeconds>10</scanIntervalSeconds>
+                    <webApp>
+                        <contextPath>/${projectName}</contextPath>
+                        <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
+                            <resourcesAsCSV>target/filtered-resources</resourcesAsCSV>
+                        </baseResource>
+                    </webApp>
+                </configuration>
+            </plugin>
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.0</version>
-				<configuration>
-					<source>${jdk.version}</source>
-					<target>${jdk.version}</target>
-				 <encoding>${project.build.sourceEncoding}</encoding>
-				</configuration>
+            <!-- tomcat deployment -->
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <server>${server}</server>
+                    <url>http://${host}:${port}/manager/text</url>
+                    <path>/${projectName}</path>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
 
 
-			</plugin>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-war-plugin</artifactId>
-                            <version>3.2.2</version>
-                            <configuration>
-                                <webResources>
-                                    <resource>
-                                        <directory>src/main/webapp</directory>
-                                        <filtering>true</filtering>
-                                        <includes>
-                                          <include>**/web.xml</include>
-                                        </includes>
-                                    </resource>
-                                </webResources>
-                                <warSourceDirectory>src/main/webapp</warSourceDirectory>
-                                <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
-                            </configuration>
-                        </plugin>
-		 <plugin>
-		  <groupId>org.apache.maven.plugins</groupId>
-		  <artifactId>maven-resources-plugin</artifactId>
-		  <version>3.0.2</version>
-		  <configuration>
-		   <encoding>${project.build.sourceEncoding}</encoding>
-		  </configuration>
-		 </plugin>
-		</plugins>
-	</build>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>src/main/webapp</directory>
+                            <filtering>true</filtering>
+                            <includes>
+                                <include>**/web.xml</include>
+                            </includes>
+                        </resource>
+                    </webResources>
+                    <warSourceDirectory>src/main/webapp</warSourceDirectory>
+                    <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
