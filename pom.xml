@@ -11,8 +11,8 @@
 	<properties>
 		<jdk.version>1.8</jdk.version>
         <jersey.version>2.25</jersey.version>
-        <httpclient.version>4.5.6</httpclient.version>
-        <jackson.version>2.9.8</jackson.version>
+        <httpclient.version>4.5.8</httpclient.version>
+        <jackson.version>2.9.9</jackson.version>
 		<commons-io.version>2.6</commons-io.version>
         <projectName>doecodeapi</projectName>
         <datacite.url>https://mds.test.datacite.org/</datacite.url>
@@ -42,20 +42,20 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-dbcp2</artifactId>
-			<version>2.5.0</version>
+			<version>2.6.0</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.8.1</version>
+			<version>3.9</version>
 		</dependency>
 
                 <dependency> 
                   <groupId>org.slf4j</groupId>
                   <artifactId>slf4j-log4j12</artifactId>
-                  <version>1.7.25</version>
+                  <version>1.7.26</version>
                 </dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
@@ -69,7 +69,7 @@
                 <dependency>
                     <groupId>com.neovisionaries</groupId>
                     <artifactId>nv-i18n</artifactId>
-                    <version>1.23</version>
+                    <version>1.25</version>
                 </dependency>
                 
                 <!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
@@ -77,7 +77,7 @@
                 <dependency>
                     <groupId>com.googlecode.libphonenumber</groupId>
                     <artifactId>libphonenumber</artifactId>
-                    <version>8.10.4</version>
+                    <version>8.10.12</version>
                 </dependency>
 
                 
@@ -203,25 +203,25 @@
          <dependency>
              <groupId>org.hibernate.validator</groupId>
              <artifactId>hibernate-validator</artifactId>
-             <version>6.0.14.Final</version>
+             <version>6.0.16.Final</version>
          </dependency>
          <dependency>
              <groupId>org.hibernate.validator</groupId>
              <artifactId>hibernate-validator-annotation-processor</artifactId>
-             <version>6.0.14.Final</version>
+             <version>6.0.16.Final</version>
          </dependency>
 	 
         <!-- apache shiro authentication layer -->
 	<dependency>
     		<groupId>org.apache.shiro</groupId>
     		<artifactId>shiro-core</artifactId>
-     		<version>1.4.0</version>
+     		<version>1.4.1</version>
 	</dependency>
 
             <dependency>
                     <groupId>org.apache.shiro</groupId>
                     <artifactId>shiro-web</artifactId>
-                    <version>1.4.0</version>
+                    <version>1.4.1</version>
             </dependency>
 
             <dependency>
@@ -246,7 +246,7 @@
             <dependency>
               <groupId>org.eclipse.jgit</groupId>
               <artifactId>org.eclipse.jgit</artifactId>
-              <version>5.2.1.201812262042-r</version>
+              <version>5.3.1.201904271842-r</version>
               <type>jar</type>
             </dependency>
             <!-- SVN support -->
@@ -274,6 +274,27 @@
             </resources>
 
 		<plugins>
+            <!-- enforce min version -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0-M2</version>
+                <executions>
+                    <execution>
+                        <id>enforce-maven</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.0.5</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- support checking for latest versions -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -347,7 +368,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.5.1</version>
+				<version>3.8.0</version>
 				<configuration>
 					<source>${jdk.version}</source>
 					<target>${jdk.version}</target>
@@ -377,7 +398,7 @@
 		 <plugin>
 		  <groupId>org.apache.maven.plugins</groupId>
 		  <artifactId>maven-resources-plugin</artifactId>
-		  <version>2.6</version>
+		  <version>3.0.2</version>
 		  <configuration>
 		   <encoding>${project.build.sourceEncoding}</encoding>
 		  </configuration>
