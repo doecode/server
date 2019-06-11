@@ -317,6 +317,7 @@
                         </goals>
                         <configuration>
                             <files>
+                                <file>${user.home}/shared-resources/doecode/application.properties</file>
                                 <file>${user.home}/shared-resources/doecode/${environment}.properties</file>
                             </files>
                         </configuration>
