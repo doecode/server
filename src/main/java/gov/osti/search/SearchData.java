@@ -56,6 +56,7 @@ public class SearchData implements Serializable {
     private Integer rows;
     private Integer start;
     private String[] softwareType = null;
+    private boolean showFacets;
 
     /**
      * Parses JSON in the request body of the reader into a SearchDaa object.
@@ -443,4 +444,17 @@ public class SearchData implements Serializable {
         this.softwareType = softwareType;
     }
 
+    /**
+     * @return the facets flag
+     */
+    public boolean isShowFacets() {
+        return showFacets;
+    }
+
+    /**
+     * @param facetsFlag the facets flag
+     */
+    public void setShowFacets(boolean facetsFlag) {
+        this.showFacets = facetsFlag;
+    }
 }

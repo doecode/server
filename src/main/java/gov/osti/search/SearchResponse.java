@@ -28,6 +28,7 @@ public class SearchResponse {
     @JacksonXmlProperty (localName = "doc")
     private List<DOECodeMetadata> docs = new ArrayList<>();
     private Map<String,Integer> facets = new LinkedHashMap<>();
+    private final Map<String, Map<String, Map<String, Integer>>> facetCounts = new LinkedHashMap<>();
 
     /**
      * @return the numFound
@@ -56,7 +57,7 @@ public class SearchResponse {
     public void setStart(Integer start) {
         this.start = start;
     }
-    
+
     public List<DOECodeMetadata> add(DOECodeMetadata m) {
         docs.add(m);
         return docs;
@@ -88,5 +89,19 @@ public class SearchResponse {
      */
     public void setFacets(Map<String,Integer> facets) {
         this.facets = facets;
+    }
+
+    /**
+     * @return the facet counts
+     */
+    public Map<String, Map<String, Map<String, Integer>>> getFacetCounts() {
+        return facetCounts;
+    }
+
+    /**
+     * @param facetFieldCounts the facet counts to set
+     */
+    public void setFacetFieldCounts(Map<String, Map<String, Integer>> facetFieldCounts) {
+        this.facetCounts.put("facet_fields", facetFieldCounts);
     }
 }

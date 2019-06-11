@@ -22,9 +22,11 @@ import gov.osti.search.SearchData;
 import gov.osti.search.SolrDocument;
 import gov.osti.search.SolrResult;
 import gov.osti.listeners.DoeServletContextListener;
+import gov.osti.search.FacetCountsDeserializer;
 import gov.osti.search.FacetDeserializer;
 import gov.osti.search.SearchResponse;
 import gov.osti.search.SolrFacet;
+import gov.osti.search.SolrFacetCounts;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
@@ -48,6 +50,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -61,22 +64,22 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implement a search interface with a SOLR backend.
- * 
+ *
  * @author ensornl
  */
 @Path("/search")
 public class SearchService {
     @Context ServletContext context;
-    
+
     // Logger
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
-    
-    /** 
+
+    /**
      * Implement a simple JSON filter to remove named properties.
      */
-    @JsonFilter("filter properties by name")  
-    class PropertyFilterMixIn {}  
-    
+    @JsonFilter("filter properties by name")
+    class PropertyFilterMixIn {}
+
     // filter out certain attribute names
     protected final static String[] ignoreProperties = {
         "recipientName",
@@ -96,13 +99,18 @@ public class SearchService {
         "site_ownership_code"
     };
     protected static FilterProvider filter = new SimpleFilterProvider()
-            .addFilter("filter properties by name", 
+            .addFilter("filter properties by name",
                     SimpleBeanPropertyFilter.serializeAllExcept(ignoreProperties));
-    
+    protected static FilterProvider filterExcludeFacets = new SimpleFilterProvider()
+            .addFilter("filter properties by name",
+                    SimpleBeanPropertyFilter.serializeAllExcept(ArrayUtils.addAll(ignoreProperties, new String[] {"facets","facet_counts"})));
+
     // specialized handler for SOLR date faceting
-    protected static SimpleModule module = new SimpleModule()
+    protected static final SimpleModule moduleFacet = new SimpleModule()
             .addDeserializer(SolrFacet.class, new FacetDeserializer());
-    
+    protected static final SimpleModule moduleFacetCounts = new SimpleModule()
+            .addDeserializer(SolrFacetCounts.class, new FacetCountsDeserializer());
+
     // Jackson ObjectMapper instance
     protected static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -117,7 +125,8 @@ public class SearchService {
     protected static final ObjectMapper JSON_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .registerModule(module)
+            .registerModule(moduleFacet)
+            .registerModule(moduleFacetCounts)
             .addMixIn(Object.class, PropertyFilterMixIn.class)
             .setTimeZone(TimeZone.getDefault());
     protected static final ObjectMapper BIBLIO_WRAPPER = new ObjectMapper()
@@ -131,19 +140,19 @@ public class SearchService {
     protected static final ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
 
     // configured location of the search service endpoint
-    private static String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
-    
+    private static final String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
+
     /**
      * Acquire information from the searching index if possible.  This endpoint
      * should ONLY return Approved records that have been indexed for searching.
      * Requires that searching be configured.
-     * 
+     *
      * Response Codes:
      * 200 - OK, record found, and returned in desired format
      * 206 - No content, searching is not configured/unavailable
      * 404 - Record was not found
      * 500 - IO error or search malformed
-     * 
+     *
      * @param codeId the CODE ID to find
      * @param format the desired FORMAT; may be "yaml" or "xml".  Default is JSON
      * unless specified
@@ -161,14 +170,14 @@ public class SearchService {
         CloseableHttpClient hc = HttpClientBuilder
                 .create()
                 .build();
-        
+
         try {
             // construct a Search for a single CODEID value
             URIBuilder builder = new URIBuilder(SEARCH_URL)
                 .addParameter("q", "codeId:" + codeId)
                 .addParameter("fl", "json")
                 .addParameter("rows", "1");
-        
+
             HttpGet get = new HttpGet(builder.build());
 
             HttpResponse response = hc.execute(get);
@@ -351,6 +360,7 @@ public class SearchService {
         try {
             // get a set of search parameters
             SearchData searchFor = SearchData.parseJson(new StringReader(parameters));
+            boolean showFacets = searchFor.isShowFacets();
 
             CloseableHttpClient hc = HttpClientBuilder
                     .create()
@@ -365,6 +375,11 @@ public class SearchService {
                 builder.addParameter("rows", String.valueOf(searchFor.getRows()));
             if (null!=searchFor.getStart())
                 builder.addParameter("start", String.valueOf(searchFor.getStart()));
+            // is show facets, add those
+            if (showFacets) {
+                    builder.addParameter("facet", "on");
+                    builder.addParameter("facet.field", "fResearchOrganizations");
+            }
 
             HttpGet get = new HttpGet(builder.build());
 
@@ -389,16 +404,25 @@ public class SearchService {
 
                         query.add(md);
                     }
-                    // check out the FACETS
-                    query.setFacets(result.getSolrFacet().getValues());
+                    if (showFacets) {
+                        // check out the FACETS
+                        query.setFacets(result.getSolrFacet().getValues());
+                        // check out the FACET COUNTS
+                        query.setFacetFieldCounts(result.getSolrFacetCounts().getFields()); // fields
+                    }
                 }
+
+                FilterProvider searchFilter = filter;
+                if (!showFacets)
+                    searchFilter = filterExcludeFacets;
+
                 // respond with the appropriate format based on the input parameter
                 if ("xml".equals(format)) {
                     return Response
                             .ok()
                             .header("Content-Type", MediaType.APPLICATION_XML)
                             .entity(XML_MAPPER
-                                    .writer(filter)
+                                    .writer(searchFilter)
                                     .writeValueAsString(query))
                             .build();
                 } else if ("yaml".equals(format)) {
@@ -406,7 +430,7 @@ public class SearchService {
                             .ok()
                             .header("Content-Type", "text/yaml")
                             .entity(YAML_MAPPER
-                                    .writer(filter)
+                                    .writer(searchFilter)
                                     .writeValueAsString(query))
                             .build();
                 } else {
@@ -414,7 +438,7 @@ public class SearchService {
                             .ok()
                             .header("Content-Type", MediaType.APPLICATION_JSON)
                             .entity(JSON_MAPPER
-                                    .writer(filter)
+                                    .writer(searchFilter)
                                     .writeValueAsString(query))
                             .build();
                 }

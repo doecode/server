@@ -486,6 +486,7 @@
     <field name="repositoryLink" type="text_en" indexed="true" stored="true"/>
     <field name="landingPage" type="text_en" indexed="true" stored="true"/>
     <field name="researchOrganizations.organizationName" type="text_en" multiValued="true" indexed="true" stored="true"/>
+    <field name="fResearchOrganizations" type="string" multiValued="true" indexed="true"/>
     <field name="siteAccessionNumber" type="string"/>
     <field name="siteOwnershipCode" type="string" indexed="true"/>
     <field name="softwareTitle" type="text_en" indexed="true" stored="true"/>
@@ -514,6 +515,7 @@
     <copyField source="codeId" dest="_id_numbers"/>
     <copyField source="developers.orcid" dest="_id_numbers"/>
     <copyField source="contributors.orcid" dest="_id_numbers"/>
+    <copyField source="researchOrganizations.organizationName" dest="fResearchOrganizations"/>
 
     <!-- developer and contributor names accumulation -->
     <copyField source="developers.name" dest="_names"/>
