@@ -45,12 +45,12 @@ public class SearchData implements Serializable {
     private Date dateEarliest = null;
     private Date dateLatest = null;
     private String[] accessibility = null;
-    private String[] programmingLanguages;
+    private String programmingLanguages;
     private String keywords;
     private String[] projectKeywords;
     private String[] licenses;
-    private String[] researchOrganization = null;
-    private String[] sponsoringOrganization = null;
+    private String researchOrganization = null;
+    private String sponsoringOrganization = null;
     private String orcid;
     private String sort = null;
     private Integer rows;
@@ -140,19 +140,19 @@ public class SearchData implements Serializable {
 		this.accessibility = accessibility;
 	}
 
-	public String[] getResearchOrganization() {
+	public String getResearchOrganization() {
 		return researchOrganization;
 	}
 
-	public void setResearchOrganization(String[] researchOrganization) {
+	public void setResearchOrganization(String researchOrganization) {
 		this.researchOrganization = researchOrganization;
 	}
 
-	public String[] getSponsoringOrganization() {
+	public String getSponsoringOrganization() {
 		return sponsoringOrganization;
 	}
 
-	public void setSponsoringOrganization(String[] sponsoringOrganization) {
+	public void setSponsoringOrganization(String sponsoringOrganization) {
 		this.sponsoringOrganization = sponsoringOrganization;
 	}
 
@@ -237,16 +237,9 @@ public class SearchData implements Serializable {
                 q.append("(").append(types.toString()).append(")");
             }
         }
-        if (null!=getProgrammingLanguages()) {
-            StringBuilder values = new StringBuilder();
-            for ( String programmingLanguage : getProgrammingLanguages() ) {
-                if (values.length()>0) values.append(" OR ");
-                values.append("programmingLanguages:\"").append(escapeToken(programmingLanguage)).append("\"");
-            }
-            if (values.length()>0) {
-                if (q.length()>0) q.append(" ");
-                q.append("(").append(values.toString()).append(")");
-            }
+        if (!StringUtils.isEmpty(getProgrammingLanguages())) {
+            if (q.length()>0) q.append(" ");
+            q.append("programmingLanguages:(").append(escape(getProgrammingLanguages(), true)).append(")");
         }
         if (!StringUtils.isEmpty(getKeywords())) {
             if (q.length()>0) q.append(" ");
@@ -294,27 +287,13 @@ public class SearchData implements Serializable {
             if (q.length()>0) q.append(" ");
             q.append("_id_numbers:(").append(escape(getIdentifiers())).append(")");
         }
-        if (null!=getResearchOrganization()) {
-                        StringBuilder values = new StringBuilder();
-                        for ( String org : getResearchOrganization() ) {
-                                        if (values.length()>0) values.append(" OR ");
-                                        values.append("researchOrganizations.organizationName:\"").append(escape(org)).append("\"");
-                        }
-                        if (values.length()>0) {
-                                        if (q.length()>0) q.append(" ");
-                                        q.append("(").append(values.toString()).append(")");
-                        }
+        if (!StringUtils.isEmpty(getResearchOrganization())) {
+            if (q.length()>0) q.append(" ");
+            q.append("researchOrganizations.organizationName:(").append(escape(getResearchOrganization(), true)).append(")");
         }
-        if (null!=getSponsoringOrganization()) {
-                        StringBuilder values = new StringBuilder();
-                        for ( String org : getSponsoringOrganization() ) {
-                                        if (values.length()>0) values.append(" OR ");
-                                        values.append("sponsoringOrganizations.organizationName:\"").append(escape(org)).append("\"");
-                        }
-                        if (values.length()>0) {
-                                        if (q.length()>0) q.append(" ");
-                                        q.append("(").append(values.toString()).append(")");
-                        }
+        if (!StringUtils.isEmpty(getSponsoringOrganization())) {
+            if (q.length()>0) q.append(" ");
+            q.append("sponsoringOrganizations.organizationName:(").append(escape(getSponsoringOrganization(), true)).append(")");
         }
         if (!StringUtils.isEmpty(getSoftwareTitle())) {
             if (q.length()>0) q.append(" ");
@@ -397,14 +376,14 @@ public class SearchData implements Serializable {
     /**
      * @return the programming languages
      */
-    public String[] getProgrammingLanguages() {
+    public String getProgrammingLanguages() {
         return programmingLanguages;
     }
 
     /**
      * @param programmingLanguages the programming languages to set
      */
-    public void setProgrammingLanguages(String[] programmingLanguages) {
+    public void setProgrammingLanguages(String programmingLanguages) {
         this.programmingLanguages = programmingLanguages;
     }
 
