@@ -1584,7 +1584,7 @@ public class UserServices {
             email.addTo(userEmail);
             email.addCc(EMAIL_FROM);
             
-            email.setHtmlMsg("<html>Your account has been automatically deactivated due to after 3 unsuccessful logon attempts.  "
+            email.setHtmlMsg("<html>Your account has been automatically deactivated after 3 unsuccessful logon attempts.  "
                     + "<p>Please contact doecode@osti.gov as an administrator will need to reactivate your account before you "
                     + "can sign-in to DOE CODE or change your password.</html>");
             
