@@ -4,7 +4,7 @@
     <groupId>gov.osti</groupId>
     <artifactId>doecode</artifactId>
     <packaging>war</packaging>
-    <version>1.10.0</version>
+    <version>1.11.0</version>
     <name>DOE CODE Web Application (Server)</name>
     <url>http://maven.apache.org</url>
 
