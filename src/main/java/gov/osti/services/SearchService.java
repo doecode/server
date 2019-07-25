@@ -94,9 +94,7 @@ public class SearchService {
         "access_limitations",
         "accessLimitation",
         "access_limitation",
-        "disclaimers",
-        "siteOwnershipCode",
-        "site_ownership_code"
+        "disclaimers"
     };
     protected static FilterProvider filter = new SimpleFilterProvider()
             .addFilter("filter properties by name",
