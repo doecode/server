@@ -77,27 +77,54 @@ Content-Type: application/json
 ```
 ```json
 {
-  "responseHeader":{
-    "status":0,
-    "QTime":0,
-    "params":{
-      "q":"_text_:(test)",
-      "sort":"",
-      "rows":"10"}},
-  "response":{"numFound":15,"start":0,"docs":[
-      {
-        "codeId":25818,
-        "siteOwnershipCode":"OSTI",
-        "openSource":true,
-        "landingPage":"https://en.wikipedia.org/wiki/Anarchist_Protected_Area",
-        "accessibility":"ON",
-        "accessLimitations":["UNL"],
-        "developers.name":["Last, test "],
-        "_names":["Last, test ",
-          "test, test "],
-        "contributors.name":["test, test "]
-      }
- ]
+    "num_found": 1,
+    "start": 0,
+    "docs": [
+        {
+            "code_id": 12345,
+            "site_ownership_code": "OSTI",
+            "open_source": false,
+            "landing_page": "https://www.something.com",
+            "accessibility": "CS",
+            "software_type": "S",
+            "developers": [
+                {
+                    "email": "lastp@test.com",
+                    "orcid": "",
+                    "first_name": "Last",
+                    "last_name": "Person",
+                    "middle_name": "",
+                    "affiliations": [
+                        "Some Aerospace Group"
+                    ]
+                }
+            ],
+            "contributors": [
+                {
+                    "email": "con1@test.com",
+                    "orcid": "",
+                    "first_name": "Contributor1",
+                    "last_name": "Last",
+                    "middle_name": "",
+                    "contributor_type": "DataCurator",
+                    "affiliations": [
+                        "Some Corp."
+                    ]
+                }
+            ],
+            "sponsoring_organizations": [],
+            "contributing_organizations": [],
+            "research_organizations": [],
+            "related_identifiers": [],
+            "software_title": "Testing",
+            "description": "This is just a test record.",
+            "country_of_origin": "United States",
+            "licenses": [
+                "MIT License",
+                "Mozilla Public License 2.0"
+            ]
+        }
+    ]
 }
 ```
 
@@ -125,27 +152,54 @@ Content-Type: application/json
 ```
 ```json
 {
-  "responseHeader":{
-    "status":0,
-    "QTime":0,
-    "params":{
-      "q":"_text_:(test)",
-      "sort":"",
-      "rows":"10"}},
-  "response":{"numFound":15,"start":0,"docs":[
-      {
-        "codeId":25818,
-        "siteOwnershipCode":"OSTI",
-        "openSource":true,
-        "landingPage":"https://en.wikipedia.org/wiki/Anarchist_Protected_Area",
-        "accessibility":"ON",
-        "accessLimitations":["UNL"],
-        "developers.name":["Last, test "],
-        "_names":["Last, test ",
-          "test, test "],
-        "contributors.name":["test, test "]
-      }
- ]
+    "num_found": 1,
+    "start": 0,
+    "docs": [
+        {
+            "code_id": 12345,
+            "site_ownership_code": "OSTI",
+            "open_source": false,
+            "landing_page": "https://www.something.com",
+            "accessibility": "CS",
+            "software_type": "S",
+            "developers": [
+                {
+                    "email": "lastp@test.com",
+                    "orcid": "",
+                    "first_name": "Last",
+                    "last_name": "Person",
+                    "middle_name": "",
+                    "affiliations": [
+                        "Some Aerospace Group"
+                    ]
+                }
+            ],
+            "contributors": [
+                {
+                    "email": "con1@test.com",
+                    "orcid": "",
+                    "first_name": "Contributor1",
+                    "last_name": "Last",
+                    "middle_name": "",
+                    "contributor_type": "DataCurator",
+                    "affiliations": [
+                        "Some Corp."
+                    ]
+                }
+            ],
+            "sponsoring_organizations": [],
+            "contributing_organizations": [],
+            "research_organizations": [],
+            "related_identifiers": [],
+            "software_title": "Testing",
+            "description": "This is just a test record.",
+            "country_of_origin": "United States",
+            "licenses": [
+                "MIT License",
+                "Mozilla Public License 2.0"
+            ]
+        }
+    ]
 }
 ```
 
