@@ -512,6 +512,7 @@ metadata fields.
 "accessibility":"OS",
 "software_type":"S",
 "repository_link":"https://github.com/doecode/doecode",
+"landing_page": "",
 "developers":[
  {"first_name":"Project",
   "middle_name":"A.",
@@ -564,6 +565,11 @@ metadata fields.
 "acronym":"doecode",
 "doi":"10.5072/dc/2017/7174",
 "description":"Main repository for managing the new DOE CODE site from the DOE Office of Scientific and Technical Information (OSTI)",
+"programming_languages": ["Java"],
+"version_number": "v1.11.1",
+"documentation_url": "",
+"country_of_origin": "United States",
+"keywords": "doecode",
 "license":["Apache License 2.0"],
 "release_date":"2017-08-23"
 }
