@@ -152,6 +152,7 @@ Content-Type: application/json
 | Name | Description |
 | --- | --- |
 | all_fields | Search for value in all the available search fields |
+| site_ownership_code | Search for value in the site ownership code. |
 | software_title | Search for value in the software title |
 | developers_contributors | Search for the value in developer or contributor names |
 | identifiers | Search within identifying numbers |
