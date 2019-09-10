@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.osti.entity.Site;
 
@@ -161,7 +162,7 @@ public class UserServices {
     }
 
     /**
-     * Endpoint that returns user email
+     * Endpoint that returns user id and email
      * 
      * @return an OK Response if session is logged in, otherwise a FORBIDDEN or
      * UNAUTHENTICATED response as appropriate
@@ -178,7 +179,7 @@ public class UserServices {
         // return an OK if authenticated, otherwise authentication services will handle status
         return Response
                 .status(Response.Status.OK)
-                .entity(mapper.createObjectNode().put("email", user.getEmail()).toString())
+                .entity(mapper.createObjectNode().put("userId", user.getUserId()).put("email", user.getEmail()).toString())
                 .build();
     }
     
@@ -318,6 +319,7 @@ public class UserServices {
                         .createObjectNode()
                         .put("xsrfToken", xsrfToken)
                         .put("site", user.getSiteId())
+                        .put("userid", user.getUserId())
                         .put("email", user.getEmail())
                         .put("first_name", user.getFirstName())
                         .put("last_name", user.getLastName())
@@ -441,7 +443,7 @@ public class UserServices {
                     .build();
         
         try {
-            User user = em.find(User.class, request.getEmail());
+            User user = findUserByEmail(em, request.getEmail());
 
             // if there's already a user on file, cannot re-register if VERIFIED
             if ( user != null && user.isVerified() ) {
@@ -572,7 +574,7 @@ public class UserServices {
         
         // attempt to process the request
         try {
-            User user = em.find(User.class, request.getEmail());
+            User user = findUserByEmail(em, request.getEmail());
             
             // account has to exist AND be verified
             if (null==user || !user.isVerified()) 
@@ -816,26 +818,20 @@ public class UserServices {
     @RequiresRoles("OSTI")
     @Path("/{email}")
     public Response getUser(@PathParam("email") String email) {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-        
         try {
             if (StringUtils.isBlank(email)) 
                 return ErrorResponse
                         .badRequest("Missing required parameter.")
                         .build();
             
-            TypedQuery<User> q = em.createNamedQuery("User.findUser", User.class)
-                    .setParameter("email", email);
+            // should just be one user
+            User u = findUserByEmail(email);
             
             // if no users, send back a 404 response
-            List<User> users = q.getResultList();
-            if (users.isEmpty())
+            if (u == null)
                 return ErrorResponse
                         .notFound("No users found.")
                         .build();
-            
-            // should just be one
-            User u = users.get(0);
             
             return Response
                     .ok()
@@ -846,8 +842,6 @@ public class UserServices {
             return ErrorResponse
                     .internalServerError("JSON processing error on User.")
                     .build();
-        } finally {
-            em.close();
         }
     }
 
@@ -969,18 +963,13 @@ public class UserServices {
                     .build();
         
         try {
-            TypedQuery<User> query = em.createNamedQuery("User.findUser", User.class)
-                    .setParameter("email", email);
+            // obtain the BEFORE User
+            User source = findUserByEmail(em, email);
             
-            List<User> results = query.getResultList();
-            
-            if (results.isEmpty())
+            if (source == null)
                 return ErrorResponse
                         .notFound("User is not on file.")
                         .build();
-            
-            // obtain the BEFORE User
-            User source = results.get(0);
             
             // ensure the EMAILS match, if supplied
             if ( !StringUtils.equalsIgnoreCase(email, source.getEmail()) )
@@ -1083,7 +1072,7 @@ public class UserServices {
                     .build();
         
         try {
-            User u = em.find(User.class, user.getEmail());
+            User u = em.find(User.class, user.getUserId());
 
             if (null==u) {
                 return ErrorResponse
@@ -1456,7 +1445,7 @@ public class UserServices {
             String confirmationCode = claims.getId();
             String email = claims.getSubject();
 
-            currentUser = em.find(User.class, email);
+            currentUser = findUserByEmail(em, email);
 
             if (currentUser == null) {
                 //no user matched, return with error
@@ -1627,12 +1616,36 @@ public class UserServices {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
-            return em.find(User.class, email);
+            return findUserByEmail(em, email);
+        } finally {
+            em.close();
+        }
+    }
+
+    /**
+     * Locate a User record by EMAIL address.
+     * 
+     * @param em the ENTITY MANAGER to use if ATTACHED object is needed
+     * @param email the EMAIL to look for
+     * @return a User object if possible or null if not found or errors
+     */
+    private static User findUserByEmail(EntityManager em, String email) {        
+        try {
+            TypedQuery<User> q = em.createNamedQuery("User.findUser", User.class)
+                    .setParameter("email", email);
+
+            // if no users, send back a 404 response
+            List<User> users = q.getResultList();
+            if (users.isEmpty())
+                throw new Exception("No users found.");
+            
+            // should just be one
+            User u = users.get(0);
+
+            return u;
         } catch ( Exception e ) {
             log.warn("Error locating user : " + email, e);
             return null;
-        } finally {
-            em.close();
         }
     }
     
@@ -1650,7 +1663,7 @@ public class UserServices {
         
         try {
             // find the User
-            User user = em.find(User.class, email);
+            User user = findUserByEmail(em, email);
             
             // this shouldn't happen
             if (null==user) 
@@ -1698,7 +1711,7 @@ public class UserServices {
         EntityManager em = DoeServletContextListener.createEntityManager();
         
         try {
-            User user = em.find(User.class, email);
+            User user = findUserByEmail(em, email);
             
             if (null==user)
                 throw new NotFoundException("Unable to locate user " + email);

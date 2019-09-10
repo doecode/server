@@ -11,6 +11,8 @@ import javax.persistence.Column;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
@@ -19,9 +21,10 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name="users")
+@Table(name="users", uniqueConstraints=@UniqueConstraint(columnNames={"email","apiKey"}))
 @NamedQueries ({
     @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u ORDER BY u.lastName"),
     @NamedQuery (name = "User.findUser", query = "SELECT u FROM User u WHERE u.email=lower(:email)")
@@ -48,6 +51,8 @@ public class User implements Serializable {
 
     // email address is primary key for Users
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long userId = null;
     private String email = null;
     private String password = null;
     private String apiKey = null;
@@ -118,6 +123,14 @@ public class User implements Serializable {
 
     public void setConfirmationCode(String confirmationCode) {
             this.confirmationCode = confirmationCode;
+    }
+
+    public Long getUserId() {
+            return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getEmail() {
