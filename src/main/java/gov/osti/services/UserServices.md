@@ -347,6 +347,30 @@ you may specify a starting row number (from 0) as a query parameter ("start") an
 number of rows ("rows").  If present, the number of rows is capped at 100; if not specified,
 there is no upper limit.
 
+### get valid user roles
+
+`GET /doecodeapi/services/user/roles`
+
+Returns JSON object containing "admin" and "standard".
+Requires administrative access to veiw "admin" roles.
+Each role contains a value, label, and description.
+
+>  Request:
+```
+GET /doecodeapi/services/user/roles
+Content-Type: application/json
+Authorization: Basic user-api-key
+```
+
+> Response:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{"standard":[{"value":"OSTI","label":"OSTI","description":"Office of Scientific and Technical Information"}]}
+```
+
 ### update (admin)
 
 `POST /doecodeapi/services/user/update/{email}`

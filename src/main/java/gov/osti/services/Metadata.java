@@ -35,6 +35,8 @@ import gov.osti.entity.ResearchOrganization;
 import gov.osti.entity.Site;
 import gov.osti.entity.SponsoringOrganization;
 import gov.osti.entity.User;
+import gov.osti.entity.UserRole;
+import gov.osti.entity.UserRole.RoleType;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.File;
@@ -304,7 +306,7 @@ public class Metadata {
      * to succeeding.
      *
      * Ownership is defined as:  owner and user email match, OR user's roles
-     * include the SITE OWNERSHIP CODE of the record, OR user has the "OSTI"
+     * include the SITE OWNERSHIP CODE of the record, OR user has the "RecordAdmin"
      * special administrative role.
      * Result Codes:
      * 200 - OK, with JSON containing the metadata information
@@ -343,7 +345,7 @@ public class Metadata {
 
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) &&
-             !user.hasRole("OSTI") &&
+             !user.hasRole("RecordAdmin") &&
              !user.hasRole(md.getSiteOwnershipCode()))
             return ErrorResponse
                     .forbidden("Permission denied.")
@@ -478,20 +480,22 @@ public class Metadata {
 
         try {
             Set<String> roles = user.getRoles();
-            String rolecode = (null==roles) ? "" :
-               (roles.isEmpty()) ? "" : roles.iterator().next();
+
+            List<String> allowedSites = UserRole.GetRoleList(RoleType.STANDARD);
+            allowedSites.retainAll(roles);
 
             TypedQuery<DOECodeMetadata> query;
             // admins see ALL PROJECTS
-            if ("OSTI".equals(rolecode)) {
+            if (roles.contains("RecordAdmin")) {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
-            } else if (StringUtils.isNotEmpty(rolecode)) {
-                // if you have another ROLE, it is assumed to be a SITE ADMIN; see all those records
-                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.siteOwnershipCode = :site", DOECodeMetadata.class)
-                        .setParameter("site", rolecode);
+            } else if (!allowedSites.isEmpty()) {
+                // if you have any allowed site ROLE, it is assumed to be a SITE ADMIN; see all those records plus their own
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner OR md.siteOwnershipCode IN :site", DOECodeMetadata.class)
+                        .setParameter("owner", user.getEmail())
+                        .setParameter("site", allowedSites);
             } else {
                 // no roles, you see only YOUR OWN projects
-                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = lower(:owner)", DOECodeMetadata.class)
+                query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner", DOECodeMetadata.class)
                         .setParameter("owner", user.getEmail());
             }
 
@@ -597,7 +601,7 @@ public class Metadata {
     @Consumes (MediaType.APPLICATION_JSON)
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("ApprovalAdmin")
     public Response listProjectsPending(@QueryParam("start") int start,
                                         @QueryParam("rows") int rows,
                                         @QueryParam("site") String siteCode,
@@ -765,7 +769,7 @@ public class Metadata {
 
         // must be OSTI user in order to add/update PROJECT KEYWORDS
         List<String> projectKeywords = md.getProjectKeywords();
-        if (projectKeywords != null && !projectKeywords.isEmpty() && !user.hasRole("OSTI"))
+        if (projectKeywords != null && !projectKeywords.isEmpty() && !user.hasRole("RecordAdmin"))
             throw new ValidationException("Project Keywords can only be set by authorized users.");
 
         // if there's a CODE ID, attempt to look up the record first and
@@ -789,7 +793,7 @@ public class Metadata {
                 // must be the OWNER, SITE ADMIN, or OSTI in order to UPDATE
                 if (!user.getEmail().equals(emd.getOwner()) &&
                      !user.hasRole(emd.getSiteOwnershipCode()) &&
-                     !user.hasRole("OSTI"))
+                     !user.hasRole("RecordAdmin"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
                 // to Save, item must be non-existant, or already in Saved workflow status (if here, we know it exists)
@@ -1992,7 +1996,7 @@ public class Metadata {
     @Produces (MediaType.APPLICATION_JSON)
     @Path ("/reindex")
     @RequiresAuthentication
-    @RequiresRoles ("OSTI")
+    @RequiresRoles ("ContentAdmin")
     public Response reindex() throws IOException {
         EntityManager em = DoeServletContextListener.createEntityManager();
 
@@ -2022,7 +2026,7 @@ public class Metadata {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/refresh")
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("ContentAdmin")
     public Response refresh() throws Exception {
         try {
             DoeServletContextListener.refreshCaches();
@@ -2054,7 +2058,7 @@ public class Metadata {
     @Path ("/approve/{codeId}")
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("ApprovalAdmin")
     public Response approve(@PathParam("codeId") Long codeId) {
         EntityManager em = DoeServletContextListener.createEntityManager();
         Subject subject = SecurityUtils.getSubject();

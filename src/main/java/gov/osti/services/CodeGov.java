@@ -231,7 +231,7 @@ public class CodeGov {
     @Path("/listrecords")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("ContentAdmin")
     public Response listApprovedSnapshots()
             throws JsonProcessingException {
         EntityManager em = DoeServletContextListener.createEntityManager();

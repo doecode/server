@@ -34,6 +34,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.osti.entity.Site;
 
 import gov.osti.entity.User;
+import gov.osti.entity.UserRole;
+import gov.osti.entity.UserRole.RoleType;
 import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.security.DOECodeCrypt;
 import io.jsonwebtoken.Claims;
@@ -229,15 +231,15 @@ public class UserServices {
     @Path ("/login")
     public Response login(String object) {
         LoginRequest request;
-	try {
-            request = mapper.readValue(object, LoginRequest.class);
-	} catch (IOException e) {
-            // TODO Auto-generated catch block
-            log.warn("JSON Mapper error: " + e.getMessage());
-            return ErrorResponse
-                    .internalServerError("Error processing request.")
-                    .build();
-	}
+        try {
+                request = mapper.readValue(object, LoginRequest.class);
+        } catch (IOException e) {
+                // TODO Auto-generated catch block
+                log.warn("JSON Mapper error: " + e.getMessage());
+                return ErrorResponse
+                        .internalServerError("Error processing request.")
+                        .build();
+        }
         // a User object to use
         User user = null;
         
@@ -308,14 +310,14 @@ public class UserServices {
                     .build();
         }
     
-	String xsrfToken = DOECodeCrypt.nextRandomString();
-	String accessToken = DOECodeCrypt.generateLoginJWT(user.getApiKey(), xsrfToken);
-	NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
+        String xsrfToken = DOECodeCrypt.nextRandomString();
+        String accessToken = DOECodeCrypt.generateLoginJWT(user.getApiKey(), xsrfToken);
+        NewCookie cookie = DOECodeCrypt.generateNewCookie(accessToken);
 	
         try {
         return Response
                 .status(Response.Status.OK)
-                .entity(mapper
+                .entity(((ObjectNode)mapper
                         .createObjectNode()
                         .put("xsrfToken", xsrfToken)
                         .put("site", user.getSiteId())
@@ -323,12 +325,12 @@ public class UserServices {
                         .put("email", user.getEmail())
                         .put("first_name", user.getFirstName())
                         .put("last_name", user.getLastName())
-                        .put("roles", mapper.writeValueAsString(user.getRoles()))
-                        .put("pending_roles", mapper.writeValueAsString(user.getPendingRoles()))
+                        .set("roles", mapper.valueToTree(user.getRoles())))
+                        .set("pending_roles", mapper.valueToTree(user.getPendingRoles()))
                         .toString())
                 .cookie(cookie)
                 .build();
-        } catch ( JsonProcessingException e ) {
+        } catch ( Exception e ) {
             log.warn("JSON Error logging in " + request.getEmail(), e);
             return ErrorResponse
                     .internalServerError("Unable to process login information.")
@@ -672,7 +674,7 @@ public class UserServices {
      * 
      * CONTR users may not access this endpoint.  Logged in lab users may
      * request permission to access other records from their site; this role
-     * is PENDING APPROVAL until a site admin user ("OSTI") either approves or
+     * is PENDING APPROVAL until a site admin user ("UserAdmin") either approves or
      * disapproves that role.
      * 
      * Response Codes:
@@ -758,7 +760,7 @@ public class UserServices {
     @RequiresAuthentication
     @Produces (MediaType.APPLICATION_JSON)
     @Consumes ({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
-    @RequiresRoles("OSTI")
+    @RequiresRoles("UserAdmin")
     @Path("/users")
     public Response getUsers(
             @QueryParam("start") int start,
@@ -815,7 +817,7 @@ public class UserServices {
     @RequiresAuthentication
     @Produces (MediaType.APPLICATION_JSON)
     @Consumes ({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
-    @RequiresRoles("OSTI")
+    @RequiresRoles("UserAdmin")
     @Path("/{email}")
     public Response getUser(@PathParam("email") String email) {
         try {
@@ -940,7 +942,7 @@ public class UserServices {
      */
     @POST
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("UserAdmin")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/update/{email}")
@@ -970,7 +972,7 @@ public class UserServices {
                 return ErrorResponse
                         .notFound("User is not on file.")
                         .build();
-            
+                        
             // ensure the EMAILS match, if supplied
             if ( !StringUtils.equalsIgnoreCase(email, source.getEmail()) )
                 return ErrorResponse
@@ -1119,7 +1121,7 @@ public class UserServices {
      */
     @GET
     @Path ("/requests")
-    @RequiresRoles("OSTI")
+    @RequiresRoles("UserAdmin")
     @Produces (MediaType.APPLICATION_JSON)
     @RequiresAuthentication
     public Response loadRequests(
@@ -1497,6 +1499,38 @@ public class UserServices {
             em.close();  
         }
 
+    }
+    
+    /**
+     * Query to determine available USER ROLES.
+     * 
+     * Response Codes:
+     * 200 - OK, JSON contains ADMIN and STANDARD role arrays
+     * 500 - Internal service error
+     * 
+     * @return a Response containing the JSON if found
+     */
+    @GET
+    @RequiresAuthentication
+    @RequiresRoles("UserAdmin")
+    @Produces (MediaType.APPLICATION_JSON)
+    @Path ("/roles")
+    public Response getRoles() {       
+        try {
+            // return the results back
+            return Response
+                    .ok()
+                    .entity(((ObjectNode)mapper
+                            .createObjectNode()
+                            .set("admin", mapper.valueToTree(UserRole.GetRoles(RoleType.ADMIN))))
+                            .set("standard", mapper.valueToTree(UserRole.GetRoles(RoleType.STANDARD))).toString())
+                    .build();
+        } catch ( Exception e ) {
+            log.error("Site Lookup Error", e);
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+        }
     }
 
     /**

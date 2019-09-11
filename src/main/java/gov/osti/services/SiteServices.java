@@ -58,7 +58,7 @@ public class SiteServices {
      */
     @GET
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("SiteAdmin")
     @Consumes({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/info")
@@ -98,7 +98,7 @@ public class SiteServices {
      */
     @GET
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("SiteAdmin")
     @Consumes({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/info/{site}")
@@ -149,7 +149,7 @@ public class SiteServices {
      */
     @POST
     @RequiresAuthentication
-    @RequiresRoles("OSTI")
+    @RequiresRoles("SiteAdmin")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/update")
