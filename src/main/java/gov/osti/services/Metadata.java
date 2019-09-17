@@ -1546,6 +1546,11 @@ public class Metadata {
 
             // check validations for Submitted workflow
             List<String> errors = validateSubmit(md);
+            
+            // if BUSINESS, check Sponsor Orgs on SUBMIT
+            if (DOECodeMetadata.Type.B.equals(md.getSoftwareType()))
+                errors.addAll(validateSponsorOrgs(md));
+
             if ( !errors.isEmpty() ) {
                 // generate a JSONAPI errors object
                 return ErrorResponse
@@ -2365,8 +2370,8 @@ public class Metadata {
                 }
                 if (StringUtils.isBlank(contributor.getFirstName()) || StringUtils.isBlank(contributor.getLastName()) || (null == contributor.getContributorType())) {
                     reasons.add("Contributor must include first name, last name, and contributor type.");
+                }
             }
-        }
         }
         // if "OS" accessibility, a REPOSITORY LINK is REQUIRED
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
@@ -2388,27 +2393,18 @@ public class Metadata {
      * Perform ANNOUNCE validations on metadata.
      *
      * @param m the Metadata to check
-     * @return a List of submission validation errors, empty if none
+     * @return a List of announcement validation errors, empty if none
      */
     protected static List<String> validateAnnounce(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
         // get all the SUBMITTED reasons, if any
         reasons.addAll(validateSubmit(m));
-        // add SUBMIT-specific validations
+        // add ANNOUNCE-specific validations
         if (null==m.getReleaseDate())
             reasons.add("Release date is required.");
-        if (null==m.getSponsoringOrganizations() || m.getSponsoringOrganizations().isEmpty())
-            reasons.add("At least one sponsoring organization is required.");
-        else {
-            for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
-                if (StringUtils.isBlank(o.getOrganizationName()))
-                    reasons.add("Sponsoring organization name is required.");
-                if (StringUtils.isBlank(o.getPrimaryAward()) && o.isDOE())
-                    reasons.add("Primary award number is required.");
-                else if (o.isDOE() && !Validation.isValidAwardNumber(o.getPrimaryAward()))
-                    reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
-            }
-        }
+
+        reasons.addAll(validateSponsorOrgs(m));
+
         if (null==m.getResearchOrganizations() || m.getResearchOrganizations().isEmpty())
             reasons.add("At least one research organization is required.");
         else {
@@ -2437,6 +2433,38 @@ public class Metadata {
         if (!DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility()))
             if (StringUtils.isBlank(m.getFileName()))
                 reasons.add("A file archive must be included for non-open source submissions.");
+
+        return reasons;
+    }
+
+    /**
+     * Check SPONSOR ORG validations on metadata.
+     *
+     * @param m the Metadata to check
+     * @return a List of sponsor org validation errors, empty if none
+     */
+    private static List<String> validateSponsorOrgs(DOECodeMetadata m) {
+        List<String> reasons = new ArrayList<>();
+
+        int doeSponsorCount = 0;
+        if (null==m.getSponsoringOrganizations() || m.getSponsoringOrganizations().isEmpty())
+            reasons.add("At least one sponsoring organization is required.");
+        else {
+            for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
+                if (StringUtils.isBlank(o.getOrganizationName()))
+                    reasons.add("Sponsoring organization name is required.");
+                if (StringUtils.isBlank(o.getPrimaryAward()) && o.isDOE())
+                    reasons.add("Primary award number is required.");
+                else if (o.isDOE() && !Validation.isValidAwardNumber(o.getPrimaryAward()))
+                    reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
+
+                if (o.isDOE())
+                    doeSponsorCount++;
+            }
+        }
+
+        if (doeSponsorCount == 0)
+            reasons.add("At least one DOE funded sponsoring organization is required.");
 
         return reasons;
     }
