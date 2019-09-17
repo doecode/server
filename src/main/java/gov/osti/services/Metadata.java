@@ -351,6 +351,10 @@ public class Metadata {
                     .forbidden("Permission denied.")
                     .build();
 
+        // if user is not admin, remove Project Keywords from the result.
+        if (!user.hasRole("RecordAdmin"))
+            md.setProjectKeywords(null);
+
         // if YAML is requested, return that; otherwise, default to JSON
         try {
             if ("yaml".equals(format)) {
