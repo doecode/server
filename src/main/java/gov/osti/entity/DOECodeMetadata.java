@@ -14,6 +14,10 @@ import java.io.File;
 import java.io.Reader;
 import java.util.List;
 
+import gov.osti.entity.BiblioLink;
+import gov.osti.listeners.DoeServletContextListener;
+import java.util.ArrayList;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -63,6 +67,9 @@ public class DOECodeMetadata implements Serializable {
      */
     private static final long serialVersionUID = -909574677603914304L;
     private static final Logger log = LoggerFactory.getLogger(DOECodeMetadata.class.getName());
+
+    // get the SITE URL base for applications
+    private static String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
 
     /**
      * Record states/work flow:
@@ -235,6 +242,10 @@ public class DOECodeMetadata implements Serializable {
     // determine whether or not the RELEASE DATE was changed
     private transient boolean hasSetReleaseDate=false;
 
+    @JacksonXmlElementWrapper (localName = "links")
+    @JacksonXmlProperty (localName = "link")
+    private transient List<BiblioLink> links; 
+
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -277,7 +288,7 @@ public class DOECodeMetadata implements Serializable {
     }
 
     public void setCodeId(Long codeId) {
-            this.codeId = codeId;
+        this.codeId = codeId;
     }
 
     @Column (name="SITE_OWNERSHIP_CODE")
@@ -801,6 +812,16 @@ public class DOECodeMetadata implements Serializable {
     @JsonIgnore
     public boolean hasSetReleaseDate() {
         return hasSetReleaseDate;
+    }
+
+    public List<BiblioLink> getLinks() {
+        String biblioLink = SITE_URL + "/biblio/" + this.codeId;
+
+        this.links = new ArrayList<>();
+        BiblioLink citationLink = new BiblioLink("citation", biblioLink);
+        this.links.add(citationLink);
+
+        return this.links;
     }
 
     /**

@@ -403,6 +403,7 @@ A full JSON example is [provided below](#json_example).
 | date_of_issuance | The date the software project was made available or submitted. |
 | software_title | The software title. |
 | software_type | The type of software, either "S" for Scientific, or "B" for Business related. |
+| links | (Array) Read-only set of URL links for the record.  Only "citation" link is currently provided. |
 
 ### <a name="persons_fields"></a>Developers and Contributors
 Developers and Contributors are one-to-many Objects within a software project's metadata information.  
@@ -571,7 +572,10 @@ metadata fields.
 "country_of_origin": "United States",
 "keywords": "doecode",
 "license":["Apache License 2.0"],
-"release_date":"2017-08-23"
+"release_date":"2017-08-23",
+"links": [
+    {"rel": "citation",
+     "href": "https://www.osti.gov/doecode/biblio/2651"}]
 }
 ```
 

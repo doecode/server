@@ -122,6 +122,12 @@ Content-Type: application/json
             "licenses": [
                 "MIT License",
                 "Mozilla Public License 2.0"
+            ],
+            "links": [
+                {
+                    "rel": "citation",
+                    "href": "https://dev.osti.gov/doecode/biblio/12345"
+                }
             ]
         }
     ]
@@ -197,6 +203,12 @@ Content-Type: application/json
             "licenses": [
                 "MIT License",
                 "Mozilla Public License 2.0"
+            ],
+            "links": [
+                {
+                    "rel": "citation",
+                    "href": "https://dev.osti.gov/doecode/biblio/12345"
+                }
             ]
         }
     ]
