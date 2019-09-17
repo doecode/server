@@ -468,7 +468,7 @@ public class UserServices {
 
             String encryptedPassword = PASSWORD_SERVICE.encryptPassword(request.getPassword());
 
-            // assign as SITE if possible based on the EMAIL, or default to CONTRACTOR
+            // assign a SITE if possible based on the EMAIL, or default to CONTRACTOR
             String domain = request.getEmail().substring(request.getEmail().indexOf("@"));
             TypedQuery<Site> query = em.createNamedQuery("Site.findByDomain", Site.class)
                     .setParameter("domain", domain);
@@ -476,6 +476,34 @@ public class UserServices {
             // look up the Site and set CODE, or CONTR if not found
             List<Site> sites = query.getResultList();
             String siteCode = ((sites.isEmpty()) ? "CONTR" : sites.get(0).getSiteCode());
+
+            if ("HQ".equals(siteCode)) {
+                String hqSiteId = request.getSiteId();
+                // ensure HQ registration provide a Site ID
+                if (StringUtils.isBlank(hqSiteId))
+                    return ErrorResponse
+                            .badRequest("Missing required Site ID for HQ registration.")
+                            .build();
+
+                // privided HQ Site Code must be valid.
+                query = em.createNamedQuery("Site.findBySiteCode", Site.class)
+                .setParameter("site", hqSiteId.trim());
+                sites = query.getResultList();
+
+                if (sites.isEmpty())
+                    return ErrorResponse
+                            .badRequest("HQ Site ID must be valid.")
+                            .build();
+
+                Site hqSite = sites.get(0);
+
+                if (!hqSite.isHqUsage())
+                    return ErrorResponse
+                            .badRequest("HQ Site ID must be designated as HQ type.")
+                            .build();
+
+                siteCode = hqSite.getSiteCode();
+            }
             
             // if CONTR, we need to REQUIRE and VALIDATE the CONTRACT NUMBER
             if (StringUtils.equals(siteCode, "CONTR")) {
@@ -1289,6 +1317,7 @@ public class UserServices {
         private String password;
         private String confirmPassword;
         private String contractNumber;
+        private String siteId;
         
         public RegistrationRequest() {
             
@@ -1377,6 +1406,20 @@ public class UserServices {
          */
         public void setContractNumber(String contractNumber) {
             this.contractNumber = contractNumber;
+        }
+
+        /**
+         * @return the HQ Site ID
+         */
+        public String getSiteId() {
+            return siteId;
+        }
+
+        /**
+         * @param siteId the HQ Site ID to set
+         */
+        public void setSiteId(String siteId) {
+            this.siteId = siteId;
         }
         
     }
@@ -1511,19 +1554,27 @@ public class UserServices {
      * @return a Response containing the JSON if found
      */
     @GET
-    @RequiresAuthentication
-    @RequiresRoles("UserAdmin")
     @Produces (MediaType.APPLICATION_JSON)
     @Path ("/roles")
-    public Response getRoles() {       
+    public Response getRoles() { 
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+
+        ObjectNode obj = mapper.createObjectNode();
+
+        // if UserAdmin, include admin roles.
+        if (user != null && user.hasRole("UserAdmin"))
+            obj.set("admin", mapper.valueToTree(UserRole.GetRoles(RoleType.ADMIN)));
+
+        obj.set("standard", mapper.valueToTree(UserRole.GetRoles(RoleType.STANDARD)));
+        obj.set("hq", mapper.valueToTree(UserRole.GetRoles(RoleType.HQ)));
+
         try {
             // return the results back
             return Response
                     .ok()
-                    .entity(((ObjectNode)mapper
-                            .createObjectNode()
-                            .set("admin", mapper.valueToTree(UserRole.GetRoles(RoleType.ADMIN))))
-                            .set("standard", mapper.valueToTree(UserRole.GetRoles(RoleType.STANDARD))).toString())
+                    .entity(obj.toString())
                     .build();
         } catch ( Exception e ) {
             log.error("Site Lookup Error", e);

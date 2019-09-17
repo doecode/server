@@ -351,7 +351,7 @@ there is no upper limit.
 
 `GET /doecodeapi/services/user/roles`
 
-Returns JSON object containing "admin" and "standard".
+Returns JSON object containing "admin", "standard", and "hq" roles.
 Requires administrative access to veiw "admin" roles.
 Each role contains a value, label, and description.
 
@@ -368,7 +368,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 ```
 ```json
-{"standard":[{"value":"OSTI","label":"OSTI","description":"Office of Scientific and Technical Information"}]}
+{"standard":[{"value":"OSTI","label":"OSTI","description":"Office of Scientific and Technical Information"}],"hq":[{"value":"DOESC","label":"DOESC","description":"USDOE Office of Science (SC)"}]}
 ```
 
 ### update (admin)

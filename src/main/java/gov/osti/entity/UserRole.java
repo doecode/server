@@ -24,7 +24,7 @@ public class UserRole implements Serializable {
      * Enumeration of valid Admin Roles for a Role.
      */
     public static enum RoleType {
-        ADMIN, STANDARD;
+        ADMIN, STANDARD, HQ;
     }
 
     private String value;
@@ -92,11 +92,12 @@ public class UserRole implements Serializable {
             roles.add(new UserRole("ApprovalAdmin", "Approval Admin", "Permission to approve any project for biblio indexing."));
             roles.add(new UserRole("ContentAdmin", "Content Admin", "Permission to access content controls, such as Refresh, Reindex, etc."));
         }
-        else if (RoleType.STANDARD.equals(roleType)) {
+        else if (RoleType.STANDARD.equals(roleType) || RoleType.HQ.equals(roleType)) {
+            String namedQuery = "Site.find" + (RoleType.HQ.equals(roleType) ? "HQ" : "Standard");
             EntityManager em = DoeServletContextListener.createEntityManager();        
             try {
                 // get ALL SITES
-                TypedQuery<Site> query = em.createNamedQuery("Site.findAll", Site.class);
+                TypedQuery<Site> query = em.createNamedQuery(namedQuery, Site.class);
                 List<Site> siteList = query.getResultList();
     
                 for (Site site:siteList) {
@@ -121,11 +122,12 @@ public class UserRole implements Serializable {
             roles.add("ApprovalAdmin");
             roles.add("ContentAdmin");
         }
-        else if (RoleType.STANDARD.equals(roleType)) {
+        else if (RoleType.STANDARD.equals(roleType) || RoleType.HQ.equals(roleType)) {
+            String namedQuery = "Site.find" + (RoleType.HQ.equals(roleType) ? "HQ" : "Standard");
             EntityManager em = DoeServletContextListener.createEntityManager();        
             try {
                 // get ALL SITES
-                TypedQuery<Site> query = em.createNamedQuery("Site.findAll", Site.class);
+                TypedQuery<Site> query = em.createNamedQuery(namedQuery, Site.class);
                 List<Site> siteList = query.getResultList();
     
                 for (Site site:siteList) {

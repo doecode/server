@@ -20,6 +20,10 @@ import javax.persistence.Table;
     @NamedQuery(name = "Site.findBySiteCode", query = "SELECT s FROM Site s WHERE s.siteCode = :site")
     ,
     @NamedQuery(name = "Site.findAll", query = "SELECT s FROM Site s ORDER BY s")
+    ,
+    @NamedQuery(name = "Site.findStandard", query = "SELECT s FROM Site s WHERE s.standardUsage = true ORDER BY s")
+    ,
+    @NamedQuery(name = "Site.findHQ", query = "SELECT s FROM Site s WHERE s.hqUsage = true ORDER BY s")
 })
 public class Site implements Serializable {
 
@@ -27,6 +31,8 @@ public class Site implements Serializable {
     private List<String> emailDomains;
     private List<String> pocEmails;
     private String lab;
+    private boolean standardUsage = false;
+    private boolean hqUsage = false;
 
     public Site() {
     }
@@ -78,5 +84,23 @@ public class Site implements Serializable {
 
     public void setLab(String lab) {
         this.lab = lab;
+    }
+
+    @Column(name = "standard_usage", nullable = false)
+    public boolean isStandardUsage() {
+        return standardUsage;
+    }
+
+    public void setStandardUsage(boolean usage) {
+        this.standardUsage = usage;
+    }
+
+    @Column(name = "hq_usage", nullable = false)
+    public boolean isHqUsage() {
+        return hqUsage;
+    }
+
+    public void setHqUsage(boolean usage) {
+        this.hqUsage = usage;
     }
 }
