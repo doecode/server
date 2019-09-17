@@ -527,6 +527,7 @@ metadata fields.
  {"email":"testguy@testing.com",
   "affiliations":["Testing Services, Inc."],
   "first_name":"Tester",
+  "last_name":"Smith",
   "contributor_type":"DataCurator"}],
 "sponsoring_organizations":[
   {"organization_name":"OSTI",

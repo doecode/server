@@ -2363,7 +2363,10 @@ public class Metadata {
                     if (!Validation.isValidORCID(contributor.getOrcid()))
                         reasons.add("Contributor ORCID \"" + contributor.getOrcid() +"\" is not valid.");
                 }
+                if (StringUtils.isBlank(contributor.getFirstName()) || StringUtils.isBlank(contributor.getLastName()) || (null == contributor.getContributorType())) {
+                    reasons.add("Contributor must include first name, last name, and contributor type.");
             }
+        }
         }
         // if "OS" accessibility, a REPOSITORY LINK is REQUIRED
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
@@ -2377,6 +2380,7 @@ public class Metadata {
         // if repository link is present, and not CO, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
+
         return reasons;
     }
 
