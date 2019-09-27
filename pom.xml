@@ -11,8 +11,8 @@
     <properties>
         <jdk.version>1.8</jdk.version>
         <jersey.version>2.25</jersey.version>
-        <httpclient.version>4.5.8</httpclient.version>
-        <jackson.version>2.9.9</jackson.version>
+        <httpclient.version>4.5.10</httpclient.version>
+        <jackson.version>2.9.9</jackson.version> <!-- databind on 2.9.9.3 security patch-->
         <commons-io.version>2.6</commons-io.version>
         <projectName>doecodeapi</projectName>
         <datacite.url>https://mds.test.datacite.org/</datacite.url>
@@ -39,12 +39,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-dbcp2</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -55,21 +49,14 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.26</version>
+            <version>1.7.28</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.5</version>
-        </dependency>
-
-        <!-- for COUNTRY CODE and name conversions based on ISO-3166-1 standard -->
-        <dependency>
-            <groupId>com.neovisionaries</groupId>
-            <artifactId>nv-i18n</artifactId>
-            <version>1.25</version>
+            <version>42.2.8</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
@@ -77,16 +64,7 @@
         <dependency>
             <groupId>com.googlecode.libphonenumber</groupId>
             <artifactId>libphonenumber</artifactId>
-            <version>8.10.12</version>
-        </dependency>
-
-
-        <!-- Apache HTTP components for connector communication -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpclient.version}</version>
-            <type>jar</type>
+            <version>8.10.18</version>
         </dependency>
 
         <!-- Apache HTTP multipart form upload -->
@@ -107,7 +85,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <version>2.9.9.3</version>
             <type>jar</type>
         </dependency>
         <dependency>
@@ -188,7 +166,7 @@
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.9.3</version>
+            <version>1.9.4</version>
             <type>jar</type>
         </dependency>
 
@@ -203,12 +181,12 @@
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>6.0.16.Final</version>
+            <version>6.0.17.Final</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator-annotation-processor</artifactId>
-            <version>6.0.16.Final</version>
+            <version>6.0.17.Final</version>
         </dependency>
 
         <!-- apache shiro authentication layer -->
@@ -246,14 +224,14 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>5.3.1.201904271842-r</version>
+            <version>5.4.3.201909031940-r</version>
             <type>jar</type>
         </dependency>
         <!-- SVN support -->
         <dependency>
             <groupId>org.tmatesoft.svnkit</groupId>
             <artifactId>svnkit</artifactId>
-            <version>1.9.3</version>
+            <version>1.10.1</version>
             <type>jar</type>
         </dependency>
 
