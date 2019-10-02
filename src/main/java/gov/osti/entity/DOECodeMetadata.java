@@ -814,6 +814,11 @@ public class DOECodeMetadata implements Serializable {
         return hasSetReleaseDate;
     }
 
+    /**
+     * Get biblio links.
+     *
+     * @return list of links for this record
+     */
     public List<BiblioLink> getLinks() {
         String biblioLink = SITE_URL + "/biblio/" + this.codeId;
 
