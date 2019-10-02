@@ -6,9 +6,11 @@ import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+
 import javax.persistence.Basic;
 import javax.persistence.Column;
-
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -26,7 +28,7 @@ import javax.persistence.UniqueConstraint;
 @Entity
 @Table(name="users", uniqueConstraints=@UniqueConstraint(columnNames={"email","apiKey"}))
 @NamedQueries ({
-    @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u ORDER BY u.lastName"),
+    @NamedQuery (name = "User.findAllUsers", query = "SELECT u FROM User u ORDER BY lower(u.lastName), lower(u.firstName)"),
     @NamedQuery (name = "User.findUser", query = "SELECT u FROM User u WHERE u.email=lower(:email)")
 })
 public class User implements Serializable {
@@ -94,6 +96,9 @@ public class User implements Serializable {
 
     @ElementCollection 
     private Set<String> pendingRoles = null;
+
+    private transient String displayName;
+    private transient String displayNameLastnameFirst;
 
     /**
      * Do NOT output this on JSON Object requests.
@@ -396,5 +401,64 @@ public class User implements Serializable {
     
     public boolean hasRoles() {
         return (null!=roles);
+    }
+
+    /**
+     * Get a User's full display name in "First Last" format.
+     */
+    public String getDisplayName() {
+        this.displayName = getFullName(false);
+        return this.displayName;
+    }
+
+    /**
+     * Get a User's full display name in "Last, First" format.
+     */
+    public String getDisplayNameLastnameFirst() {
+        this.displayNameLastnameFirst = getFullName(true);
+        return this.displayNameLastnameFirst;
+    }
+
+    /**
+     * Get a User's full display name from First/Last values.
+     * 
+     * @param lastnameFirst the boolean that controls if Last Name should be listed
+     *                      first
+     */
+    private String getFullName(boolean lastnameFirst) {
+        String fullName = "";
+
+        boolean hasFirstName = StringUtils.isNotBlank(getFirstName());
+        boolean hasLastName = StringUtils.isNotBlank(getLastName());
+
+        String part1 = "";
+        String part2 = "";
+
+        if (lastnameFirst) {
+            if (hasLastName)
+                part1 = getLastName().trim();
+            if (hasFirstName)
+                part2 = getFirstName().trim();
+        } else {
+            if (hasLastName)
+                part2 = getLastName().trim();
+            if (hasFirstName)
+                part1 = getFirstName().trim();
+        }
+
+        boolean hasPart1 = StringUtils.isNotBlank(part1);
+        boolean hasPart2 = StringUtils.isNotBlank(part2);
+
+        fullName += part1;
+
+        if (lastnameFirst && hasPart1 && hasPart2)
+            fullName += ",";
+
+        if (hasPart1 && hasPart2)
+            fullName += " ";
+
+        fullName += part2;
+
+        return fullName;
     }
 }

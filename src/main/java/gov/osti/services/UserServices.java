@@ -325,6 +325,8 @@ public class UserServices {
                         .put("email", user.getEmail())
                         .put("first_name", user.getFirstName())
                         .put("last_name", user.getLastName())
+                        .put("display_name", user.getDisplayName())
+                        .put("display_name_lastname_first", user.getDisplayNameLastnameFirst())
                         .set("roles", mapper.valueToTree(user.getRoles())))
                         .set("pending_roles", mapper.valueToTree(user.getPendingRoles()))
                         .toString())
@@ -934,7 +936,9 @@ public class UserServices {
                             .createObjectNode()
                             .put("email", user.getEmail())
                             .put("first_name", user.getFirstName())
-                            .put("last_name", user.getLastName()).toString())
+                            .put("last_name", user.getLastName())
+                            .put("display_name", user.getDisplayName())
+                            .put("display_name_lastname_first", user.getDisplayNameLastnameFirst()).toString())
                     .build();
         } catch ( Exception e ) {
             if ( em.getTransaction().isActive())
