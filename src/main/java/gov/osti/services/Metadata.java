@@ -346,6 +346,7 @@ public class Metadata {
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) &&
              !user.hasRole("RecordAdmin") &&
+             !user.hasRole("ApprovalAdmin") &&
              !user.hasRole(md.getSiteOwnershipCode()))
             return ErrorResponse
                     .forbidden("Permission denied.")
@@ -771,9 +772,9 @@ public class Metadata {
         ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
         Validator validator = validators.getValidator();
 
-        // must be OSTI user in order to add/update PROJECT KEYWORDS
+        // must be RecordAdmin user in order to add/update PROJECT KEYWORDS
         List<String> projectKeywords = md.getProjectKeywords();
-        if (projectKeywords != null && !projectKeywords.isEmpty() && !user.hasRole("RecordAdmin"))
+        if (projectKeywords != null && !projectKeywords.isEmpty() && !user.hasRole("RecordAdmin") && !user.hasRole("ApprovalAdmin"))
             throw new ValidationException("Project Keywords can only be set by authorized users.");
 
         // if there's a CODE ID, attempt to look up the record first and
@@ -794,10 +795,17 @@ public class Metadata {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
 
             if ( null!=emd ) {
-                // must be the OWNER, SITE ADMIN, or OSTI in order to UPDATE
-                if (!user.getEmail().equals(emd.getOwner()) &&
-                     !user.hasRole(emd.getSiteOwnershipCode()) &&
-                     !user.hasRole("RecordAdmin"))
+                // to Approve, user must be an ApprovalAdmin and record must be previously Submitted/Announced
+                if (DOECodeMetadata.Status.Approved.equals(md.getWorkflowStatus())) {
+                    if (!(user.hasRole("ApprovalAdmin")
+                            && (DOECodeMetadata.Status.Submitted.equals(emd.getWorkflowStatus())
+                                    || DOECodeMetadata.Status.Announced.equals(emd.getWorkflowStatus()))))
+                        throw new IllegalAccessException("Invalid approval attempt.");
+                }
+                // otherwise, must be the OWNER, SITE ADMIN, or RecordAdmin in order to UPDATE
+                else if (!user.getEmail().equals(emd.getOwner())
+                        && !user.hasRole(emd.getSiteOwnershipCode())
+                        && !user.hasRole("RecordAdmin"))
                     throw new IllegalAccessException("Invalid access attempt.");
 
                 // to Save, item must be non-existant, or already in Saved workflow status (if here, we know it exists)
@@ -2075,6 +2083,7 @@ public class Metadata {
 
         try {
             DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+            em.detach(md);
 
             if ( null==md )
                 return ErrorResponse
