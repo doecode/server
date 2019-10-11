@@ -36,7 +36,7 @@ import javax.persistence.UniqueConstraint;
     @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.snapshotStatus=:status"),
     @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC"),
     @NamedQuery (name = "MetadataSnapshot.findByDoiAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.doi=:doi AND s.snapshotKey.snapshotStatus=:status"),
-    @NamedQuery (name = "MetadataSnapshot.findByCodeIdAsSystemStatus", query = "SELECT ss FROM MetadataSnapshot s, MetadataSnapshot ss WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus=:status AND s.snapshotKey.codeId = ss.snapshotKey.codeId AND ss.snapshotKey.snapshotStatus <> :status AND ss.dateRecordAdded <= s.dateRecordUpdated")
+    @NamedQuery (name = "MetadataSnapshot.findByCodeIdAsSystemStatus", query = "SELECT ss FROM MetadataSnapshot s, MetadataSnapshot ss WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus=:status AND s.snapshotKey.codeId = ss.snapshotKey.codeId AND ss.snapshotKey.snapshotStatus <> :status AND ss.dateRecordAdded <= s.dateRecordUpdated ORDER BY ss.snapshotKey.snapshotStatus")
 })
 public class MetadataSnapshot implements Serializable {
     @EmbeddedId
