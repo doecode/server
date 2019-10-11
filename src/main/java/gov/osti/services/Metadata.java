@@ -165,9 +165,8 @@ public class Metadata {
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     // get the SITE URL base for applications
     private static String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
-    // get the SITE URL base for applications
+    // get Program Manager info
     private static String PM_NAME = DoeServletContextListener.getConfigurationProperty("project.manager.name");
-    // get the SITE URL base for applications
     private static String PM_EMAIL = DoeServletContextListener.getConfigurationProperty("project.manager.email");
 
     // set pattern for DOI normalization
