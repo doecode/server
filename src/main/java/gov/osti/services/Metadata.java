@@ -910,6 +910,24 @@ public class Metadata {
      * @throws IOException on IO transmission errors
      */
     private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer) throws IOException {
+        sendToArchiver(codeId, repositoryLink, archiveFile, archiveContainer, false);
+    }
+
+    /**
+     * Send this Metadata to the ARCHIVER external support process.
+     *
+     * Needs a CODE ID and one of either an ARCHIVE FILE or REPOSITORY LINK.
+     *
+     * If nothing supplied to archive, do nothing.
+     *
+     * @param codeId the CODE ID for this METADATA
+     * @param repositoryLink (optional) the REPOSITORY LINK value, or null if none
+     * @param archiveFile (optional) the File recently uploaded to ARCHIVE, or null if none
+     * @param archiveContainer (optional) the Container recently uploaded to ARCHIVE, or null if none
+     * @param sendFileNotic (optional) let archiver know to send a file notification email, if needed
+     * @throws IOException on IO transmission errors
+     */
+    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer, Boolean sendFileNotice) throws IOException {
         if ( "".equals(ARCHIVER_URL) )
             return;
 
@@ -953,6 +971,9 @@ public class Metadata {
 
                 if (archiveContainer != null)
                     mpe.addPart("container", new FileBody(archiveContainer, ContentType.DEFAULT_BINARY));
+
+                if (archiveFile != null)
+                    mpe.addPart("sendFileNotification", new StringBody(sendFileNotice.toString(), ContentType.TEXT_PLAIN));
 
                 post.setEntity(mpe.build());
             }
@@ -1794,9 +1815,9 @@ public class Metadata {
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
+                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer, true);
                 else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer);
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, true);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
