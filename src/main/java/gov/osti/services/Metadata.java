@@ -2511,6 +2511,7 @@ public class Metadata {
 
         // if EMAIL or DESTINATION ADDRESS are not set, abort
         if (StringUtils.isEmpty(EMAIL_HOST) ||
+            StringUtils.isEmpty(EMAIL_FROM) ||
             StringUtils.isEmpty(EMAIL_SUBMISSION))
             return;
 
@@ -2569,6 +2570,7 @@ public class Metadata {
 
         // if HOST or record OWNER or PROJECT MANAGER NAME isn't set, cannot send
         if (StringUtils.isEmpty(EMAIL_HOST) ||
+            StringUtils.isEmpty(EMAIL_FROM) ||
             null==md ||
             StringUtils.isEmpty(md.getOwner()) ||
             StringUtils.isEmpty(PM_NAME))
@@ -2663,6 +2665,7 @@ public class Metadata {
     private static void sendPOCNotification(DOECodeMetadata md) {
         // if HOST or MD or PROJECT MANAGER NAME isn't set, cannot send
         if (StringUtils.isEmpty(EMAIL_HOST) ||
+            StringUtils.isEmpty(EMAIL_FROM) ||
             null == md ||
             StringUtils.isEmpty(PM_NAME))
             return;
