@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -19,8 +20,16 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -58,6 +67,7 @@ public class CodeGov {
 
     // logger instance
     private static final Logger log = LoggerFactory.getLogger(CodeGov.class);
+
     // absolute filesystem location to store uploaded files, if any
     private static final String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
 
@@ -218,6 +228,89 @@ public class CodeGov {
             return ErrorResponse
                     .status(Response.Status.INTERNAL_SERVER_ERROR, "JSON conversion error.")
                     .build();
+        }
+    }
+
+    /**
+     * Acquire info about the latest CodeGov file.
+     *
+     * @return extra Code.gov JSON information
+     * @throws JsonProcessingException
+     */
+    @GET
+    @Path("/info")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getCodeGovInfo() throws JsonProcessingException {
+        try {
+            java.nio.file.Path codegovFile = Paths.get(FILE_UPLOADS, "codegov", "code.json");
+
+            // if no file was found, fail
+            if (!Files.exists(codegovFile))
+                return ErrorResponse.status(Response.Status.NOT_FOUND, "Code.gov JSON file not found!").build();
+
+            // read file info
+            BasicFileAttributes attr;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/dd/yyyy h:mm:ss a").withLocale(Locale.US).withZone(ZoneId.systemDefault());
+            
+            try {
+                attr = Files.readAttributes(codegovFile, BasicFileAttributes.class);
+            } catch (Exception e) {
+                log.warn("Cannot get the Code Gov JSON file attributes - " + e);
+                return ErrorResponse.status(Response.Status.NOT_FOUND, "Unable to get file attributes from Code.gov JSON file!").build();
+            }
+
+            // read file
+            JsonNode json = JSON_MAPPER.readTree(new FileInputStream(codegovFile.toString()));
+
+            // get releases
+            JsonNode releases = json.get("releases");
+
+            // iterate, counting usage types
+            Map<String, Integer> usageMap = new TreeMap();
+            if (releases.isArray()) {
+                ArrayNode releasesArray = (ArrayNode) releases;
+        
+                for (int i = 0; i < releasesArray.size(); i++) {
+                    JsonNode projectNode = releasesArray.get(i);
+
+                    String permission = "Unknown";
+                    try {
+                        permission = projectNode.get("permissions").get("usageType").asText();
+                    } catch (Exception e) {
+                        permission = "Unknown";
+                    }
+
+                    Integer count = usageMap.get(permission);
+                    count = (count ==  null) ? 1 : count + 1;
+
+                    usageMap.put(permission, count);
+
+                }
+            }
+
+            // generate return JSON
+            ObjectNode info = JSON_MAPPER.createObjectNode();
+            ObjectNode records = JSON_MAPPER.createObjectNode();
+            ObjectNode usage = JSON_MAPPER.createObjectNode();
+
+            for (String key : usageMap.keySet()) {
+                int count = usageMap.get(key);
+                usage.put(key, count);
+            }
+
+            records.put("total", (releases != null ? releases.size() : 0));
+            records.put("usage", usage);
+
+            info.put("records", records);
+            info.put("last_accessed", formatter.format(attr.lastAccessTime().toInstant()));
+            info.put("last_modified", formatter.format(attr.lastModifiedTime().toInstant()));            
+
+            return Response.status(Response.Status.OK)
+                    .entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(info)).build();
+
+        } catch (IOException e) { // IO
+            log.warn("JSON conversion error: " + e.getMessage());
+            return ErrorResponse.status(Response.Status.INTERNAL_SERVER_ERROR, "JSON conversion error.").build();
         }
     }
 
