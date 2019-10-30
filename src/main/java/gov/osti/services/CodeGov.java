@@ -18,6 +18,7 @@ import gov.osti.entity.Site;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
@@ -44,8 +45,24 @@ import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+
 import java.util.TimeZone;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * REST Web Service for CodeGov information.
@@ -70,6 +87,9 @@ public class CodeGov {
 
     // absolute filesystem location to store uploaded files, if any
     private static final String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
+
+    // API path to archiver services if available
+    private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
 
     /**
      * Creates a new instance of MetadataResource for use with Code.gov
@@ -111,8 +131,6 @@ public class CodeGov {
         "site_accession_number",
         "otherSpecialRequirements",
         "other_special_requirements",
-        "fileName",
-        "file_name",
         "recipientName",
         "recipient_name",
         "recipientEmail",
@@ -387,6 +405,23 @@ public class CodeGov {
                         // add "lab_display_name" info to response record
                         ((ObjectNode) objNode).put("lab_display_name", labDisplayName);
                     }
+
+                    String fileName = null;
+                    String repositoryLink = null;
+                    String projectType = objNode.get("accessibility").asText();
+                    JsonNode obj;
+
+                    if ("OS".equals(projectType)) {
+                        obj = objNode.get("repository_link");
+                        repositoryLink = obj == null ? "" : obj.asText();
+                    }
+                    else {
+                        obj = objNode.get("file_name");
+                        fileName = obj == null ? "" : obj.asText();
+                    }
+                    Double labor = getProjectLaborHours(codeId, fileName, repositoryLink);
+
+                    ((ObjectNode) objNode).put("labor_hours", labor);
                 }
 
                 // update Total
@@ -405,6 +440,67 @@ public class CodeGov {
                     .build();
         } finally {
             em.close();
+        }
+    }
+
+    /**
+     * Send this Metadata to the ARCHIVER external support process to lookup latest Project info.
+     *
+     * Needs a CODE ID, and ARCHIVE FILE or REPOSITORY LINK if lookup validation is required.
+     *
+     * If any issues arise, log the error and return 0.0 (a valid "labor hour" is always required).
+     *
+     * @param codeId the CODE ID for this METADATA
+     */
+    private static double getProjectLaborHours(Long codeId, String fileName, String repositoryLink) {
+        if ( "".equals(ARCHIVER_URL) )
+            return 0.0;
+
+        // set up a connection
+        CloseableHttpClient hc =
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(RequestConfig
+                        .custom()
+                        .setSocketTimeout(300000)
+                        .setConnectTimeout(300000)
+                        .setConnectionRequestTimeout(300000)
+                        .build())
+                .build();
+
+        try {
+            String url = ARCHIVER_URL + "/latest/" + codeId;
+
+            if (fileName != null)
+                url += "?fileName=" + URLEncoder.encode(fileName);
+            else if (repositoryLink != null)
+                url += "?repositoryLink=" + URLEncoder.encode(repositoryLink);
+
+            HttpGet get = new HttpGet(url);
+
+            HttpResponse response = hc.execute(get);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            String responseText = EntityUtils.toString(response.getEntity());
+
+            if (HttpStatus.SC_OK!=statusCode) {
+                return 0.0;
+            }
+
+            JsonNode projectInfo = mapper.readTree(responseText);
+            double labor = projectInfo.get("labor_hours").asDouble();
+
+            return labor;
+        } catch ( IOException e ) {
+            log.warn("Archiver Labor request error: " + e.getMessage());
+            return 0.0;
+        } finally {
+            try {
+                if (null!=hc) hc.close();
+            } catch ( IOException e ) {
+                log.warn("Close Error: " + e.getMessage());
+            }
         }
     }
 }
