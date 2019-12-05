@@ -95,7 +95,9 @@ public class RelatedIdentifier implements Serializable {
         HasVersion("Has Version"),
         IsVersionOf("Is Version Of"),
         IsRequiredBy("Is Required By"),
-        Requires("Requires");
+        Requires("Requires"),
+        Obsoletes("Obsoletes"),
+        IsObsoletedBy("Is Obsoleted By");
 
         private final String label;
         private RelationType inverse;
@@ -132,6 +134,8 @@ public class RelatedIdentifier implements Serializable {
             IsVersionOf.inverse = HasVersion;
             IsRequiredBy.inverse = Requires;
             Requires.inverse = IsRequiredBy;
+            IsObsoletedBy.inverse = Obsoletes;
+            Obsoletes.inverse = IsObsoletedBy;
         }
 
         private RelationType(String label) {
