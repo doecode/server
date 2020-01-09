@@ -15,9 +15,9 @@
   <title>DOE CODE Types API Documentation</title>
 
   <!-- Flatdoc -->
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src='${pageContext.request.contextPath}/js/legacy.js'></script>
-  <script src='${pageContext.request.contextPath}/js/flatdoc.js'></script>
+  <script src='${pageContext.request.contextPath}/js/flatdoc-0.90-jq3.js'></script>
 
   <!-- Flatdoc theme -->
   <link href="${pageContext.request.contextPath}/css/flatdoc-theme.css" rel="stylesheet">
