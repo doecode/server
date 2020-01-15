@@ -29,8 +29,8 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>
-            <param-value>org.secnod.shiro.jersey.AuthorizationFilterFeature, org.secnod.shiro.jersey.SubjectFactory, org.secnod.shiro.jersey.AuthInjectionBinder,
-            org.secnod.shiro.jaxrs.ShiroExceptionMapper,
+            <param-value>org.apache.shiro.web.jaxrs.AuthorizationFilterFeature, org.apache.shiro.web.jaxrs.ShiroFeature,
+            org.apache.shiro.web.jaxrs.ShiroSecurityContext,
             gov.osti.services.Metadata,gov.osti.services.Types,gov.osti.services.Validation,
             gov.osti.services.SearchService,gov.osti.services.GoogleSitemapService,org.glassfish.jersey.media.multipart.MultiPartFeature,
             gov.osti.services.Documentation,gov.osti.services.CodeGov,
