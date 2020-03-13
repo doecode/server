@@ -16,6 +16,9 @@ public class GitRepository {
     private static final Logger log = LoggerFactory.getLogger(GitRepository.class);
 
     public static boolean isValid(String url) {
+        // for GIT repos, append ".git" as a suffix
+        url = url.replaceFirst("(?:\\/|[.]git)?$", ".git");
+
         try {
             Collection<Ref> references = Git
                     .lsRemoteRepository()
