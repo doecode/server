@@ -65,7 +65,9 @@ public class UserServices {
     private static final String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
     // EMAIL send-from account name
     private static final String EMAIL_FROM = DoeServletContextListener.getConfigurationProperty("email.from");
-
+    // EMAIL CC for account reactivations
+    private static final String REACTIVATION_EMAIL_CC_LIST = DoeServletContextListener.getConfigurationProperty("account.reactivation.email");
+    
     public UserServices() {
 
     }
@@ -1010,7 +1012,14 @@ public class UserServices {
                 return ErrorResponse
                         .badRequest("User email mismatch error.")
                         .build();
-            
+
+
+
+            // if user was not active, and is now, send email
+            boolean sendNotification = (null != source.isActive() && !source.isActive()) && (null != userRequest.isActive() && userRequest.isActive());
+
+
+
             // start a TRANSACTION to persist changes to SOURCE
             em.getTransaction().begin();
             
@@ -1043,6 +1052,10 @@ public class UserServices {
             // made it this far, persist the changes
             em.merge(source);
             em.getTransaction().commit();
+
+            // update complete, send email if required
+            if (sendNotification)
+                sendUnlockedAccountEmail(source.getEmail());
             
             // send back an OK response
             return Response
@@ -1665,6 +1678,37 @@ public class UserServices {
             email.setHtmlMsg("<html>Your account has been automatically deactivated after 3 unsuccessful logon attempts.  "
                     + "<p>Please contact doecode@osti.gov as an administrator will need to reactivate your account before you "
                     + "can sign-in to DOE CODE or change your password.</html>");
+            
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Email Error: ",e);
+        }
+    }
+    
+    /**
+     * Send an email message to the User should their account become reactivated.
+     * 
+     * @param userEmail the user email in question
+     */
+    private static void sendUnlockedAccountEmail(String userEmail) {
+        HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
+        email.setHostName(EMAIL_HOST);
+        
+        try {
+            String[] ccList = REACTIVATION_EMAIL_CC_LIST.split(", ?");
+
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOE CODE User Account Reactivated");
+            email.addTo(userEmail);
+            for (String cc : ccList) 
+                email.addCc(cc);
+            
+            email.setHtmlMsg("<html>Your DOE CODE account has been reactivated."
+                    + "<p>To log in, go to the DOE CODE <a href='" + SITE_URL + "/login'>Sign In</a> page. "
+                    + "If you have forgotten your password, from the Sign In page, go to <a href='" + SITE_URL + "/forgot-password'>Forgot Password?</a></html>"
+                    + "<p>If you have further questions, please contact us at <a href=\"mailto:" + EMAIL_FROM + "\">" + EMAIL_FROM + "</a>."
+                    );
             
             email.send();
         } catch ( EmailException e ) {
