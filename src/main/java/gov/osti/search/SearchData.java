@@ -40,6 +40,7 @@ public class SearchData implements Serializable {
     private String softwareTitle = null;
     private String developersContributors = null;
     private String biblioData = null;
+    private String doi = null;
     private String identifiers = null;
     private String siteOwnershipCode = null;
     private Date dateEarliest = null;
@@ -98,6 +99,14 @@ public class SearchData implements Serializable {
 
 	public void setBiblioData(String biblioData) {
 		this.biblioData = biblioData;
+	}
+
+	public String getDoi() {
+		return doi;
+	}
+
+	public void setDoi(String doi) {
+		this.doi = doi;
 	}
 
 	public String getIdentifiers() {
@@ -282,6 +291,10 @@ public class SearchData implements Serializable {
         if (!StringUtils.isEmpty(getDevelopersContributors())) {
             if (q.length()>0) q.append(" ");
             q.append("_names:(").append(escape(getDevelopersContributors(), true)).append(")");
+        }
+        if (!StringUtils.isEmpty(getDoi())) {
+            if (q.length()>0) q.append(" ");
+            q.append("doi:(").append(escape(getDoi(), true)).append(")");
         }
         if (!StringUtils.isEmpty(getIdentifiers())) {
             if (q.length()>0) q.append(" ");

@@ -466,7 +466,7 @@
     <field name="documentationUrl" type="text_en" indexed="true" stored="true"/>
     <field name="developers.name" type="text_en" multiValued="true" indexed="true" stored="true"/>
     <field name="developers.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
-    <field name="doi" type="string"/>
+    <field name="doi" type="text_en" indexed="true" stored="true"/>
     <field name="doiStatus" type="string" indexed="true" stored="true"/>
     <field name="keywords" type="text_general" indexed="true"/>
     <field name="projectKeywords" type="text_general" multiValued="true" indexed="true" stored="true"/>
