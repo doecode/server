@@ -22,6 +22,8 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The GitHub metadata scraper class, to acquire the relevant metadata attributes
@@ -94,9 +96,14 @@ public class GitHub implements ConnectorInterface {
             if (null!=uri.getHost()) {
                 if (uri.getHost().contains("github.com")) {
                     String path = uri.getPath();
-                    return path.substring(path.indexOf("/")+1)
-                            .replaceAll("/$", ""); // remove the trailing slash if present
+        
+                    Pattern pattern = Pattern.compile("^([^\\/\\s]+\\/[^\\/\\s]+)");
+                    Matcher matcher = pattern.matcher(path.substring(path.indexOf("/") + 1));
+            
+                    if(matcher.find()) {
+                        return matcher.group(1);
                 }
+            }
             }
         } catch ( URISyntaxException e ) {
             // warn that URL is not a valid URI
