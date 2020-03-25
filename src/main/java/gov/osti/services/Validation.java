@@ -14,6 +14,7 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import gov.osti.listeners.DoeServletContextListener;
 import gov.osti.repository.GitRepository;
 import gov.osti.repository.SubversionRepository;
+import gov.osti.connectors.GitHub;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
@@ -118,6 +119,7 @@ public class Validation {
         private String type;
         private String value;
         private String error;
+        private String extraInfo;
 
         /**
          * @return the type
@@ -159,6 +161,20 @@ public class Validation {
          */
         public void setError(String error) {
             this.error = error;
+        }
+
+        /**
+         * @return the value
+         */
+        public String getExtraInfo() {
+            return extraInfo;
+        }
+
+        /**
+         * @param info the value to set
+         */
+        public void setExtraInfo(String info) {
+            this.extraInfo = info;
         }
     }
     
@@ -501,9 +517,19 @@ public class Validation {
     @Produces (MediaType.APPLICATION_JSON)
     @Path ("/repositorylink")
     public Response checkRepositoryLink(@QueryParam("value") String value) {
-        return ( isValidRepositoryLink(value) ) ?
-                Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build() :
-                ErrorResponse.badRequest(generateURLErrorMsg(value, "repositorylink")).build();
+        // is link a tag URL, or valid Repo
+        String tag = GitHub.getTagFromUrl(value);
+
+        if (tag != null && GitHub.isTagReferenceAndValid(value))
+            return Response.ok().entity(mapper.createObjectNode()
+                .put("value", "OK").put("isTaggedVersion", true)
+                .put("isTaggedVersion", true)
+                .put("tagName", tag)
+                .toString()).build();
+        else if (isValidRepositoryLink(value))
+            return Response.ok().entity(mapper.createObjectNode().put("value", "OK").toString()).build();
+        else
+            return ErrorResponse.badRequest(generateURLErrorMsg(value, "repositorylink")).build();
     }
 
     /**
@@ -565,7 +591,11 @@ public class Validation {
                 if (StringUtils.equalsIgnoreCase(req.getType(), "doi")) {
                     req.setError((isValidDoi(req.getValue()) ? "" : req.getValue() + " is not a valid DOI."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "repositorylink")) {
-                     req.setError(isValidRepositoryLink(req.getValue()) ? "" : generateURLErrorMsg(req.getValue(), req.getType()));
+                    String value = req.getValue();
+                    // is link a tag URL, or valid Repo
+                    String tag = GitHub.getTagFromUrl(value);
+                    req.setError(GitHub.isTagReferenceAndValid(value) || isValidRepositoryLink(value) ? "" : generateURLErrorMsg(value, req.getType()));
+                    req.setExtraInfo(tag);
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "phonenumber")) {
                     req.setError((isValidPhoneNumber(req.getValue()) ? "" : req.getValue() + " is not a valid phone number."));
                 } else if (StringUtils.equalsIgnoreCase(req.getType(), "url")) {

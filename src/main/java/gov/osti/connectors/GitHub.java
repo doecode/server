@@ -102,8 +102,8 @@ public class GitHub implements ConnectorInterface {
             
                     if(matcher.find()) {
                         return matcher.group(1);
+                    }
                 }
-            }
             }
         } catch ( URISyntaxException e ) {
             // warn that URL is not a valid URI
@@ -114,6 +114,27 @@ public class GitHub implements ConnectorInterface {
         }
         
         return null;
+    }
+    
+    /**
+     * Attempt to identify the TAG NAME from the given URL.  
+     * 
+     * Criteria:  URL host should contain "github.com"
+     * 
+     * @param url the URL to process
+     * @return the TAG NAME if able to parse; null if not, or unrecognized URL
+     */
+    public static String getTagFromUrl(String url) {
+        String tag = null;
+        
+        Pattern pattern = Pattern.compile("github[.]com.*\\/releases\\/tag\\/(.*)");
+        Matcher matcher = pattern.matcher(url);
+
+        if(matcher.find()) {
+            tag = matcher.group(1);
+        }
+
+        return tag;
     }
     
     /**
@@ -211,6 +232,41 @@ public class GitHub implements ConnectorInterface {
         }
         // unable to process this one
         return null;
+    }
+    
+    /**
+     * Determine if tag reference exists in the repo
+     * 
+     * @param url the URL to process
+     * 
+     * @return a JsonElement of the DOECodeMetadata filled in as possible from
+     * the API
+     */
+    public static boolean isTagReferenceAndValid(String url) {
+        try {
+            // try to identify the NAME of the project
+            String name = getProjectFromUrl(url);
+            if (null==name)
+                return false;
+
+            // try to identify the TAG of the project
+            String tag = getTagFromUrl(url);
+            if (null==tag)
+                return false;
+
+            // acquire the GitHub API response as JSON
+            HttpGet get = gitHubAPIGet(GITHUB_BASE_URL + name + "/git/ref/tags/" + tag);
+            
+            return !(HttpUtil.fetch(get) == "");
+        } catch ( IOException e ) {
+            // here's where you'd warn about the IO error
+            log.warn("IO Error reading GitHub information: " + e.getMessage());
+            log.warn("Read from " + url);
+        }
+
+        // unable to process this one
+        return false;
+        
     }
     
 }

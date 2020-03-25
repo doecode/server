@@ -2391,7 +2391,7 @@ public class Metadata {
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
         // if repository link is present, and not CO, it needs to be valid too
-        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
+        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
 
         return reasons;
