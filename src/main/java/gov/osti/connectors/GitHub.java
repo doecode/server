@@ -128,7 +128,7 @@ public class GitHub implements ConnectorInterface {
     @Override
     public JsonNode read(String url) {
         DOECodeMetadata md = new DOECodeMetadata();
-        ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());;
+        ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
         
         try {
             // try to identify the NAME of the project
