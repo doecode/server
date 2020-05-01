@@ -12,7 +12,6 @@
     <fieldType name="binary" class="solr.BinaryField"/>
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
-    <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" defaultCurrency="USD" precisionStep="8"/>
     <fieldType name="date" class="solr.TrieDateField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
     <fieldType name="dates" class="solr.TrieDateField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="0"/>
     <fieldType name="delimited_payloads_float" class="solr.TextField" indexed="true" stored="false">
