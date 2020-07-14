@@ -221,6 +221,7 @@ public class DOECodeMetadata implements Serializable {
     private List<String> licenses;
 
     private String proprietaryUrl = null;
+    private String licenseContactEmail = null;
     private String recipientName = null;
     private String recipientEmail = null;
     private String recipientPhone = null;
@@ -519,6 +520,16 @@ public class DOECodeMetadata implements Serializable {
 
     public void setProprietaryUrl(String proprietaryUrl) {
             this.proprietaryUrl = proprietaryUrl;
+    }
+     
+
+    @Size (max = 255, message = "License Contact email is limited to 255 characters.")
+    @Column (name="license_contact_email")
+    public String getLicenseContactEmail() {
+            return licenseContactEmail;
+    }
+    public void setLicenseContactEmail(String licenseContactEmail) {
+            this.licenseContactEmail = licenseContactEmail;
     }
 
 	/**

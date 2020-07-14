@@ -263,7 +263,6 @@ Validation rules are:
   * "OS" (Open Source, Publicly Available Repository), requires a valid accessible repository link
   * "ON" (Open Source, No Publicly Available Repository), requires a landing page
   * "CS" (Closed Source, Site Hosted), requires a landing page
-  * "CO" (Closed Source, OSTI Hosted), repository provided by OSTI, with optional landing page
 * software title
 * description
 * at least one license
@@ -273,7 +272,6 @@ Validation rules are:
 * software type is required:
   * "S" (Scientific)
   * "B" (Business), also requires at least one sponsoring organization
-* If project type is Closed Source, OSTI Hosted ("CO"), a file upload is required. *When uploading a file or container via the API, it must be provided as a "file" or "container" multipart form parameter.  File uploads should be a compressed file of type: .zip, .tar, .tgz, .tar.gz, or .tar.bz2.  Container uploads should be Docker or Singularity image files of type: .tar, or .simg*
 
 
 
@@ -383,7 +381,7 @@ A full JSON example is [provided below](#json_example).
 | --- | --- |
 | code_id | The unique value given to a particular DOE CODE Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
 | site_ownership_code | The DOE National Laboratory, DOE Program Office, Field Office, or Major Site/Facility that is submitting the code/software.  This value is determined by the system. |
-| accessibility | This refers to how the source of the project type is accessed; must be one of "OS" (open source), "ON" (open source, not public), "CS" (closed source, site hosted), or "CO" (closed source, OSTI hosted) |
+| accessibility | This refers to how the source of the project type is accessed; must be one of "OS" (open source), "ON" (open source, not public), or "CS" (closed source, site hosted) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public repository URL should be provided here.  DOE CODE does not currently support the submission of individual branch URL paths, so this must be a primary or base URL for the repository. |
 | landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |
 | developers | An array of Objects, providing information about a project's developers or creators.  Array order determines display order.  Fields are [specified below](#persons_fields). |

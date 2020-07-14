@@ -94,7 +94,9 @@ public class SearchService {
         "access_limitations",
         "accessLimitation",
         "access_limitation",
-        "disclaimers"
+        "disclaimers",
+        "licenseContactEmail",
+        "license_contact_email"
     };
     protected static FilterProvider filter = new SimpleFilterProvider()
             .addFilter("filter properties by name",

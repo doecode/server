@@ -91,6 +91,7 @@ public class UserRole implements Serializable {
             roles.add(new UserRole("UserAdmin", "User Admin", "Permission to edit any User information and Role associations."));
             roles.add(new UserRole("ApprovalAdmin", "Approval Admin", "Permission to approve any project for biblio indexing."));
             roles.add(new UserRole("ContentAdmin", "Content Admin", "Permission to access content controls, such as Refresh, Reindex, etc."));
+            roles.add(new UserRole("OSTIHostedAdmin", "OSTI Hosted Admin", "Permission to create or edit OSTI Hosted projects."));
         }
         else if (RoleType.STANDARD.equals(roleType) || RoleType.HQ.equals(roleType)) {
             String namedQuery = "Site.find" + (RoleType.HQ.equals(roleType) ? "HQ" : "Standard");
@@ -121,6 +122,7 @@ public class UserRole implements Serializable {
             roles.add("UserAdmin");
             roles.add("ApprovalAdmin");
             roles.add("ContentAdmin");
+            roles.add("OSTIHostedAdmin");
         }
         else if (RoleType.STANDARD.equals(roleType) || RoleType.HQ.equals(roleType)) {
             String namedQuery = "Site.find" + (RoleType.HQ.equals(roleType) ? "HQ" : "Standard");

@@ -70,9 +70,6 @@ file.uploads | the server path used for saving uploaded files
 file.containers | the server path used for saving uploaded container images
 file.containers.approved | the server path used for storing approved uploaded container images
 archiver.url | (optional) base URL for DOE CODE Archiver API if using it for archiving
-gitlab.osti.baseurl | (optional) base URL for the OSTI Hosted GitLab
-gitlab.osti.token | (optional) GitLab API token for accessing OSTI Hosted GitLab
-gitlab.osti.namespace | (optional) namespace to use when creating projects in OSTI Hosted GitLab
 project.manager.name | Display name for use in Project Manager emails.
 project.manager.email | (optional) Email address for BCC use when sending Project Manager emails.
 account.reactivation.email | (optional) Email address for CC use when sending Account Reset emails. Comma delimit for multiple addresses.

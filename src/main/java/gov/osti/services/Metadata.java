@@ -342,6 +342,12 @@ public class Metadata {
                     .notFound("Code ID not on file.")
                     .build();
 
+        // limited OSTI HOSTED editing
+        if ( Accessibility.CO.equals(md.getAccessibility()) && !user.hasRole("OSTIHostedAdmin") )
+            return ErrorResponse
+                    .notFound("You must be an OSTI Hosted Administrator to access this content.")
+                    .build();
+
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) &&
              !user.hasRole("RecordAdmin") &&
@@ -1486,6 +1492,16 @@ public class Metadata {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
             Long currentCodeId = md.getCodeId();
+
+            // limited OSTI HOSTED submission
+            if ( Accessibility.CO.equals(md.getAccessibility()) && !user.hasRole("OSTIHostedAdmin") ) {
+                log.error ("Cannot Submit OSTI Hosted; User does not have permission: " + currentCodeId);
+                return ErrorResponse
+                        .internalServerError("You must be an OSTI Hosted Administrator to submit this content.")
+                        .build();
+
+            }
+
             boolean previouslySaved = false;
             if (currentCodeId != null) {
                 DOECodeMetadata emd = em.find(DOECodeMetadata.class, currentCodeId);
@@ -1692,6 +1708,16 @@ public class Metadata {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
             Long currentCodeId = md.getCodeId();
+
+            // limited OSTI HOSTED submission
+            if ( Accessibility.CO.equals(md.getAccessibility()) && !user.hasRole("OSTIHostedAdmin") ) {
+                log.error ("Cannot Announce OSTI Hosted; User does not have permission: " + currentCodeId);
+                return ErrorResponse
+                        .internalServerError("You must be an OSTI Hosted Administrator to announce this content.")
+                        .build();
+
+            }
+
             boolean previouslySaved = false;
             if (currentCodeId != null) {
                 DOECodeMetadata emd = em.find(DOECodeMetadata.class, currentCodeId);
@@ -2341,6 +2367,22 @@ public class Metadata {
      * @return a List of error messages if any validation errors, empty if none
      */
     protected static List<String> validateSubmit(DOECodeMetadata m) {
+        List<String> licenseList = m.getLicenses();
+        String projectType = m.getAccessibility() != null ? m.getAccessibility().name() : "";
+        String licenseContactEmail = m.getLicenseContactEmail();
+
+        boolean hasLicense = !(licenseList == null || licenseList.isEmpty());
+        boolean licenseRequired = true;
+        boolean licenseContactRequired = false;
+        boolean isClosedSource = (projectType != null && projectType.startsWith("C"));
+        boolean hasLicenseContactEmail = (!StringUtils.isEmpty(licenseContactEmail));
+
+        if (isClosedSource && hasLicenseContactEmail)
+            licenseRequired = false;
+
+        if (isClosedSource && !hasLicense)
+            licenseContactRequired = true;
+
         List<String> reasons = new ArrayList<>();
         if (null==m.getAccessibility())
             reasons.add("Missing Source Accessibility.");
@@ -2348,10 +2390,12 @@ public class Metadata {
             reasons.add("Software title is required.");
         if (StringUtils.isBlank(m.getDescription()))
             reasons.add("Description is required.");
-        if (null==m.getLicenses())
+        if (licenseRequired && !hasLicense)
             reasons.add("A License is required.");
-        else if (m.getLicenses().contains(DOECodeMetadata.License.Other.value()) && StringUtils.isBlank(m.getProprietaryUrl()))
+        else if (hasLicense && m.getLicenses().contains(DOECodeMetadata.License.Other.value()) && StringUtils.isBlank(m.getProprietaryUrl()))
             reasons.add("Proprietary License URL is required.");
+        if (licenseContactRequired && !hasLicenseContactEmail)
+            reasons.add("A License Contact Email is required.");
         if (null==m.getDevelopers() || m.getDevelopers().isEmpty())
             reasons.add("At least one developer is required.");
         else {

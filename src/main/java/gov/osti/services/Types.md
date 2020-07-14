@@ -222,6 +222,5 @@ A listing of valid accessibility codes and descriptions.
 > {"accessibility":[
 > {"label":"Open Source","value":"OS"},
 > {"label":"Open Source, No Public Access","value":"ON"},
-> {"label":"Closed Source","value":"CS"},
-> {"label":"Closed Source, OSTI Hosted","value":"CO"}]}
+> {"label":"Closed Source","value":"CS"}]}
 > ```
