@@ -13,6 +13,7 @@ import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
 
 /**
  * Base class for "Persons" or Agents:  currently parent class for Developers
@@ -101,5 +102,19 @@ public class Agent implements Serializable {
         return ((StringUtils.isEmpty(getLastName())) ? "" : getLastName() + ", ") +
                ((StringUtils.isEmpty(getFirstName()) ? " " : getFirstName() + " ")) +
                ((StringUtils.isEmpty(getMiddleName()) ? "" : getMiddleName()));
+    }
+
+    protected List<String> CleanList(List<String> list) {
+        if (list != null) {
+            // remove empty data
+            int cnt = list.size();
+            for (int i = cnt - 1; i >= 0; i--) {
+            String s = list.get(i);
+            if (StringUtils.isBlank(s))
+                    list.remove(i);
+            }
+        }
+
+        return list;
     }
 }

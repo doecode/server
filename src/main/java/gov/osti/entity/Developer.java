@@ -42,6 +42,6 @@ public class Developer extends Agent {
             return affiliations;
     }
     public void setAffiliations(List<String> affiliations) {
-            this.affiliations = affiliations;
+            this.affiliations = this.CleanList(affiliations);
     }
 }

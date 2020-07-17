@@ -11,6 +11,7 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * A non-Person sponsoring entity.
@@ -53,6 +54,26 @@ public class SponsoringOrganization extends Organization {
     }
     
     public void setFundingIdentifiers(List<FundingIdentifier> list) {
-        this.fundingIdentifiers = list;
+        this.fundingIdentifiers = CleanFundersList(list);
+    }
+
+    protected List<FundingIdentifier> CleanFundersList(List<FundingIdentifier> list) {
+        if (list != null) {
+            // remove empty data
+            int cnt = list.size();
+            for (int i = cnt - 1; i >= 0; i--) {
+                FundingIdentifier f = list.get(i);
+                if (f == null) {
+                    list.remove(i);
+                }
+                else {
+                    String s = f.getIdentifierValue();
+                    if (StringUtils.isBlank(s))
+                        list.remove(i);
+                }
+            }
+        }
+
+        return list;
     }
 }

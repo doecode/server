@@ -17,6 +17,7 @@ import java.util.List;
 import gov.osti.entity.BiblioLink;
 import gov.osti.listeners.DoeServletContextListener;
 import java.util.ArrayList;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -335,7 +336,7 @@ public class DOECodeMetadata implements Serializable {
      * @param limitations a set of Access Limitations to store
      */
     public void setAccessLimitations(List<String> limitations) {
-        this.accessLimitations = limitations;
+        this.accessLimitations = this.CleanList(limitations);
     }
     
     /**
@@ -424,7 +425,7 @@ public class DOECodeMetadata implements Serializable {
             return programmingLanguages;
     }
     public void setProgrammingLanguages(List<String> programmingLanguages) {
-            this.programmingLanguages = programmingLanguages;
+            this.programmingLanguages = this.CleanList(programmingLanguages);
     }
 
     @Size (max = 50, message = "Version Number is limited to 50 characters.")
@@ -487,7 +488,7 @@ public class DOECodeMetadata implements Serializable {
             return projectKeywords;
     }
     public void setProjectKeywords(List<String> projectKeywords) {
-            this.projectKeywords = projectKeywords;
+            this.projectKeywords = this.CleanList(projectKeywords);
     }
 
     @Size (max = 3000, message = "Disclaimers are limited to 3000 characters.")
@@ -508,7 +509,7 @@ public class DOECodeMetadata implements Serializable {
             return licenses;
     }
     public void setLicenses(List<String> licenses) {
-            this.licenses = licenses;
+            this.licenses = this.CleanList(licenses);
     }
      
 
@@ -860,5 +861,19 @@ public class DOECodeMetadata implements Serializable {
      */
     public void setSoftwareType(Type type) {
         this.softwareType = type;
+    }
+
+    protected List<String> CleanList(List<String> list) {
+        if (list != null) {
+            // remove empty data
+            int cnt = list.size();
+            for (int i = cnt - 1; i >= 0; i--) {
+                    String s = list.get(i);
+                    if (StringUtils.isBlank(s))
+                    list.remove(i);
+            }
+        }
+
+        return list;
     }
 }
