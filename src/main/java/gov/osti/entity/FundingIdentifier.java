@@ -18,6 +18,7 @@ import javax.persistence.Enumerated;
 public class FundingIdentifier implements Serializable {
     public enum Type {
         AwardNumber("Award Number"),
+        AwardDOI("Award DOI"),
         BRCode("BR Code"),
         FWPNumber("FWP Number");
         

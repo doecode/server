@@ -200,6 +200,7 @@ Content-Type: application/json
 ```json
 {"fundingIdentifierTypes":[
 {"label":"Award Number","value":"AwardNumber"},
+{"label":"Award DOI","value":"AwardDOI"},
 {"label":"BR Code","value":"BRCode"},
 {"label":"FWP Number","value":"FWPNumber"}]}
 ```
