@@ -28,6 +28,7 @@ import gov.osti.entity.Contributor;
 import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
+import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.Developer;
 import gov.osti.entity.DoiReservation;
@@ -2394,6 +2395,12 @@ public class Metadata {
             reasons.add("A License is required.");
         else if (hasLicense && m.getLicenses().contains(DOECodeMetadata.License.Other.value()) && StringUtils.isBlank(m.getProprietaryUrl()))
             reasons.add("Proprietary License URL is required.");
+        if (hasLicense) {
+            for (String l : licenseList) {
+                if (!DOECodeMetadata.License.contains(l))
+                    reasons.add("License not valid: [" + l +"]");
+            }
+        }
         if (licenseContactRequired && !hasLicenseContactEmail)
             reasons.add("A License Contact Email is required.");
         if (null==m.getDevelopers() || m.getDevelopers().isEmpty())

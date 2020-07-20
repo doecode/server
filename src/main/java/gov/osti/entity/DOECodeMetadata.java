@@ -13,6 +13,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import java.io.File;
 import java.io.Reader;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 import gov.osti.entity.BiblioLink;
 import gov.osti.listeners.DoeServletContextListener;
@@ -125,6 +127,13 @@ public class DOECodeMetadata implements Serializable {
         
         private final String label;
         private final String value;
+
+        private static final Set<String> values = new HashSet<String>(License.values().length);
+
+        static{
+            for(License f: License.values())
+                values.add(f.value());
+        }
         
         private License(String label, String value) {
             this.label =label;
@@ -137,6 +146,10 @@ public class DOECodeMetadata implements Serializable {
         
         public String label() {
             return this.label;
+        }
+
+        public static boolean contains(String value){
+            return values.contains(value);
         }
     }
     
