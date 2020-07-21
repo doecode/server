@@ -188,40 +188,46 @@ public class GitHub implements ConnectorInterface {
             md.setDescription(response.getDescription());
 
             if (StringUtils.isNotEmpty(response.getContributorsUrl())) {
-                HttpGet contributor_request = gitHubAPIGet(response.getContributorsUrl());
-                Contributor[] contributors = mapper.readValue(HttpUtil.fetch(contributor_request), Contributor[].class);
 
                 List<Developer> developers = new ArrayList<>();
-                for ( Contributor contributor : contributors ) {
-                    Developer developer = new Developer();
-                    if (StringUtils.isNotEmpty(contributor.getUrl())) {
-                        HttpGet user_request = gitHubAPIGet(contributor.getUrl());
-                        User user = mapper.readValue(HttpUtil.fetch(user_request), User.class);
+                Contributor[] contributors;
+                int page = 1;
+                do {
+                    HttpGet contributor_request = gitHubAPIGet(response.getContributorsUrl() + "?per_page=100&page=" + page++);
+                        
+                    contributors = mapper.readValue(HttpUtil.fetch(contributor_request), Contributor[].class);
+                    
+                    for ( Contributor contributor : contributors ) {
+                        Developer developer = new Developer();
+                        if (StringUtils.isNotEmpty(contributor.getUrl())) {
+                            HttpGet user_request = gitHubAPIGet(contributor.getUrl());
+                            User user = mapper.readValue(HttpUtil.fetch(user_request), User.class);
 
-                        developer.setEmail(user.getEmail());
-                        List<String> affiliations = new ArrayList<>();
-                        if (StringUtils.isNotEmpty(user.getCompany())) {
-                            affiliations.add(user.getCompany());
-                            developer.setAffiliations(affiliations);
-                        }
-
-                        /** if no User name is present, default to the login name;
-                         * otherwise attempt to break into first/last name.
-                         */
-                        if (StringUtils.isEmpty(user.getName())) {
-                            developer.setFirstName(user.getLogin());
-                        } else {
-                            int lastSpace = user.getName().lastIndexOf(" ");
-                            if ( -1==lastSpace ) {
-                                developer.setFirstName(user.getName());
-                            } else {
-                                developer.setFirstName(user.getName().substring(0, lastSpace));
-                                developer.setLastName(user.getName().substring(lastSpace+1));
+                            developer.setEmail(user.getEmail());
+                            List<String> affiliations = new ArrayList<>();
+                            if (StringUtils.isNotEmpty(user.getCompany())) {
+                                affiliations.add(user.getCompany());
+                                developer.setAffiliations(affiliations);
                             }
+
+                            /** if no User name is present, default to the login name;
+                             * otherwise attempt to break into first/last name.
+                             */
+                            if (StringUtils.isEmpty(user.getName())) {
+                                developer.setFirstName(user.getLogin());
+                            } else {
+                                int lastSpace = user.getName().lastIndexOf(" ");
+                                if ( -1==lastSpace ) {
+                                    developer.setFirstName(user.getName());
+                                } else {
+                                    developer.setFirstName(user.getName().substring(0, lastSpace));
+                                    developer.setLastName(user.getName().substring(lastSpace+1));
+                                }
+                            }
+                            developers.add(developer);
                         }
-                        developers.add(developer);
                     }
-                }
+                } while (contributors != null && contributors.length > 0);
                 md.setDevelopers(developers);
             }
             return md.toJson();
