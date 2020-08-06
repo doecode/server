@@ -12,7 +12,7 @@ metadata information.
 
 ## GitHub
 
-Given the GitHub repository URL, the following information is obtained (provided
+Given the GitHub Repository URL, the following information is obtained (provided
 the project has such filled-in):
 * Software Title ("Full Name")
 * Acronym ("Name")

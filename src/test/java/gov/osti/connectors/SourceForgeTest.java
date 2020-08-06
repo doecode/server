@@ -36,7 +36,7 @@ public class SourceForgeTest {
     }
 
     /**
-     * Test extraction of the project name from various SOURCEFORGE repository URLs.
+     * Test extraction of the project name from various SOURCEFORGE Repository URLs.
      */
     @Test
     public void testGetProjectNameFromUrl() {

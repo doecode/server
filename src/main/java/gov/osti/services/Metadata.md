@@ -152,7 +152,7 @@ not used to mint information until submitted or announced with metadata successf
 
 `GET /doecodeapi/services/metadata/autopopulate?repo={url}`
 
-Attempt to read information from the given *repository URL* value.  Supports github.com, bitbucket.org, and sourceforge.com. 
+Attempt to read information from the given *Repository URL* value.  Supports github.com, bitbucket.org, and sourceforge.com. 
 Any relevant information from the repository API will be returned in JSON metadata format.
 Mapped repository information varies according to service API-supplied metadata.  Optionally, you may specify
 a query parameter of "format=yaml" to receive YAML file suitable for download.  
@@ -382,7 +382,7 @@ A full JSON example is [provided below](#json_example).
 | code_id | The unique value given to a particular DOE CODE Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
 | site_ownership_code | The DOE National Laboratory, DOE Program Office, Field Office, or Major Site/Facility that is submitting the code/software.  This value is determined by the system. |
 | accessibility | This refers to how the source of the project type is accessed; must be one of "OS" (open source), "ON" (open source, not public), or "CS" (closed source, site hosted) |
-| repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public repository URL should be provided here.  DOE CODE does not currently support the submission of individual branch URL paths, so this must be a primary or base URL for the repository. |
+| repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public Repository URL should be provided here.  DOE CODE does not currently support the submission of individual branch URL paths, so this must be a primary or base URL for the repository. |
 | landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |
 | developers | An array of Objects, providing information about a project's developers or creators.  Array order determines display order.  Fields are [specified below](#persons_fields). |
 | contributors | An array of information about project contributors.  Array order determines display order.  Fields are [specified below](#persons_fields). Contributors must specify a [type of contribution](#contributor_types) made to the project. |
