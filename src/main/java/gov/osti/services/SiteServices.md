@@ -44,7 +44,7 @@ General or non-account-specific informational API calls.
 
 `GET /doecodeapi/services/site/info`
 
-Authenticated OSTI role end point, retrieves a list of Site information.
+Authenticated role end point, retrieves a list of Site information.
 
 > Request:
 ```html
@@ -68,7 +68,7 @@ Date: Mon, 14 Aug 2017 14:55:04 GMT
 
 `GET /doecodeapi/services/site/info/{site}`
 
-Authenticated OSTI role end point, retrieves Site information for a specific site code.
+Authenticated role end point, retrieves Site information for a specific site code.
 
 > Request:
 > ```html
@@ -93,7 +93,7 @@ API calls to manage site information; update information.
 
  `POST /doecodeapi/services/site/update`
 
-Updates a Site in DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
+Updates a Site in DOE CODE.  User must be part of a verified role.  Primarily intended to support client front-end Site management.
 Currently only supports POC updates.  Empty value/array will erase the data.  If successful, simply returns the new data.
 
 > Request:
