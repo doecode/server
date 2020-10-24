@@ -161,7 +161,7 @@ public class SearchService {
     @GET
     @Path("{codeId}")
     @Produces ({MediaType.APPLICATION_JSON, "text/yaml", MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
-    public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format) {
+    public Response getSingleRecord(@PathParam("codeId") Long codeId, @QueryParam("format") String format, @QueryParam("export") boolean export) {
         // no search configured, you get nothing
         if ("".equals(SEARCH_URL))
             return Response
@@ -193,6 +193,8 @@ public class SearchService {
                 SolrDocument doc = result.getSearchResponse().getDocuments()[0];
                 // convert it to a POJO
                 DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(doc.getJson()));
+                if (export)
+                    md.setDoi("https://doi.org/" + md.getDoi());
 
                 // if no release date, don't return the DOI for display in search results.
                 if (!StringUtils.isBlank(md.getDoi()) && md.getReleaseDate() == null)
