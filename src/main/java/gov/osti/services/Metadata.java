@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -2628,6 +2629,9 @@ public class Metadata {
 
             String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
 
+            // if DOI and Release Date, then display the doi.org URL in email
+            boolean showDoiUrl = (!StringUtils.isBlank(md.getDoi()) && md.getReleaseDate() != null);
+
             email.setFrom(EMAIL_FROM);
             email.setSubject("Approved -- DOE CODE ID: " + codeId + ", " + softwareTitle);
             email.addTo(md.getOwner());
@@ -2651,7 +2655,21 @@ public class Metadata {
                .append(codeId)
                .append("\">")
                .append(codeId)
-               .append("</a>, has been approved.  It is now <a href=\"")
+               .append("</a>,");
+
+            if (showDoiUrl) {
+                String doiUrlPrefix = "https://doi.org/";
+                String doi = md.getDoi();
+                String doiEncoded = URLEncoder.encode(doi);
+
+                msg.append(" <a href=\"")
+                    .append(doiUrlPrefix + doiEncoded)
+                    .append("\">")
+                    .append(doiUrlPrefix + doi)
+                    .append("</a>,");
+            }
+               
+            msg.append(" has been approved.  It is now <a href=\"")
                .append(SITE_URL)
                .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
 
@@ -2740,6 +2758,9 @@ public class Metadata {
 
                 String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");
 
+                // if DOI and Release Date, then display the doi.org URL in email
+                boolean showDoiUrl = (!StringUtils.isBlank(md.getDoi()) && md.getReleaseDate() != null);
+
                 email.setFrom(EMAIL_FROM);
                 email.setSubject("POC Notification -- " + workflowStatus + " -- DOE CODE ID: " + codeId + ", " + softwareTitle);
 
@@ -2760,8 +2781,21 @@ public class Metadata {
                 msg.append("<p>As a point of contact for ").append(lab).append(", we wanted to inform you that a software project, titled ")
                    .append(softwareTitle)
                    .append(", associated with your organization was ").append(lastApprovalFor).append(" to DOE CODE and assigned DOE CODE ID: ")
-                   .append(codeId)
-                   .append(".  This project record is discoverable in <a href=\"")
+                   .append(codeId);
+
+                    if (showDoiUrl) {
+                        String doiUrlPrefix = "https://doi.org/";
+                        String doi = md.getDoi();
+                        String doiEncoded = URLEncoder.encode(doi);
+
+                        msg.append(" and <a href=\"")
+                            .append(doiUrlPrefix + doiEncoded)
+                            .append("\">")
+                            .append(doiUrlPrefix + doi)
+                            .append("</a>");
+                    }
+                   
+                msg.append(".  This project record is discoverable in <a href=\"")
                    .append(SITE_URL)
                    .append("\">DOE CODE</a>, e.g. searching by the project title or DOE CODE ID #, and can be found here: <a href=\"")
                    .append(biblioLink)
