@@ -538,11 +538,6 @@ public class Metadata {
                 for (JsonNode objNode : recordNode) {
                     rowCount++;
 
-                    // skip non-approved records
-                    String currentStatus = objNode.get("workflow_status").asText();
-                    if (!currentStatus.equalsIgnoreCase("Approved"))
-                        continue;
-
                     // get code_id to find Snapshot
                     long codeId = objNode.get("code_id").asLong();
                     querySnapshot.setParameter("codeId", codeId);
