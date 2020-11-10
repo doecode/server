@@ -360,7 +360,7 @@ public class Metadata {
                     .build();
 
         // if user is not admin, remove Project Keywords from the result.
-        if (!user.hasRole("RecordAdmin"))
+        if (!user.hasRole("RecordAdmin") && !user.hasRole("ApprovalAdmin"))
             md.setProjectKeywords(null);
 
         // if YAML is requested, return that; otherwise, default to JSON
