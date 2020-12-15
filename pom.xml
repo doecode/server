@@ -11,7 +11,7 @@
     <properties>
         <jdk.version>1.8</jdk.version>
         <jersey.version>2.32</jersey.version>
-        <httpclient.version>4.5.12</httpclient.version>
+        <httpclient.version>4.5.13</httpclient.version>
         <jackson.version>2.11.0</jackson.version>
         <commons-io.version>2.6</commons-io.version>
         <projectName>doecodeapi</projectName>
