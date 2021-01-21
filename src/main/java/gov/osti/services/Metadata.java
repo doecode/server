@@ -2283,6 +2283,30 @@ public class Metadata {
     }
 
     /**
+     * Remove duplicate AWARD entries and normalize values.
+     *
+     * @param md the Metadata to evaluate
+     */
+    private void normalizeAwards(DOECodeMetadata md) {
+        List<Award> currentList = md.getAwardDois();
+
+        // nothing to process
+        if (currentList == null || currentList.isEmpty())
+            return;
+
+        // trim DOI values
+        for(Award a : currentList)
+            a.setAwardDoi(trimDoi(a.getAwardDoi()));
+
+        // remove AWARD duplicates
+        Set<Award> s = new HashSet<>();
+        s.addAll(currentList);
+        currentList.clear();
+        currentList.addAll(s);
+        md.setAwardDois(currentList);
+    }
+
+    /**
      * Trim away unneeded DOI prefixes, etc.
      *
      * @param doi the DOI to trim
@@ -2338,6 +2362,7 @@ public class Metadata {
     private void performDataNormalization(DOECodeMetadata md) {
         normalizeMetadata(md);
         normalizeRelatedIdentifiers(md);
+        normalizeAwards(md);
     }
 
     /**
@@ -2415,6 +2440,11 @@ public class Metadata {
                     reasons.add("License not valid: [" + l +"]");
             }
         }
+        if (StringUtils.isNotBlank(m.getDoi())) {
+            if (!Validation.isValidDoi(m.getDoi())) {
+                    reasons.add("DOI is not valid: [" + m.getDoi() +"]");
+            }
+        }
         if (licenseContactRequired && !hasLicenseContactEmail)
             reasons.add("A License Contact Email is required.");
         if (null==m.getDevelopers() || m.getDevelopers().isEmpty())
@@ -2449,7 +2479,11 @@ public class Metadata {
         if (!(null==m.getAwardDois() || m.getAwardDois().isEmpty())) {
             for ( Award award : m.getAwardDois() ) {
                 if ( StringUtils.isBlank(award.getAwardDoi()) || StringUtils.isBlank(award.getFunderName()) ) {
-                    reasons.add("Award must include Award DOI, and Funder Name.");
+                    reasons.add("Award must include both Award DOI and Funder Name.");
+                }
+                
+                if (!Validation.isValidDoi(award.getAwardDoi())) {
+                    reasons.add("Award DOI is not valid: [" + award.getAwardDoi() +"]");
                 }
             }
         }
