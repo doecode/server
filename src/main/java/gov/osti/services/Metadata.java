@@ -2888,7 +2888,7 @@ public class Metadata {
         if (StringUtils.isBlank(m.getRecipientOrg()))
             reasons.add("Contact organization is required.");
 
-        if (!DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility()))
+        if (!m.getIsMigration() && !DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility()))
             if (StringUtils.isBlank(m.getFileName()))
                 reasons.add("A file archive must be included for non-open source submissions.");
 

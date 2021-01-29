@@ -266,6 +266,8 @@ public class DOECodeMetadata implements Serializable {
     @JacksonXmlProperty (localName = "link")
     private transient List<BiblioLink> links; 
 
+    private boolean isMigration = false;
+
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
@@ -826,6 +828,15 @@ public class DOECodeMetadata implements Serializable {
     public void setDateRecordUpdated() {
         setDateRecordUpdated(new Date());
     }
+
+    @Column (name="IS_MIGRATION")
+	public boolean getIsMigration() {
+		return isMigration;
+	}
+
+	public void setIsMigration(boolean isMigration) {
+		this.isMigration = isMigration;
+	}
 
     /**
      * Method called when a record is first created. Sets dates added and

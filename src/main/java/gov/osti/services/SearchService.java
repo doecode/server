@@ -100,7 +100,9 @@ public class SearchService {
         "awardDoi",
         "award_doi",
         "awardDois",
-        "award_dois"
+        "award_dois",
+        "isMigration",
+        "is_migration"
     };
     protected static FilterProvider filter = new SimpleFilterProvider()
             .addFilter("filter properties by name",
