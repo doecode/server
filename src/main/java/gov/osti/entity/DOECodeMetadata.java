@@ -717,8 +717,8 @@ public class DOECodeMetadata implements Serializable {
 		this.landingPage = landingPage;
 	}
 
-        @Enumerated (EnumType.STRING)
-        @Column (name = "ACCESSIBLIITY")
+    @Enumerated (EnumType.STRING)
+    @Column (name = "ACCESSIBLIITY")
 	public Accessibility getAccessibility() {
 		return accessibility;
 	}
