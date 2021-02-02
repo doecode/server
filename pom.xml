@@ -10,10 +10,10 @@
 
     <properties>
         <jdk.version>1.8</jdk.version>
-        <jersey.version>2.32</jersey.version>
+        <jersey.version>2.33</jersey.version>
         <httpclient.version>4.5.13</httpclient.version>
-        <jackson.version>2.11.0</jackson.version>
-        <commons-io.version>2.6</commons-io.version>
+        <jackson.version>2.12.1</jackson.version>
+        <commons-io.version>2.8.0</commons-io.version>
         <projectName>doecodeapi</projectName>
         <datacite.url>https://mds.test.datacite.org/</datacite.url>
         <environment>development</environment>
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.10</version>
+            <version>3.11</version>
         </dependency>
 
         <!--Logging-->
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>com.googlecode.libphonenumber</groupId>
             <artifactId>libphonenumber</artifactId>
-            <version>8.12.2</version>
+            <version>8.12.17</version>
         </dependency>
 
         <!-- Apache HTTP multipart form upload -->
@@ -187,31 +187,31 @@
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>6.1.4.Final</version>
+            <version>6.2.0.Final</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator-annotation-processor</artifactId>
-            <version>6.1.4.Final</version>
+            <version>6.2.0.Final</version>
         </dependency>
 
         <!-- apache shiro authentication layer -->
         <dependency>
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-core</artifactId>
-            <version>1.7.0</version>
+            <version>1.7.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-web</artifactId>
-            <version>1.7.0</version>
+            <version>1.7.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-jaxrs</artifactId>
-            <version>1.7.0</version>
+            <version>1.7.1</version>
         </dependency>
 
         <dependency>
@@ -230,7 +230,7 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>5.9.0.202009080501-r</version>
+            <version>5.10.0.202012080955-r</version>
             <type>jar</type>
         </dependency>
         <!-- SVN support -->
