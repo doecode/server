@@ -574,7 +574,7 @@ metadata fields.
 "documentation_url": "",
 "country_of_origin": "United States",
 "keywords": "doecode",
-"license":["Apache License 2.0"],
+"licenses":["Apache License 2.0"],
 "release_date":"2017-08-23",
 "links": [
     {"rel": "citation",
