@@ -1365,27 +1365,15 @@ public class Metadata {
      *
      * @param em the EntityManager to control commits.
      * @param md the Metadata to evaluate.
-     * @return Updated DOECodeMetadata object.
+     * @return Updated and detached List<RelatedIdentifier> object.
      */
-    private static DOECodeMetadata createIndexableRi(EntityManager em, DOECodeMetadata md) throws IOException {
-        // need a detached copy of the RI data
-        DOECodeMetadata alteredMd = new DOECodeMetadata();
-        BeanUtilsBean bean = new BeanUtilsBean();
-
-        try {
-            bean.copyProperties(alteredMd, md);
-        } catch (IllegalAccessException | InvocationTargetException ex) {
-            // log issue, swallow error
-            String msg = "NonIndexable RI Removal Bean Error: " + ex.getMessage();
-            throw new IOException(msg);
-        }
-
+    private static List<RelatedIdentifier> createIndexableRi(EntityManager em, DOECodeMetadata md) throws IOException {
         TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByDoiAndStatus", MetadataSnapshot.class)
                 .setParameter("status", DOECodeMetadata.Status.Approved);
 
         // get detached list of RI to check
         List<RelatedIdentifier> riList = new ArrayList<>();
-        riList.addAll(alteredMd.getRelatedIdentifiers());
+        riList.addAll(md.getRelatedIdentifiers());
 
         // filter to targeted RI
         List<RelatedIdentifier> filteredRiList = riList.stream().filter(p -> p.getIdentifierType() == RelatedIdentifier.Type.DOI
@@ -1415,13 +1403,28 @@ public class Metadata {
                 removalList.add(ri);
         }
 
-        // perform removals, as needed, and update
+        // perform removals, as needed
         if (!removalList.isEmpty()) {
             riList.removeAll(removalList);
         }
 
-        // Add AWARD DOI to RI list, and then remove , for Indexing purposes.
-        List<Award> awards = alteredMd.getAwardDois();
+        return riList;
+    }
+
+    /**
+     * Add indexable Award DOI RI from metadata.
+     *
+     * @param em the EntityManager to control commits.
+     * @param md the Metadata to evaluate.
+     * @return Updated and detached List<RelatedIdentifier> object.
+     */
+    private static List<RelatedIdentifier> createAwardRi(EntityManager em, DOECodeMetadata md) throws IOException {
+        // get detached list of RI to check
+        List<RelatedIdentifier> riList = new ArrayList<>();
+        riList.addAll(md.getRelatedIdentifiers());
+
+        // Add AWARD DOI to RI list for Indexing purposes.
+        List<Award> awards = md.getAwardDois();
         if (awards != null && !awards.isEmpty()) {
             for (Award award : awards) {
                 RelatedIdentifier ri = new RelatedIdentifier();
@@ -1430,14 +1433,9 @@ public class Metadata {
                 ri.setIdentifierValue(award.toJson());
                 riList.add(ri);
             }
-            alteredMd.setAwardDois(null);
         }
 
-        if (!removalList.isEmpty() || (awards != null && !awards.isEmpty())) {
-            alteredMd.setRelatedIdentifiers(riList);
-        }
-
-        return alteredMd;
+        return riList;
     }
 
     /**
@@ -1694,17 +1692,22 @@ public class Metadata {
                 .create()
                 .setDefaultRequestConfig(rc)
                 .build();
+
+        // backup info
+        List<RelatedIdentifier> originalRi = md.getRelatedIdentifiers();
+
         try {
             // do not index DOE CODE New/Previous DOI related identifiers if Approved without a Release Date
-            DOECodeMetadata indexableMd = createIndexableRi(em, md);
+            List<RelatedIdentifier> indexableRi = createIndexableRi(em, md);
+            md.setRelatedIdentifiers(indexableRi);
 
             // construct a POST submission to the indexer service
             HttpPost post = new HttpPost(INDEX_URL);
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
             // add JSON String to index for later display/search
-            ObjectNode node = (ObjectNode)index_mapper.valueToTree(indexableMd);
-            node.put("json", indexableMd.toJson().toString());
+            ObjectNode node = (ObjectNode)index_mapper.valueToTree(md);
+            node.put("json", md.toJson().toString());
             post.setEntity(new StringEntity(node.toString(), "UTF-8"));
 
             HttpResponse response = hc.execute(post);
@@ -1721,6 +1724,9 @@ public class Metadata {
             } catch ( IOException e ) {
                 log.warn("Index Close Error: " + e.getMessage());
             }
+
+            // restore manipulated lists from backup info
+            md.setRelatedIdentifiers(originalRi);
         }
     }
 
@@ -2561,8 +2567,18 @@ public class Metadata {
         // if configured, post this to OSTI
         String publishing_host = context.getInitParameter("publishing.host");
         if (null!=publishing_host) {
+            // backup info
+            List<RelatedIdentifier> originalRi = md.getRelatedIdentifiers();
+            List<Award> awardDois = md.getAwardDois();
+
             // do not index DOE CODE New/Previous DOI related identifiers if Approved without a Release Date
-            DOECodeMetadata indexableMd = createIndexableRi(em, md);
+            List<RelatedIdentifier> indexableRi = createIndexableRi(em, md);
+            md.setRelatedIdentifiers(indexableRi);
+
+            // add award info to RI list for OSTI
+            List<RelatedIdentifier> awardRi = createAwardRi(em, md);
+            md.setRelatedIdentifiers(awardRi);
+            md.setAwardDois(null);
 
             // set some reasonable default timeouts
             // create an HTTP client to request through
@@ -2579,7 +2595,7 @@ public class Metadata {
             HttpPost post = new HttpPost(publishing_host + "/services/softwarecenter?action=api");
             post.setHeader("Content-Type", "application/json");
             post.setHeader("Accept", "application/json");
-            post.setEntity(new StringEntity(mapper.writeValueAsString(indexableMd), "UTF-8"));
+            post.setEntity(new StringEntity(mapper.writeValueAsString(md), "UTF-8"));
 
                 HttpResponse response = hc.execute(post);
                 String text = EntityUtils.toString(response.getEntity());
@@ -2588,6 +2604,11 @@ public class Metadata {
                     log.warn("OSTI Error: " + text);
                     throw new IOException ("OSTI software publication error for " + md.getCodeId());
                 }
+            }
+            finally {
+                // restore manipulated lists from backup info
+                md.setRelatedIdentifiers(originalRi);
+                md.setAwardDois(awardDois);
             }
         }
     }
