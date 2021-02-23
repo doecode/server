@@ -390,6 +390,7 @@ A full JSON example is [provided below](#json_example).
 | contributing_organizations | (Array) Information about any contributing organizations providing support for the software project. Fields are [specified below](#organization_fields).  As with contributors, organizations must specify a [type of contribution](#contributor_types). |
 | research_organizations | (Array) Information about organizations providing research information for the project. Fields are [specified below](#organization_fields). |
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
+| award_dois | (Array) Any Award DOI under which work or time was provided. An Award DOI is assigned to awards, contracts, equipment, facilities, grants, prizes, salary awards, and/or training grants. |
 | description | An abstract about the software project. |
 | programming_languages | (Array) Any programming language used on the software project. |
 | keywords | Words or phrases that describe the project as summarized in the report/product. Keywords aide in the online search and discovery of information about the project. |
@@ -560,6 +561,9 @@ metadata fields.
   {"identifier_type":"DOI",
    "identifier_value":"10.5072/OSTI/2017/1",
    "relation_type":"IsSourceOf"}],
+"award_dois":[
+  {"award_doi":"10.1234/awardExp1",
+   "funder_name":"Dept. of Award Examples"}],
 "date_of_issuance":"2016-02-03",
 "software_title":"Department of Energy DOE CODE Project",
 "acronym":"doecode",

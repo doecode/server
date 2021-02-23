@@ -5,6 +5,8 @@ package gov.osti.doi;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+
+import gov.osti.entity.Award;
 import gov.osti.entity.Contributor;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
@@ -187,25 +189,45 @@ public class DataCite {
      * @param sponsors a List of Sponsoring Organizations
      * @throws XMLStreamException on XML output errors
      */
-    private static void writeFundingIdentifiers(XMLStreamWriter sw, List<SponsoringOrganization> sponsors) throws XMLStreamException {
-        if (null==sponsors || sponsors.isEmpty())
+    private static void writeFundingIdentifiers(XMLStreamWriter sw, List<SponsoringOrganization> sponsors, List<Award> awards) throws XMLStreamException {
+        if ((null==sponsors || sponsors.isEmpty()) && (null==awards || awards.isEmpty()))
             return;
         
         sw.writeStartElement("fundingReferences");
         
-        for ( SponsoringOrganization sponsor : sponsors ) {
-            // Sponsor name first
-            sw.writeStartElement("fundingReference");
-            
-            sw.writeStartElement("funderName");
-            sw.writeCharacters(sponsor.getOrganizationName());
-            sw.writeEndElement();
-            
-            sw.writeStartElement("awardNumber");
-            sw.writeCharacters(sponsor.getPrimaryAward());
-            sw.writeEndElement();
-            
-            sw.writeEndElement();
+        if (!(null==awards || awards.isEmpty())) {
+            for ( Award award : awards ) {
+                // Sponsor name first
+                sw.writeStartElement("fundingReference");
+                
+                sw.writeStartElement("funderName");
+                sw.writeCharacters(award.getFunderName());
+                sw.writeEndElement();
+                
+                sw.writeStartElement("awardNumber");
+                sw.writeAttribute("awardURI", award.getAwardDoi());
+                //sw.writeCharacters(); // award number here?
+                sw.writeEndElement();
+                
+                sw.writeEndElement();
+            }
+        }
+        
+        if (!(null==sponsors || sponsors.isEmpty())) {
+            for ( SponsoringOrganization sponsor : sponsors ) {
+                // Sponsor name first
+                sw.writeStartElement("fundingReference");
+                
+                sw.writeStartElement("funderName");
+                sw.writeCharacters(sponsor.getOrganizationName());
+                sw.writeEndElement();
+                
+                sw.writeStartElement("awardNumber");
+                sw.writeCharacters(sponsor.getPrimaryAward());
+                sw.writeEndElement();
+                
+                sw.writeEndElement();
+            }
         }
         
         sw.writeEndElement();
@@ -310,7 +332,7 @@ public class DataCite {
         sw.writeEndElement();
         sw.writeEndElement();
         
-        writeFundingIdentifiers(sw, m.getSponsoringOrganizations());
+        writeFundingIdentifiers(sw, m.getSponsoringOrganizations(), m.getAwardDois());
         
         sw.writeStartElement("resourceType");
         sw.writeAttribute("resourceTypeGeneral", "Software");

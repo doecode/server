@@ -25,11 +25,13 @@ import gov.osti.connectors.gitlab.GitLabFile;
 import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
 import gov.osti.entity.Contributor;
+import gov.osti.entity.Award;
 import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.Accessibility;
 import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.DOECodeMetadata.Status;
+import gov.osti.entity.RelatedIdentifier.RelationType;
 import gov.osti.entity.Developer;
 import gov.osti.entity.DoiReservation;
 import gov.osti.entity.ResearchOrganization;
@@ -1028,7 +1030,7 @@ public class Metadata {
      * @param md the Metadata to evaluate.
      * @return Updated DOECodeMetadata object.
      */
-    private static DOECodeMetadata removeNonIndexableRi(EntityManager em, DOECodeMetadata md) throws IOException {
+    private static DOECodeMetadata createIndexableRi(EntityManager em, DOECodeMetadata md) throws IOException {
         // need a detached copy of the RI data
         DOECodeMetadata alteredMd = new DOECodeMetadata();
         BeanUtilsBean bean = new BeanUtilsBean();
@@ -1079,6 +1081,22 @@ public class Metadata {
         // perform removals, as needed, and update
         if (!removalList.isEmpty()) {
             riList.removeAll(removalList);
+        }
+
+        // Add AWARD DOI to RI list, and then remove , for Indexing purposes.
+        List<Award> awards = alteredMd.getAwardDois();
+        if (awards != null && !awards.isEmpty()) {
+            for (Award award : awards) {
+                RelatedIdentifier ri = new RelatedIdentifier();
+                ri.setIdentifierType(RelatedIdentifier.Type.AWARD);
+                ri.setRelationType(RelatedIdentifier.RelationType.IsReferencedBy);
+                ri.setIdentifierValue(award.toJson());
+                riList.add(ri);
+            }
+            alteredMd.setAwardDois(null);
+        }
+
+        if (!removalList.isEmpty() || (awards != null && !awards.isEmpty())) {
             alteredMd.setRelatedIdentifiers(riList);
         }
 
@@ -1341,7 +1359,7 @@ public class Metadata {
                 .build();
         try {
             // do not index DOE CODE New/Previous DOI related identifiers if Approved without a Release Date
-            DOECodeMetadata indexableMd = removeNonIndexableRi(em, md);
+            DOECodeMetadata indexableMd = createIndexableRi(em, md);
 
             // construct a POST submission to the indexer service
             HttpPost post = new HttpPost(INDEX_URL);
@@ -2207,7 +2225,7 @@ public class Metadata {
         String publishing_host = context.getInitParameter("publishing.host");
         if (null!=publishing_host) {
             // do not index DOE CODE New/Previous DOI related identifiers if Approved without a Release Date
-            DOECodeMetadata indexableMd = removeNonIndexableRi(em, md);
+            DOECodeMetadata indexableMd = createIndexableRi(em, md);
 
             // set some reasonable default timeouts
             // create an HTTP client to request through
@@ -2425,6 +2443,20 @@ public class Metadata {
                 }
                 if (StringUtils.isBlank(contributor.getFirstName()) || StringUtils.isBlank(contributor.getLastName()) || (null == contributor.getContributorType())) {
                     reasons.add("Contributor must include first name, last name, and contributor type.");
+                }
+            }
+        }
+        if (!(null==m.getAwardDois() || m.getAwardDois().isEmpty())) {
+            for ( Award award : m.getAwardDois() ) {
+                if ( StringUtils.isBlank(award.getAwardDoi()) || StringUtils.isBlank(award.getFunderName()) ) {
+                    reasons.add("Award must include Award DOI, and Funder Name.");
+                }
+            }
+        }
+        if (!(null==m.getRelatedIdentifiers() || m.getRelatedIdentifiers().isEmpty())) {
+            for ( RelatedIdentifier rel : m.getRelatedIdentifiers() ) {
+                if ( RelatedIdentifier.Type.AWARD.equals(rel.getIdentifierType()) ) {
+                    reasons.add("The AWARD related identifier type is only allowed for Announcement Approvals.");
                 }
             }
         }

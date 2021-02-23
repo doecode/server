@@ -49,7 +49,8 @@ public class RelatedIdentifier implements Serializable {
      */
     public enum Type implements Serializable {
         DOI("DOI"),
-        URL("URL");
+        URL("URL"),
+        AWARD("AWARD");
         
         private final String label;
         

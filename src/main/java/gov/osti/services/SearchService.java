@@ -96,7 +96,11 @@ public class SearchService {
         "access_limitation",
         "disclaimers",
         "licenseContactEmail",
-        "license_contact_email"
+        "license_contact_email",
+        "awardDoi",
+        "award_doi",
+        "awardDois",
+        "award_dois"
     };
     protected static FilterProvider filter = new SimpleFilterProvider()
             .addFilter("filter properties by name",

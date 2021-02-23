@@ -209,6 +209,11 @@ public class DOECodeMetadata implements Serializable {
     @JacksonXmlProperty (localName = "relatedIdentifier")
     private List<RelatedIdentifier> relatedIdentifiers;
 
+    // Child table -- identifiers
+    @JacksonXmlElementWrapper (localName = "awardDois")
+    @JacksonXmlProperty (localName = "awardDoi")
+    private List<Award> awardDois;
+
     private Date releaseDate;
     private String softwareTitle = null;
     private String acronym = null;
@@ -472,6 +477,19 @@ public class DOECodeMetadata implements Serializable {
     )
     public List<RelatedIdentifier> getRelatedIdentifiers() {
         return this.relatedIdentifiers;
+    }
+
+    public void setAwardDois(List<Award> awardDois) {
+        this.awardDois = awardDois;
+    }
+
+    @ElementCollection
+    @CollectionTable(
+            name="AWARD_DOIS",
+            joinColumns=@JoinColumn(name="CODE_ID")
+    )
+    public List<Award> getAwardDois() {
+        return this.awardDois;
     }
 
     @Size (max = 255, message = "Country is limited to 255 characters.")
