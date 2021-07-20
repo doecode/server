@@ -729,17 +729,17 @@ public class DOECodeMetadata implements Serializable {
 		this.accessibility = accessibility;
 	}
 
-        /**
-         * Get the OWNER of a record.  May not change once set.
-         * @return the OWNER (email) of the original record
-         */
-        @Column (name="OWNER", insertable = true, updatable = false)
+    /**
+     * Get the OWNER of a record.  May not change once set.
+     * @return the OWNER (email) of the original record
+     */
+    @Column (name="OWNER", insertable = true, updatable = false)
 	public String getOwner() {
 		return owner;
 	}
 
 	public void setOwner(String owner) {
-                owner = owner != null ? owner.toLowerCase() : owner;
+        owner = owner != null ? owner.toLowerCase() : owner;
 		this.owner = owner;
 	}
 
