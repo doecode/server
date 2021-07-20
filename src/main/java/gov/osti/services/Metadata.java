@@ -613,6 +613,7 @@ public class Metadata {
         md.setOwner(cleanStr(md.getOwner()));
         md.setFileName(cleanStr(md.getFileName()));
         md.setContainerName(cleanStr(md.getContainerName()));
+        md.setLastEditor(cleanStr(md.getLastEditor()));
     }
 
     /**
@@ -1250,7 +1251,7 @@ public class Metadata {
      * @param archiveContainer (optional) the Container recently uploaded to ARCHIVE, or null if none
      * @throws IOException on IO transmission errors
      */
-    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer) throws IOException {
+    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer, String lastEditor) throws IOException {
         if ( "".equals(ARCHIVER_URL) )
             return;
 
@@ -1276,6 +1277,9 @@ public class Metadata {
             ObjectNode request = mapper.createObjectNode();
             request.put("code_id", codeId);
             request.put("repository_link", repositoryLink);
+            if (!StringUtils.isEmpty(lastEditor)) {
+                request.put("last_editor", lastEditor);
+            }
 
             // determine if there's a file to send or not
             if (null==archiveFile && null==archiveContainer) {
@@ -1760,6 +1764,8 @@ public class Metadata {
             md.setOwner(user.getEmail()); // this User should OWN it
             md.setSiteOwnershipCode(user.getSiteId());
 
+            md.setLastEditor(md.getOwner());
+
             store(em, md, user);
 
             // re-attach metadata to transaction in order to store any changes beyond this point
@@ -1890,6 +1896,8 @@ public class Metadata {
             md.setWorkflowStatus(Status.Submitted);
             md.setSiteOwnershipCode(user.getSiteId());
 
+            md.setLastEditor(md.getOwner());
+
             // store it
             store(em, md, user);
 
@@ -1971,9 +1979,9 @@ public class Metadata {
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
+                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer, md.getLastEditor());
                 else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer);
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
@@ -2090,6 +2098,7 @@ public class Metadata {
 
             // set the OWNER
             md.setOwner(user.getEmail());
+            md.setLastEditor(md.getOwner());
             // set the WORKFLOW STATUS
             md.setWorkflowStatus(Status.Announced);
             // set the SITE
@@ -2177,9 +2186,9 @@ public class Metadata {
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
                 if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
                     // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer);
+                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer, md.getLastEditor());
                 else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer);
+                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse

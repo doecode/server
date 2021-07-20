@@ -267,6 +267,7 @@ public class DOECodeMetadata implements Serializable {
     private transient List<BiblioLink> links; 
 
     private boolean isMigration = false;
+    private String lastEditor = null;
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -836,6 +837,20 @@ public class DOECodeMetadata implements Serializable {
 
 	public void setIsMigration(boolean isMigration) {
 		this.isMigration = isMigration;
+	}
+
+    /**
+     * Get the LAST EDITOR user of a record.
+     * @return the OWNER (email) of the record editor
+     */
+    @Column (name="LAST_EDITOR")
+	public String getLastEditor() {
+		return lastEditor;
+	}
+
+	public void setLastEditor(String owner) {
+        owner = owner != null ? owner.toLowerCase() : owner;
+		this.lastEditor = owner;
 	}
 
     /**
