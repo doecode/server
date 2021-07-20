@@ -205,7 +205,7 @@ public class DataCite {
                 sw.writeEndElement();
                 
                 sw.writeStartElement("awardNumber");
-                sw.writeAttribute("awardURI", award.getAwardDoi());
+                sw.writeAttribute("awardURI", "https://doi.org/" + award.getAwardDoi());
                 //sw.writeCharacters(); // award number here?
                 sw.writeEndElement();
                 
