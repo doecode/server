@@ -1326,7 +1326,12 @@ public class Metadata {
      * @param fileName the uploaded filename to evaluate.
      * @param containerName the uploaded container image filename to evaluate.
      */
-    private static void validateUploads(FormDataContentDisposition fileInfo, FormDataContentDisposition containerInfo) {
+    private static void validateUploads(FormDataContentDisposition fileInfo, FormDataContentDisposition containerInfo, DOECodeMetadata md) {
+        // file upload not allowed with repository link
+        if (fileInfo != null && !StringUtils.isBlank(fileInfo.getFileName()) && !StringUtils.isBlank(md.getRepositoryLink())) {
+            throw new ValidationException("The system only allows for a Repository URL or a File Upload, please resubmit your record with a single appropriate source location.");
+        }
+
         // evaluate file upload
         if (fileInfo != null && !StringUtils.isBlank(fileInfo.getFileName())) {
             String fileName = fileInfo.getFileName();
@@ -1752,9 +1757,9 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-            validateUploads(fileInfo, containerInfo);
-
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+
+            validateUploads(fileInfo, containerInfo, md);
 
             em.getTransaction().begin();
 
@@ -1851,9 +1856,9 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-            validateUploads(fileInfo, containerInfo);
-
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+
+            validateUploads(fileInfo, containerInfo, md);
 
             Long currentCodeId = md.getCodeId();
 
@@ -2069,9 +2074,9 @@ public class Metadata {
         User user = (User) subject.getPrincipal();
 
         try {
-            validateUploads(fileInfo, containerInfo);
-
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
+
+            validateUploads(fileInfo, containerInfo, md);
 
             Long currentCodeId = md.getCodeId();
 
