@@ -471,11 +471,6 @@ public class CodeGov {
         try {
             String url = ARCHIVER_URL + "/latest/" + codeId;
 
-            if (fileName != null)
-                url += "?fileName=" + URLEncoder.encode(fileName);
-            else if (repositoryLink != null)
-                url += "?repositoryLink=" + URLEncoder.encode(repositoryLink);
-
             HttpGet get = new HttpGet(url);
 
             HttpResponse response = hc.execute(get);
