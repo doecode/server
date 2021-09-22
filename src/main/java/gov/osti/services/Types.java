@@ -8,12 +8,12 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import gov.osti.entity.Contributor;
 import gov.osti.entity.Contributor.Type;
 import gov.osti.entity.DOECodeMetadata;
-import gov.osti.entity.DOECodeMetadata.Accessibility;
+import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.FundingIdentifier;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.RelatedIdentifier.RelationType;
-import gov.osti.indexer.AccessibilitySerializer;
+import gov.osti.indexer.ProjectTypeSerializer;
 import gov.osti.indexer.ContributorTypeSerializer;
 import gov.osti.indexer.FundingIdentifierSerializer;
 import gov.osti.indexer.LicenseSerializer;
@@ -53,7 +53,7 @@ public class Types {
             .addSerializer(RelationType.class, new RelationTypeSerializer())
             .addSerializer(RelatedIdentifier.Type.class, new RelatedIdentifierTypeSerializer())
             .addSerializer(FundingIdentifier.Type.class, new FundingIdentifierSerializer())
-            .addSerializer(Accessibility.class, new AccessibilitySerializer());
+            .addSerializer(ProjectType.class, new ProjectTypeSerializer());
         
         mapper.registerModule(module);
     }
@@ -65,20 +65,20 @@ public class Types {
     }
     
     /**
-     * Acquire a listing of all valid ACCESSIBILITY values and descriptions
-     * @return JSON containing an array of ACCESSIBILITY values
+     * Acquire a listing of all valid PROJECT TYPE values and descriptions
+     * @return JSON containing an array of PROJECT TYPE values
      */
     @GET
     @Produces (MediaType.APPLICATION_JSON)
-    @Path ("/accessibility")
-    public Response getAccessibility() {
+    @Path ("/projecttypes")
+    public Response getProjectType() {
         try {
             return Response
                     .ok()
                     .entity(mapper
                             .createObjectNode()
-                            .putPOJO("accessibility", 
-                                    mapper.writeValueAsString(Arrays.asList(DOECodeMetadata.Accessibility.values()))).toString())
+                            .putPOJO("project_type", 
+                                    mapper.writeValueAsString(Arrays.asList(DOECodeMetadata.ProjectType.values()))).toString())
                     .build();
         } catch ( JsonProcessingException e ) {
             log.warn("JSON Output Error", e);

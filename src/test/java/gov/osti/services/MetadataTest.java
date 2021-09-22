@@ -54,7 +54,7 @@ public class MetadataTest {
         assertFalse("Validation passed?", reasons.isEmpty());
         
         String[] validations = {
-            "Missing Source Accessibility.",
+            "Missing Source Project Type.",
             "Software title is required.",
             "Description is required.",
             "A License is required.",
@@ -68,12 +68,12 @@ public class MetadataTest {
         
         // fix some of these and test them
         m.setSoftwareTitle("A Testing Software Title");
-        m.setAccessibility(DOECodeMetadata.Accessibility.OS);
+        m.setProjectType(DOECodeMetadata.ProjectType.OS);
         // removes software title validation, adds OS one
         
         reasons = Metadata.validateSubmit(m);
         assertFalse("Still requiring title?", reasons.contains("Software title is required."));
-        assertFalse("Still requiring accessibility", reasons.contains("Missing Source Accessibility."));
+        assertFalse("Still requiring project type", reasons.contains("Missing Source Project Type."));
         assertTrue ("Missing OS validation", reasons.contains("Repository URL is required for open source submissions."));
         
         // test developer issues
@@ -118,7 +118,7 @@ public class MetadataTest {
         assertTrue ("Should require a proprietary URL", reasons.contains("Proprietary License URL is required."));
         
         // create something that will pass validations
-        m.setAccessibility(DOECodeMetadata.Accessibility.CS);
+        m.setProjectType(DOECodeMetadata.ProjectType.CS);
         m.setRepositoryLink("");
         m.setLandingPage("http://code.google.com/");
         d.setEmail("testguy@testing.com");
@@ -148,7 +148,7 @@ public class MetadataTest {
         assertFalse("Validation passed?", reasons.isEmpty());
         
         String[] validations = {
-            "Missing Source Accessibility.",
+            "Missing Source Project Type.",
             "Software title is required.",
             "Description is required.",
             "A License is required.",

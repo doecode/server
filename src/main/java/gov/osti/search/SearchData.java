@@ -45,7 +45,7 @@ public class SearchData implements Serializable {
     private String siteOwnershipCode = null;
     private Date dateEarliest = null;
     private Date dateLatest = null;
-    private String[] accessibility = null;
+    private String[] projectType = null;
     private String programmingLanguages;
     private String keywords;
     private String[] projectKeywords;
@@ -141,12 +141,12 @@ public class SearchData implements Serializable {
 		this.dateLatest = dateLatest;
 	}
 
-	public String[] getAccessibility() {
-		return accessibility;
+	public String[] getProjectType() {
+		return projectType;
 	}
 
-	public void setAccessibility(String[] accessibility) {
-		this.accessibility = accessibility;
+	public void setProjectType(String[] projectType) {
+		this.projectType = projectType;
 	}
 
 	public String getResearchOrganization() {
@@ -223,11 +223,11 @@ public class SearchData implements Serializable {
             if (q.length()>0) q.append(" ");
             q.append("_text_:(").append(escape(getAllFields(), true)).append(")");
         }
-        if (null!=getAccessibility()) {
+        if (null!=getProjectType()) {
             StringBuilder codes = new StringBuilder();
-            for ( String code : getAccessibility()) {
+            for ( String code : getProjectType()) {
                 if (codes.length()>0) codes.append(" OR ");
-                codes.append("accessibility:").append(code);
+                codes.append("projectType:").append(code);
             }
             if ( codes.length()>0 ) {
                 if (q.length()>0) q.append(" ");

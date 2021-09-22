@@ -9,22 +9,22 @@ import gov.osti.entity.DOECodeMetadata;
 import java.io.IOException;
 
 /**
- * Custom serializer for Accessibility Enumeration.
+ * Custom serializer for ProjectType Enumeration.
  * 
  * @author ensornl
  */
-public class AccessibilitySerializer extends StdSerializer<DOECodeMetadata.Accessibility> {
+public class ProjectTypeSerializer extends StdSerializer<DOECodeMetadata.ProjectType> {
     
-    public AccessibilitySerializer() {
+    public ProjectTypeSerializer() {
         this(null);
     }
     
-    public AccessibilitySerializer(Class<DOECodeMetadata.Accessibility> type) {
+    public ProjectTypeSerializer(Class<DOECodeMetadata.ProjectType> type) {
         super(type);
     }
 
     @Override
-    public void serialize(DOECodeMetadata.Accessibility t, JsonGenerator jg, SerializerProvider sp) throws IOException {
+    public void serialize(DOECodeMetadata.ProjectType t, JsonGenerator jg, SerializerProvider sp) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("label", t.label());
         jg.writeStringField("value", t.name());

@@ -29,7 +29,7 @@ import gov.osti.entity.Award;
 import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
-import gov.osti.entity.DOECodeMetadata.Accessibility;
+import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.DOECodeMetadata.Status;
 import gov.osti.entity.RelatedIdentifier.RelationType;
@@ -1102,8 +1102,8 @@ public class Metadata {
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
         md.setOpenSource(
-                Accessibility.OS.equals(md.getAccessibility()) ||
-                Accessibility.ON.equals(md.getAccessibility()));
+                ProjectType.OS.equals(md.getProjectType()) ||
+                ProjectType.ON.equals(md.getProjectType()));
 
         ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
         Validator validator = validators.getValidator();
@@ -2726,7 +2726,7 @@ public class Metadata {
      */
     protected static List<String> validateSubmit(DOECodeMetadata m) {
         List<String> licenseList = m.getLicenses();
-        String projectType = m.getAccessibility() != null ? m.getAccessibility().name() : "";
+        String projectType = m.getProjectType() != null ? m.getProjectType().name() : "";
         String licenseContactEmail = m.getLicenseContactEmail();
 
         boolean hasLicense = !(licenseList == null || licenseList.isEmpty());
@@ -2742,8 +2742,8 @@ public class Metadata {
             licenseContactRequired = true;
 
         List<String> reasons = new ArrayList<>();
-        if (null==m.getAccessibility())
-            reasons.add("Missing Source Accessibility.");
+        if (null==m.getProjectType())
+            reasons.add("Missing Source Project Type.");
         if (StringUtils.isBlank(m.getSoftwareTitle()))
             reasons.add("Software title is required.");
         if (StringUtils.isBlank(m.getDescription()))
@@ -2812,8 +2812,8 @@ public class Metadata {
                 }
             }
         }
-        // if "OS" accessibility, a REPOSITORY LINK is REQUIRED
-        if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
+        // if "OS" project type, a REPOSITORY LINK is REQUIRED
+        if (DOECodeMetadata.ProjectType.OS.equals(m.getProjectType())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
         } else {
@@ -2872,7 +2872,7 @@ public class Metadata {
         if (StringUtils.isBlank(m.getRecipientOrg()))
             reasons.add("Contact organization is required.");
 
-        if (!m.getIsMigration() && !DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility()))
+        if (!m.getIsMigration() && !DOECodeMetadata.ProjectType.OS.equals(m.getProjectType()))
             if (StringUtils.isBlank(m.getFileName()))
                 reasons.add("A file archive must be included for non-open source submissions.");
 

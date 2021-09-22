@@ -448,7 +448,7 @@
     <field name="_version_" type="long" indexed="false" stored="false"/>
 
     <field name="accessLimitations" type="string" multiValued="true" indexed="false" stored="true"/>
-    <field name="accessibility" type="string" indexed="true" stored="true"/>
+    <field name="projectType" type="string" indexed="true" stored="true"/>
     <field name="acronym" type="string"/>
     <field name="codeId" type="tlong"
            indexed="true" required="true" stored="true"/>

@@ -408,7 +408,7 @@ public class CodeGov {
 
                     String fileName = null;
                     String repositoryLink = null;
-                    String projectType = objNode.get("accessibility").asText();
+                    String projectType = objNode.get("project_type").asText();
                     JsonNode obj;
 
                     if ("OS".equals(projectType)) {
