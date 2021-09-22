@@ -92,8 +92,7 @@ public class DOECodeMetadata implements Serializable {
     public enum Accessibility {
         OS("Open Source"),
         ON("Open Source, No Public Access"),
-        CS("Closed Source"),
-        CO("Closed Source, OSTI Hosted");
+        CS("Closed Source");
 
         private final String label;
 

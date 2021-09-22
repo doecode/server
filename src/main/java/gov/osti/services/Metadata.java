@@ -682,12 +682,6 @@ public class Metadata {
                     .notFound("Code ID not on file.")
                     .build();
 
-        // limited OSTI HOSTED editing
-        if ( Accessibility.CO.equals(md.getAccessibility()) && !user.hasRole("OSTIHostedAdmin") )
-            return ErrorResponse
-                    .notFound("You must be an OSTI Hosted Administrator to access this content.")
-                    .build();
-
         // do you have permissions to get this?
         if ( !user.getEmail().equals(md.getOwner()) &&
              !user.hasRole("RecordAdmin") &&
@@ -1862,15 +1856,6 @@ public class Metadata {
 
             Long currentCodeId = md.getCodeId();
 
-            // limited OSTI HOSTED submission
-            if ( Accessibility.CO.equals(md.getAccessibility()) && !user.hasRole("OSTIHostedAdmin") ) {
-                log.error ("Cannot Submit OSTI Hosted; User does not have permission: " + currentCodeId);
-                return ErrorResponse
-                        .internalServerError("You must be an OSTI Hosted Administrator to submit this content.")
-                        .build();
-
-            }
-
             boolean previouslySaved = false;
             if (currentCodeId != null) {
                 DOECodeMetadata emd = em.find(DOECodeMetadata.class, currentCodeId);
@@ -1952,17 +1937,6 @@ public class Metadata {
                         .build();
             }
 
-            // create OSTI Hosted project, as needed
-            try {
-                // process local GitLab, if needed
-                processOSTIGitLab(md);
-            } catch ( Exception e ) {
-                log.error("OSTI GitLab failure: " + e.getMessage());
-                return ErrorResponse
-                        .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
-                        .build();
-            }
-
             // send this file upload along to archiver if configured
             try {
                 // if no file/container, but previously Saved with a file/container, we need to attach to those streams and send to Archiver
@@ -1982,11 +1956,7 @@ public class Metadata {
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
-                if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
-                    // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer, md.getLastEditor());
-                else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
+                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
@@ -2080,15 +2050,6 @@ public class Metadata {
 
             Long currentCodeId = md.getCodeId();
 
-            // limited OSTI HOSTED submission
-            if ( Accessibility.CO.equals(md.getAccessibility()) && !user.hasRole("OSTIHostedAdmin") ) {
-                log.error ("Cannot Announce OSTI Hosted; User does not have permission: " + currentCodeId);
-                return ErrorResponse
-                        .internalServerError("You must be an OSTI Hosted Administrator to announce this content.")
-                        .build();
-
-            }
-
             boolean previouslySaved = false;
             if (currentCodeId != null) {
                 DOECodeMetadata emd = em.find(DOECodeMetadata.class, currentCodeId);
@@ -2159,17 +2120,6 @@ public class Metadata {
                         .build();
             }
 
-            // create OSTI Hosted project, as needed
-            try {
-                // process local GitLab, if needed
-                processOSTIGitLab(md);
-            } catch ( Exception e ) {
-                log.error("OSTI GitLab failure: " + e.getMessage());
-                return ErrorResponse
-                        .internalServerError("Unable to create OSTI Hosted project: " + e.getMessage())
-                        .build();
-            }
-
             // send this file upload along to archiver if configured
             try {
                 // if no file/container, but previously Saved with a file/container, we need to attach to those streams and send to Archiver
@@ -2189,11 +2139,7 @@ public class Metadata {
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
-                if (DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
-                    // if CO project type, no need to archive the repo because it is local GitLab
-                    sendToArchiver(md.getCodeId(), null, archiveFile, archiveContainer, md.getLastEditor());
-                else
-                    sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
+                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
@@ -2870,13 +2816,13 @@ public class Metadata {
         if (DOECodeMetadata.Accessibility.OS.equals(m.getAccessibility())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
-        } else if (!DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility())) {
-            // non-OS & non-CO submissions require a LANDING PAGE (prefix with http:// if missing)
+        } else {
+            // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
             if (!Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for non-open source submissions.");
         }
-        // if repository link is present, and not CO, it needs to be valid too
-        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
+        // if repository link is present, it needs to be valid too
+        if (StringUtils.isNotBlank(m.getRepositoryLink()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
 
         // validate Funding
@@ -3287,131 +3233,6 @@ public class Metadata {
                 log.error("Unable to send POC notification to " + Arrays.toString(emails.toArray()) + " for #" + md.getCodeId());
                 log.error("Message: " + e.getMessage());
             }
-        }
-    }
-
-    /**
-     * As needed, Create/Update OSTI Hosted GitLab projects.
-     *
-     * @param md the METADATA to process GitLab for
-     */
-    private static void processOSTIGitLab(DOECodeMetadata md) throws Exception {
-        try {
-            // only process OSTI Hosted type
-            if (!DOECodeMetadata.Accessibility.CO.equals(md.getAccessibility()))
-                return;
-
-            String fileName = md.getFileName();
-
-            String codeId = String.valueOf(md.getCodeId());
-            java.nio.file.Path uploadedFile = Paths.get(FILE_UPLOADS, String.valueOf(codeId), fileName);
-
-            // if no file was uploaded, fail
-            if (!Files.exists(uploadedFile))
-                throw new Exception("File not found in Uploads directory! [" + uploadedFile.toString() + "]");
-
-            // convert to base64 for GitLab
-            String base64Content = convertBase64(new FileInputStream(uploadedFile.toString()));
-
-            if (base64Content == null)
-                throw new Exception("Base 64 Content required for OSTI Hosted project!");
-
-            String projectName = "dc-" + md.getCodeId();
-            String hostedFolder = "hosted_files";
-
-            String uploadFile = hostedFolder + "/" + fileName;
-
-            GitLabAPI glApi = new GitLabAPI();
-            glApi.setProjectName(projectName);
-
-            // check existance of project
-            Project project = glApi.fetchProject();
-
-            Commit commit = new Commit();
-            if (project == null) {
-                // create new project, if none exists
-                project = glApi.createProject(md);
-
-                commit.setBranch(glApi.getBranch());
-                commit.setCommitMessage("Adding Hosted Files: " + fileName);
-                commit.addBase64ActionByValues("create", uploadFile, base64Content);
-            }
-            else {
-                // edit project, if one already exists
-                project = glApi.updateProject(md);
-
-                // for each file in the hosted folder, check against submitted files and process as needed
-                GitLabFile[] files = glApi.fetchTree(hostedFolder);
-
-                int adds = 0;
-                int updates = 0;
-                int deletes = 0;
-
-                if (files != null) {
-                    for ( GitLabFile f : files ) {
-                        if (!f.getType().equalsIgnoreCase("tree")) {
-                            if (f.getPath().equals(uploadFile)) {
-                                // update, if filename exists already
-                                commit.addBase64ActionByValues("update", uploadFile, base64Content);
-
-                                updates++;
-                            }
-                            else {
-                                // delete, if file is not being submitted
-                                commit.addBase64ActionByValues("delete", f.getPath(), null);
-
-                                deletes++;
-                            }
-                        }
-                    }
-                }
-
-                // right now there is only ever one file, so if we did not updated anything, we need to create it
-                if (updates == 0) {
-                    // create, if there was no matching file to update
-                    commit.addBase64ActionByValues("create", uploadFile, base64Content);
-
-                    adds++;
-                }
-
-                String prefix;
-                String detail = "\"" + fileName + "\"";
-                if (adds == 1 && updates == 0 && deletes == 0) {
-                    prefix = "Adding";
-                }
-                else if (adds == 0 && updates == 1 && deletes == 0) {
-                    prefix = "Updating";
-                }
-                else {
-                    prefix = "Modifying";
-
-                    String tmp = (adds == 1) ? "\"" + fileName + "\"" : String.valueOf(adds);
-                    detail = (adds > 0 ? "Added " + tmp : "");
-
-                    tmp = (updates == 1) ? "\"" + fileName + "\"" : String.valueOf(updates);
-                    detail += (updates > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Updated " + tmp : "");
-
-                    detail += (deletes > 0 ? (StringUtils.isBlank(detail) ? "" : ", ") + "Deleted " + deletes : "");
-                }
-
-                commit.setBranch(project.getDefaultBranch());
-                commit.setCommitMessage(prefix + " Hosted Files: " + detail);
-            }
-
-            // override repo link, no matter what
-            if (!StringUtils.isBlank(project.getWebUrl()))
-                md.setRepositoryLink(project.getWebUrl());
-            else
-                throw new Exception("Unable to determine GitLab Repository URL!");
-
-            // commit file actions, as needed
-            glApi.commitFiles(commit);
-
-        } catch ( Exception e ) {
-            // replace non-obvious 'name' with 'software_title' for user clarity
-            String eMsg = e.getMessage();
-            eMsg = eMsg.replaceFirst("'name'", "'software_title'");
-            throw new Exception(eMsg);
         }
     }
 
