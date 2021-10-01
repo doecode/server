@@ -2734,6 +2734,9 @@ public class Metadata {
         boolean licenseContactRequired = false;
         boolean isClosedSource = (projectType != null && projectType.startsWith("C"));
         boolean hasLicenseContactEmail = (!StringUtils.isEmpty(licenseContactEmail));
+        
+        boolean hasLandingPage = (!StringUtils.isEmpty(m.getLandingPage()));
+        boolean hasLandingContact = (!StringUtils.isEmpty(m.getLandingContact()));
 
         if (isClosedSource && hasLicenseContactEmail)
             licenseRequired = false;
@@ -2744,6 +2747,8 @@ public class Metadata {
         List<String> reasons = new ArrayList<>();
         if (null==m.getProjectType())
             reasons.add("Missing Source Project Type.");
+        if (hasLandingPage && hasLandingContact)
+            reasons.add("Closed Source project may have Landing Page or Contact Email, but not both.");
         if (StringUtils.isBlank(m.getSoftwareTitle()))
             reasons.add("Software title is required.");
         if (StringUtils.isBlank(m.getDescription()))

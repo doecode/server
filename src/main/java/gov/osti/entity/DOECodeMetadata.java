@@ -176,6 +176,7 @@ public class DOECodeMetadata implements Serializable {
     private Boolean openSource = null;
     private String  repositoryLink = null;
     private String landingPage = null;
+    private String landingContact = null;
     private ProjectType projectType = null;
     // the SOFTWARE TYPE
     private Type softwareType;
@@ -717,6 +718,15 @@ public class DOECodeMetadata implements Serializable {
 
 	public void setLandingPage(String landingPage) {
 		this.landingPage = landingPage;
+	}
+
+    @Column (name="LANDING_CONTACT")
+	public String getLandingContact() {
+		return landingContact;
+	}
+
+	public void setLandingContact(String landingContact) {
+		this.landingContact = landingContact;
 	}
 
     @Enumerated (EnumType.STRING)
