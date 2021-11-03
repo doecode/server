@@ -20,6 +20,8 @@ import javax.persistence.Table;
     ,
     @NamedQuery(name = "Site.findBySiteCode", query = "SELECT s FROM Site s WHERE s.siteCode = :site")
     ,
+    @NamedQuery(name = "Site.findWithSoftwareGroupEmail", query = "SELECT s FROM Site s WHERE s.softwareGroupEmail IS NOT NULL ORDER BY s")
+    ,
     @NamedQuery(name = "Site.findAll", query = "SELECT s FROM Site s ORDER BY s")
     ,
     @NamedQuery(name = "Site.findStandard", query = "SELECT s FROM Site s WHERE s.standardUsage = true ORDER BY s")
@@ -34,6 +36,7 @@ public class Site implements Serializable {
     private String lab;
     private boolean standardUsage = false;
     private boolean hqUsage = false;
+    private String softwareGroupEmail;
 
     public Site() {
     }
@@ -106,5 +109,14 @@ public class Site implements Serializable {
 
     public void setHqUsage(boolean usage) {
         this.hqUsage = usage;
+    }
+
+    @Column(name = "SOFTWARE_GROUP_EMAIL")
+    public String getSoftwareGroupEmail() {
+        return softwareGroupEmail;
+    }
+
+    public void setSoftwareGroupEmail(String email) {
+        this.softwareGroupEmail = email;
     }
 }

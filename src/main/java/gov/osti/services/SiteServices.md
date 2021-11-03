@@ -94,7 +94,7 @@ API calls to manage site information; update information.
  `POST /doecodeapi/services/site/edit`
 
 Updates a Site in DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
-Supports POC updates.  Empty value/array will erase the data.  If successful, simply returns the new data.
+Supports Software Group Email, and POC updates.  Empty value/array will erase the data.  If successful, simply returns the new data.
 
 > Request:
 ```
@@ -111,7 +111,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 ```
 ```json
-[{"site_code": "ABCD","poc_emails": []},{"site_code": "EFGH","poc_emails": ["new@email.gov"]}]
+[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"]}]
 ```
 
 <p id='site-services-on-update-site-on-success'>
@@ -123,7 +123,7 @@ On success, JSON containing the updated Site information is returned.
  `PUT /doecodeapi/services/site/new`
 
 Adds a Site to DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
-Supports Site Code, Lab Name, Standard flag, HQ flag, and POC list.  If successful, simply returns the new data.
+Supports Site Code, Lab Name, Software Group Email, Standard flag, HQ flag, and POC list.  If successful, simply returns the new data.
 
 > Request:
 ```
@@ -131,7 +131,7 @@ PUT /doecodeapi/services/site/new
 Content-Type: application/json
 ```
 ```json
-[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"]]
+[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"], "software_group_email": "another@email.gov"}]
 ```
 
 > Response:
@@ -140,7 +140,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 ```
 ```json
-[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"]]
+[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"], "software_group_email": "another@email.gov"}]
 ```
 
 <p id='site-services-on-update-site-on-success'>

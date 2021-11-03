@@ -1,6 +1,8 @@
 package gov.osti.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import javax.persistence.EntityManager;
 import javax.ws.rs.Consumes;
@@ -139,6 +141,58 @@ public class SiteServices {
     }
 
     /**
+     * Query to get SOFTWARE GROUP EMAIL info.
+     *
+     * Response Codes:
+     * 200 - OK, JSON contains SITE CODE, SOFTWARE GROUP EMAIL
+     * 500 - Internal service error
+     *
+     * @return Array of JSON; empty array if not found
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/list")
+    public Response getSpecificSiteInfo() {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        ArrayNode return_data = mapper.createArrayNode();
+
+        try {
+
+            TypedQuery<Site> query = em.createNamedQuery("Site.findWithSoftwareGroupEmail", Site.class);
+
+            // look up the Sites
+            try {
+                List<Site> sites = query.getResultList();
+
+                for (Site site:sites) {
+                    ObjectNode sub_data = mapper.createObjectNode();
+                    sub_data.put("site_code", site.getSiteCode());
+                    sub_data.put("software_group_email", site.getSoftwareGroupEmail());
+                    return_data.add(sub_data);
+                }                
+        
+            } catch (Exception e) {
+                return ErrorResponse
+                        .badRequest("Error while gathering Site Software Group Email info.")
+                        .build();
+            }
+
+            // return the results back
+            return Response
+                    .ok()
+                    .entity(mapper.writeValueAsString(return_data))
+                    .build();
+        } catch (JsonProcessingException e) {
+            log.error("Software Group Email Site Lookup Error", e);
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+
+    /**
      * Processes Site edits to a siteCode. May contain array of SITE EDIT REQUESTs.
      *
      * Response Codes:
@@ -181,6 +235,7 @@ public class SiteServices {
             for (SiteEditRequest req : requests) {
                 List<String> emails = req.getPocEmails();
                 List<String> emailDomains = req.getEmailDomains();
+                String softwareGroupEmail = req.getSoftwareGroupEmail();
                 String siteCode = req.getSiteCode();
 
                 TypedQuery<Site> query = em.createNamedQuery("Site.findBySiteCode", Site.class)
@@ -205,6 +260,14 @@ public class SiteServices {
                     if ( site == null ) {
                         return ErrorResponse
                                 .status(Response.Status.BAD_REQUEST, "A Site with code ["+ siteCode +"] does not exists.")
+                                .build();
+                    }
+        
+                    if (softwareGroupEmail != null) {
+                        // email must be a valid one
+                        if (!Validation.isValidEmail(softwareGroupEmail))
+                        return ErrorResponse
+                                .badRequest("Invalid Software Group Email address ["+ softwareGroupEmail +"] for Site ["+ siteCode +"].")
                                 .build();
                     }
 
@@ -258,7 +321,7 @@ public class SiteServices {
                     site.setLab(req.getLabName());
                     site.setPocEmails(req.getPocEmails());
                     site.setEmailDomains(req.getEmailDomains());
-                    site.setPocEmails(emails);
+                    site.setSoftwareGroupEmail(req.getSoftwareGroupEmail());
                 } catch (Exception e) {
                     return ErrorResponse
                             .badRequest("site_code: '" + siteCode + "' update failed: " + e.getMessage())
@@ -331,7 +394,7 @@ public class SiteServices {
             for (SiteEditRequest req : requests) {
                 List<String> emails = req.getPocEmails();
                 List<String> emailDomains = req.getEmailDomains();
-            log.error("Persistence Error Updating POC Emails", e);
+                String softwareGroupEmail = req.getSoftwareGroupEmail();
                 String siteCode = req.getSiteCode();
 
                 TypedQuery<Site> query = em.createNamedQuery("Site.findBySiteCode", Site.class)
@@ -356,6 +419,14 @@ public class SiteServices {
                     if ( site != null ) {
                         return ErrorResponse
                                 .status(Response.Status.BAD_REQUEST, "A Site with code ["+ siteCode +"] already exists.")
+                                .build();
+                    }
+        
+                    if (softwareGroupEmail != null) {
+                        // email must be a valid one
+                        if (!Validation.isValidEmail(softwareGroupEmail))
+                        return ErrorResponse
+                                .badRequest("Invalid Software Group Email address ["+ softwareGroupEmail +"] for Site ["+ siteCode +"].")
                                 .build();
                     }
 
@@ -405,6 +476,7 @@ public class SiteServices {
                     site.setLab(req.getLabName());
                     site.setPocEmails(req.getPocEmails());
                     site.setEmailDomains(req.getEmailDomains());
+                    site.setSoftwareGroupEmail(req.getSoftwareGroupEmail());
                 } catch (Exception e) {
                     return ErrorResponse
                             .badRequest("site_code: '" + siteCode + "' addition failed: " + e.getMessage())
@@ -440,6 +512,7 @@ public class SiteServices {
      * siteCode - desired siteCode to alter
      * labName - desired Lab Name value
      * pocEmails - array of pocEmails to associate to the siteCode
+     * softwareGroupEmail - desired Software Group Email value
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class SiteEditRequest implements Serializable {
@@ -450,6 +523,7 @@ public class SiteServices {
         private List<String> pocEmails;
         private boolean standardUsage = false;
         private boolean hqUsage = false;
+        private String softwareGroupEmail;
 
         public SiteEditRequest() {
         }
@@ -555,6 +629,20 @@ public class SiteServices {
          */    
         public void setHqUsage(boolean usage) {
             this.hqUsage = usage;
+        }
+
+        /**
+         * @return the softwareGroupEmail
+         */
+        public String getSoftwareGroupEmail() {
+            return softwareGroupEmail;
+        }
+
+        /**
+         * @param email associated to a siteCode
+         */
+        public void setSoftwareGroupEmail(String email) {
+            this.softwareGroupEmail = email;
         }
 
     }
