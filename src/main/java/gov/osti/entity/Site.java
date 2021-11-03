@@ -1,6 +1,7 @@
 package gov.osti.entity;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -72,6 +73,9 @@ public class Site implements Serializable {
     }
 
     public void setPocEmails(List<String> pocEmails) {
+        if (pocEmails == null)
+            pocEmails = new ArrayList<>();
+
         for (int i = 0; i < pocEmails.size(); i++)
             pocEmails.set(i, pocEmails.get(i).toLowerCase());
 

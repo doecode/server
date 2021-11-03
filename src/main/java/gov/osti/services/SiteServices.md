@@ -89,12 +89,12 @@ Authenticated OSTI role end point, retrieves Site information for a specific sit
 
 API calls to manage site information; update information.
 
-### update
+### edit
 
- `POST /doecodeapi/services/site/update`
+ `POST /doecodeapi/services/site/edit`
 
 Updates a Site in DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
-Currently only supports POC updates.  Empty value/array will erase the data.  If successful, simply returns the new data.
+Supports POC updates.  Empty value/array will erase the data.  If successful, simply returns the new data.
 
 > Request:
 ```
@@ -112,6 +112,35 @@ Content-Type: application/json
 ```
 ```json
 [{"site_code": "ABCD","poc_emails": []},{"site_code": "EFGH","poc_emails": ["new@email.gov"]}]
+```
+
+<p id='site-services-on-update-site-on-success'>
+On success, JSON containing the updated Site information is returned.
+</p>
+
+### new
+
+ `PUT /doecodeapi/services/site/new`
+
+Adds a Site to DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
+Supports Site Code, Lab Name, Standard flag, HQ flag, and POC list.  If successful, simply returns the new data.
+
+> Request:
+```
+PUT /doecodeapi/services/site/new
+Content-Type: application/json
+```
+```json
+[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"]]
+```
+
+> Response:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+[{"site_code": "ABCD"},{"site_code": "EFGH","poc_emails": ["new@email.gov"]]
 ```
 
 <p id='site-services-on-update-site-on-success'>
