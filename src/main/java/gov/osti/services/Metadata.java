@@ -2078,8 +2078,13 @@ public class Metadata {
             md.setWorkflowStatus(Status.Announced);
             // set the SITE
             md.setSiteOwnershipCode(user.getSiteId());
-            // if there is NO DOI set, get one
-            if (StringUtils.isEmpty(md.getDoi())) {
+            // if there is NO DOI set, get one, if not Limited
+            boolean isUNL = false;
+            List<String> accessLimitationsList = md.getAccessLimitations();
+            if (accessLimitationsList != null) {
+                isUNL = accessLimitationsList.contains("UNL");
+            }
+            if (StringUtils.isEmpty(md.getDoi()) && isUNL) {
                 DoiReservation reservation = getReservedDoi();
                 if (null==reservation)
                     throw new IOException ("DOI reservation failure.");
