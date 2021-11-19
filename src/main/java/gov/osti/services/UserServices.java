@@ -311,6 +311,12 @@ public class UserServices {
                     .badRequest("Invalid login request.")
                     .build();
         }
+
+        // lookup Software Group Email
+        Site site = findUserSoftwareGroupBySite(user.getSiteId());
+        String software_group_email = null;
+        if (site != null)
+            software_group_email = site.getSoftwareGroupEmail();
     
         String xsrfToken = DOECodeCrypt.nextRandomString();
         String accessToken = DOECodeCrypt.generateLoginJWT(user.getApiKey(), xsrfToken);
@@ -323,6 +329,7 @@ public class UserServices {
                         .createObjectNode()
                         .put("xsrfToken", xsrfToken)
                         .put("site", user.getSiteId())
+                        .put("software_group_email", software_group_email)                        
                         .put("userid", user.getUserId())
                         .put("email", user.getEmail())
                         .put("first_name", user.getFirstName())
@@ -1778,6 +1785,49 @@ public class UserServices {
             return u;
         } catch ( Exception e ) {
             log.warn("Error locating user : " + email, e);
+            return null;
+        }
+    }
+
+    /**
+     * Locate a User's Software Group Email by SITE code.
+     * 
+     * @param site the SITE CODE to look for
+     * @return a Site object if possible or null if not found or errors
+     */
+    protected static Site findUserSoftwareGroupBySite(String site) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        
+        try {
+            return findUserSoftwareGroupBySite(em, site);
+        } finally {
+            em.close();
+        }
+    }
+
+    /**
+     * Locate a User's Software Group Email by SITE code.
+     * 
+     * @param em the ENTITY MANAGER to use if ATTACHED object is needed
+     * @param site the SITE to look for
+     * @return a Site object if possible or null if not found or errors
+     */
+    private static Site findUserSoftwareGroupBySite(EntityManager em, String site) {        
+        try {
+            TypedQuery<Site> q = em.createNamedQuery("Site.findBySiteCode", Site.class)
+                    .setParameter("site", site);
+
+            // if no site, send back a 404 response
+            List<Site> sites = q.getResultList();
+            if (sites.isEmpty())
+                throw new Exception("No sites found.");
+            
+            // should just be one
+            Site s = sites.get(0);
+
+            return s;
+        } catch ( Exception e ) {
+            log.warn("Error locating site : " + site, e);
             return null;
         }
     }
