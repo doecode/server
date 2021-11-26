@@ -1166,6 +1166,15 @@ public class Metadata {
                      Status.Approved.equals(emd.getWorkflowStatus())))
                     md.setDoi(emd.getDoi());
 
+                // these fields WILL NOT CHANGE on edit/update, unless RecordAdmin
+                List<String> newAccessLims = md.getAccessLimitations();
+                List<String> currentAccessLims = emd.getAccessLimitations();
+                if (currentAccessLims != null && !currentAccessLims.isEmpty() && !user.hasRole("RecordAdmin")) {
+                    if (!(newAccessLims.size() == currentAccessLims.size() && newAccessLims.containsAll(currentAccessLims) && currentAccessLims.containsAll(newAccessLims))) {
+                        throw new BadRequestException (ErrorResponse.badRequest("User may not change Access Limitations once Submitted or Announced. Please contact support for assistance.").build());
+                    }
+                }
+
                 // do not modify AutoBackfill RI info
                 List<RelatedIdentifier> originalList = emd.getRelatedIdentifiers();
                 List<RelatedIdentifier> newList = md.getRelatedIdentifiers();
