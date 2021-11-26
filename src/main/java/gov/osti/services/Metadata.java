@@ -2001,19 +2001,6 @@ public class Metadata {
                         .build();
             }
 
-            // send to DataCite if needed (and there is a RELEASE DATE set)
-            if ( null!=md.getDoi() && null!=md.getReleaseDate() ) {
-                try {
-                    DataCite.register(md);
-                } catch ( IOException e ) {
-                    // tell why the DataCite registration failed
-                    log.warn("DataCite ERROR: " + e.getMessage());
-                    return ErrorResponse
-                            .internalServerError("The DOI registration service is currently unavailable, please try to submit your record later. If the issue persists, please contact doecode@osti.gov.")
-                            .build();
-                }
-            }
-
             // store the snapshot copy of Metadata
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
@@ -2191,18 +2178,6 @@ public class Metadata {
                         .build();
             }
 
-            // send any updates to DataCite as well (if RELEASE DATE is set)
-            if (StringUtils.isNotEmpty(md.getDoi()) && null!=md.getReleaseDate()) {
-                try {
-                    DataCite.register(md);
-                } catch ( IOException e ) {
-                    // if DataCite registration failed, say why
-                    log.warn("DataCite ERROR: " + e.getMessage());
-                    return ErrorResponse
-                            .internalServerError("The DOI registration service is currently unavailable, please try to submit your record later. If the issue persists, please contact doecode@osti.gov.")
-                            .build();
-                }
-            }
             // store the snapshot copy of Metadata in SPECIAL STATUS
             MetadataSnapshot snapshot = new MetadataSnapshot();
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
@@ -2504,6 +2479,19 @@ public class Metadata {
 
             // persist this to the database, as validations should already be complete at this stage.
             store(em, md, user);
+
+            // send any updates to DataCite as well (if RELEASE DATE is set)
+            if (StringUtils.isNotEmpty(md.getDoi()) && null!=md.getReleaseDate()) {
+                try {
+                    DataCite.register(md);
+                } catch ( IOException e ) {
+                    // if DataCite registration failed, say why
+                    log.warn("DataCite ERROR: " + e.getMessage());
+                    return ErrorResponse
+                            .internalServerError("The DOI registration service is currently unavailable, please try to submit your record later. If the issue persists, please contact doecode@osti.gov.")
+                            .build();
+                }
+            }
 
             // prior to updating snapshot, gather RI List for backfilling
             List<RelatedIdentifier> previousRiList = getPreviousRiList(em, md);
