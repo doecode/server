@@ -1263,7 +1263,7 @@ public class Metadata {
      * @param archiveContainer (optional) the Container recently uploaded to ARCHIVE, or null if none
      * @throws IOException on IO transmission errors
      */
-    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer, String lastEditor) throws IOException {
+    private static void sendToArchiver(Long codeId, String repositoryLink, File archiveFile, File archiveContainer, String lastEditor, boolean isLimited) throws IOException {
         if ( "".equals(ARCHIVER_URL) )
             return;
 
@@ -1292,6 +1292,7 @@ public class Metadata {
             if (!StringUtils.isEmpty(lastEditor)) {
                 request.put("last_editor", lastEditor);
             }
+            request.put("is_limited", isLimited);
 
             // determine if there's a file to send or not
             if (null==archiveFile && null==archiveContainer) {
@@ -1990,7 +1991,9 @@ public class Metadata {
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
-                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
+                List<String> accessLims = md.getAccessLimitations();
+                boolean isLimited = accessLims != null && !accessLims.isEmpty() && !accessLims.contains("UNL");
+                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor(), isLimited);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
@@ -2178,7 +2181,9 @@ public class Metadata {
                 // if a FILE or CONTAINER was sent, create a File Object from it
                 File archiveFile = (null==file) ? null : new File(fullFileName);
                 File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
-                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor());
+                List<String> accessLims = md.getAccessLimitations();
+                boolean isLimited = accessLims != null && !accessLims.isEmpty() && !accessLims.contains("UNL");
+                sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor(), isLimited);
             } catch ( IOException e ) {
                 log.error("Archiver call failure: " + e.getMessage());
                 return ErrorResponse
