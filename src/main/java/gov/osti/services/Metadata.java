@@ -2889,6 +2889,8 @@ public class Metadata {
             else if (Validation.isDisallowedUrl(m.getLandingPage()))
                 reasons.add("A Landing Page URL from this domain is not allowed.");
         }
+        if (!StringUtils.isBlank(m.getRepositoryLink()) && !StringUtils.isBlank(m.getLandingPage()))
+            reasons.add("Project must not contain both Repository URL and Landing Page URL.");
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
