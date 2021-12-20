@@ -2094,7 +2094,7 @@ public class Metadata {
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
             snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setDoi(md.getDoi());
-            snapshot.setDoiIsMinted(md.getReleaseDate() != null);
+            snapshot.setDoiIsMinted(StringUtils.isNotBlank(md.getDoi()) && md.getReleaseDate() != null);
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -2271,7 +2271,7 @@ public class Metadata {
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
             snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setDoi(md.getDoi());
-            snapshot.setDoiIsMinted(md.getReleaseDate() != null);
+            snapshot.setDoiIsMinted(StringUtils.isNotBlank(md.getDoi()) && md.getReleaseDate() != null);
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
@@ -2589,7 +2589,7 @@ public class Metadata {
             snapshot.getSnapshotKey().setCodeId(md.getCodeId());
             snapshot.getSnapshotKey().setSnapshotStatus(md.getWorkflowStatus());
             snapshot.setDoi(md.getDoi());
-            snapshot.setDoiIsMinted(md.getReleaseDate() != null);
+            snapshot.setDoiIsMinted(StringUtils.isNotBlank(md.getDoi()) && md.getReleaseDate() != null);
             snapshot.setJson(md.toJson().toString());
 
             em.merge(snapshot);
