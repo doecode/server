@@ -30,11 +30,14 @@ import gov.osti.entity.Award;
 import gov.osti.entity.ChangeLog;
 import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.MetadataSnapshot;
+import gov.osti.entity.MetadataSnapshotKey;
 import gov.osti.entity.OfficialUseOnly;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.DOECodeMetadata.Status;
+import gov.osti.entity.MetadataTombstone;
+import gov.osti.entity.MetadataTombstoneKey;
 import gov.osti.entity.RelatedIdentifier.RelationType;
 import gov.osti.entity.Developer;
 import gov.osti.entity.DoiReservation;
@@ -88,6 +91,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -95,6 +99,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
@@ -102,6 +107,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -166,8 +172,20 @@ public class Metadata {
     private static final String EMAIL_FROM = DoeServletContextListener.getConfigurationProperty("email.from");
     // EMAIL address to send to for SUBMISSION/ANNOUNCE
     private static final String EMAIL_SUBMISSION = DoeServletContextListener.getConfigurationProperty("email.notification");
+    // EMAIL address to send to for DELETE/HIDE/UNHIDE
+    private static final String EMAIL_STATE_CHANGE = DoeServletContextListener.getConfigurationProperty("email.state.notification");
     // URL to indexer services, if configured
     private static String INDEX_URL = DoeServletContextListener.getConfigurationProperty("index.url");
+    // URL to indexer services, for removals, if configured
+    private static String INDEX_REMOVAL_URL = DoeServletContextListener.getConfigurationProperty("index.removal.url");
+    // SQL used to hide/unhide records in OSTI
+    private static String OSTI_HIDE_SQL = DoeServletContextListener.getConfigurationProperty("osti.hide.sql");
+    // SQL used to delete records from OSTI
+    private static String OSTI_REMOVAL_SQL = DoeServletContextListener.getConfigurationProperty("osti.removal.sql");
+    // URL to Datacite admin services, if configured
+    private static String DATACITE_DOI_EDIT = DoeServletContextListener.getConfigurationProperty("datacite.doi.edit");
+    // URL to biblio
+    private static String DATACITE_BASE_URL = DoeServletContextListener.getConfigurationProperty("datacite.baseurl");
     // absolute filesystem location to store uploaded files, if any
     private static String FILE_UPLOADS = DoeServletContextListener.getConfigurationProperty("file.uploads");
     // absolute filesystem location to store uploaded container images, if any
@@ -1422,6 +1440,49 @@ public class Metadata {
     }
 
     /**
+     * Remove this CODE ID from ARCHIVER external support process.
+     *
+     * Needs a CODE ID.
+     *
+     * @param codeId the CODE ID for this METADATA
+     * @throws IOException on IO transmission errors
+     */
+    private static void removeFromArchiver(Long codeId, String lastEditor) throws IOException {
+        // set up a connection
+        CloseableHttpClient hc =
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(RequestConfig
+                        .custom()
+                        .setSocketTimeout(300000)
+                        .setConnectTimeout(300000)
+                        .setConnectionRequestTimeout(300000)
+                        .build())
+                .build();
+
+        try {
+            HttpDelete del = new HttpDelete(ARCHIVER_URL + "/code_id/" + codeId + "?user=" + URLEncoder.encode(lastEditor, "UTF-8"));
+
+            HttpResponse response = hc.execute(del);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            if (HttpStatus.SC_OK!=statusCode && HttpStatus.SC_CREATED!=statusCode) {
+                throw new IOException ("Archiver Delete Error: " + EntityUtils.toString(response.getEntity()));
+            }
+        } catch ( IOException e ) {
+            log.warn("Archiver Delete request error: " + e.getMessage());
+            throw e;
+        } finally {
+            try {
+                if (null!=hc) hc.close();
+            } catch ( IOException e ) {
+                log.warn("Close Error: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
      * Validate accepted file types.
      *
      * @param fileName the uploaded filename to evaluate.
@@ -1837,6 +1898,61 @@ public class Metadata {
 
             // restore manipulated lists from backup info
             md.setRelatedIdentifiers(originalRi);
+        }
+    }
+
+    /**
+     * Attempt to remove this Metadata information from the indexing service configured.
+     * If no service is configured, do nothing.
+     *
+     * @param codeId the CODE ID to remove from index
+     */
+    private static void removeFromIndex(Long codeId) {
+        // if indexing is not configured, skip this step
+        if ("".equals(INDEX_REMOVAL_URL))
+            return;
+
+        // set some reasonable default timeouts
+        RequestConfig rc = RequestConfig
+                .custom()
+                .setSocketTimeout(60000)
+                .setConnectTimeout(60000)
+                .setConnectionRequestTimeout(60000)
+                .build();
+        // create an HTTP client to request through
+        CloseableHttpClient hc =
+                HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(rc)
+                .build();
+
+        try {
+            // construct a POST submission to the indexer service
+            HttpPost post = new HttpPost(INDEX_REMOVAL_URL);
+            post.setHeader("Content-Type", "application/json");
+            post.setHeader("Accept", "application/json");
+            // create JSON delete command
+            ObjectNode deleteNode = mapper.createObjectNode();
+            ObjectNode queryNode = mapper.createObjectNode();
+            queryNode.put("query", "codeId:" + codeId);
+            deleteNode.put("delete", queryNode);
+            
+            post.setEntity(new StringEntity(deleteNode.toString(), "UTF-8"));
+
+            HttpResponse response = hc.execute(post);
+
+            if ( HttpStatus.SC_OK!=response.getStatusLine().getStatusCode() ) {
+                log.warn("Index Removal Error occurred for ID=" + codeId);
+                log.warn("Message: " + EntityUtils.toString(response.getEntity()));
+            }
+        } catch ( IOException e ) {
+            log.warn("Index Removal Error: " + e.getMessage() + " ID=" + codeId);
+        } finally {
+            try {
+                if (null!=hc) hc.close();
+            } catch ( IOException e ) {
+                log.warn("Index Removal Close Error: " + e.getMessage());
+            }
         }
     }
 
@@ -2637,6 +2753,507 @@ public class Metadata {
         }
     }
 
+    /**
+     * HIDE endpoint; sends the Metadata of a targeted project to hidden state.
+     *
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * as RECORD ADMIN.
+     *
+     * @param codeId the CODE ID of the record to HIDE.
+     * @return a Response containing the JSON of the record if successful, or
+     * error information if not
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @GET
+    @Path ("/hide/{codeId}")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    @RequiresRoles("RecordAdmin")
+    public Response hide(@PathParam("codeId") Long codeId, @QueryParam("restricted") boolean restrict) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+
+        try {
+            MetadataTombstoneKey mtk = new MetadataTombstoneKey();
+            mtk.setCodeId(codeId);
+            mtk.setTombstoneStatus(MetadataTombstone.Status.Hidden);
+            MetadataTombstone mth = em.find(MetadataTombstone.class, mtk);
+
+            // if already hidden, do nothing
+            if (mth != null) {
+                return ErrorResponse
+                        .status(Response.Status.INTERNAL_SERVER_ERROR, "Record is already hidden.")
+                        .build();
+            }
+
+            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+
+            if ( null==md )
+                return ErrorResponse
+                        .notFound("Code ID not on file.")
+                        .build();
+
+            ObjectNode data = mapper.createObjectNode();
+
+
+            // gather snapshot data
+            TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Announced);
+            List<MetadataSnapshot> snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean everAnnounced = snapshotResults.size() > 0;
+
+            querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Approved);
+            snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean everApproved = snapshotResults.size() > 0;
+
+            
+            // if ever announced and approved, remove from OSTI
+            if (everAnnounced && everApproved) {
+                data.put("remove_from_osti", String.format(OSTI_HIDE_SQL, "true", "Hidden", codeId));
+            }
+
+            // remove from Datacite, if approved with DOI and release date
+            if (everApproved) {
+                MetadataSnapshot ms = snapshotResults.get(0);
+                if (DataCite.canRegister(ms.getDoi()) && ms.getDoiIsMinted()) {
+                    data.put("update_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(ms.getDoi()));
+                }
+            }
+
+            // remove from index, if ever approved
+            if (everApproved) {
+                data.put("removed_from_index", DATACITE_BASE_URL + codeId);
+                removeFromIndex(codeId);
+            }
+
+
+            em.getTransaction().begin();
+
+            // if APPROVED, we need to hide the Snapshot record, to prevent re-indexing.
+            String approvedJson = null;
+            if (everApproved) {
+                MetadataSnapshot snap = snapshotResults.get(0);
+
+                // store the snapshot copy of APPROVED MetadataSnapshot, without changing dates
+                MetadataSnapshot snapshot = new MetadataSnapshot();
+                snapshot.getSnapshotKey().setCodeId(snap.getSnapshotKey().getCodeId());
+                snapshot.getSnapshotKey().setSnapshotStatus(DOECodeMetadata.Status.Hidden);
+                snapshot.setDoi(snap.getDoi());
+                snapshot.setDoiIsMinted(snap.getDoiIsMinted());
+                approvedJson = snap.getJson();
+                snapshot.setJson(approvedJson);
+                snapshot.setHideAction(true);
+                snapshot.setDateRecordAdded(snap.getDateRecordAdded());
+                snapshot.setDateRecordUpdated(snap.getDateRecordUpdated());
+
+                em.persist(snapshot);
+                em.remove(snap);
+            }
+
+            em.remove(md);
+          
+
+            // store the Tombstone copy of Metadata and Approved data, if available
+            MetadataTombstone tombstone = new MetadataTombstone();
+            tombstone.getTombstoneKey().setCodeId(md.getCodeId());
+            tombstone.getTombstoneKey().setTombstoneStatus(MetadataTombstone.Status.Hidden);
+            tombstone.setDoi(md.getDoi());
+            tombstone.setDoiIsMinted(StringUtils.isNotBlank(md.getDoi()) && md.getReleaseDate() != null);
+            tombstone.setJson(md.toJson().toString());
+            if (everApproved)
+                tombstone.setApprovedJson(approvedJson);                
+            tombstone.setRestrictedMetadata(restrict);
+
+            em.persist(tombstone);
+
+            // if we make it this far, go ahead and commit the transaction
+            em.getTransaction().commit();
+
+            // send HIDE notification
+            if (everApproved) {
+                DOECodeMetadata mda = DOECodeMetadata.parseJson(new StringReader(approvedJson));
+                sendStateNotification(mda, "HIDDEN", user.getEmail(), data);
+            }
+            else {
+                sendStateNotification(md, "HIDDEN", user.getEmail(), data);
+            }
+
+            // and we're happy
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
+        } catch ( IOException e ) {
+            return ErrorResponse
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .build();
+        } catch ( NotFoundException e ) {
+            return ErrorResponse
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+
+    /**
+     * UNHIDE endpoint; sends the Metadata of a targeted project to unhidden state.
+     *
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * as RECORD ADMIN.
+     *
+     * @param codeId the CODE ID of the record to UNHIDE.
+     * @return a Response containing the JSON of the record if successful, or
+     * error information if not
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @GET
+    @Path ("/unhide/{codeId}")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    @RequiresRoles("RecordAdmin")
+    public Response unhide(@PathParam("codeId") Long codeId) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+
+        try {
+            MetadataTombstoneKey mtk = new MetadataTombstoneKey();
+            mtk.setCodeId(codeId);
+            mtk.setTombstoneStatus(MetadataTombstone.Status.Hidden);
+            MetadataTombstone mth = em.find(MetadataTombstone.class, mtk);
+
+            // if not already hidden, do nothing
+            if (mth == null) {
+                return ErrorResponse
+                        .notFound("Record is NOT hidden.")
+                        .build();
+            }
+
+            mtk.setCodeId(codeId);
+            mtk.setTombstoneStatus(MetadataTombstone.Status.Unhidden);
+            MetadataTombstone mtu = em.find(MetadataTombstone.class, mtk);
+
+
+            DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(mth.getJson()));
+            DOECodeMetadata mda = null;
+
+            ObjectNode data = mapper.createObjectNode();
+
+
+            // gather snapshot data
+            TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Announced);
+            List<MetadataSnapshot> snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean everAnnounced = snapshotResults.size() > 0;
+
+            querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Hidden);
+            snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean everApproved = snapshotResults.size() > 0;
+
+            // if ever approved, get approved metadata
+            String approvedJson = null;
+            boolean everMinted = false;
+            if (everApproved) {
+                MetadataSnapshot snap = snapshotResults.get(0);
+                approvedJson = snap.getJson();
+                everMinted = snap.getDoiIsMinted();
+                mda = DOECodeMetadata.parseJson(new StringReader(approvedJson));
+            }
+
+          
+            // if ever announced and approved, restore OSTI
+            if (everAnnounced && everApproved) {
+                data.put("restore_to_osti", String.format(OSTI_HIDE_SQL, "false", "Unhidden", codeId));
+            }
+
+            // restore to Datacite, if approved with DOI and release date
+            if (everApproved && everMinted && DataCite.canRegister(mda.getDoi())) {
+                try {
+                    data.put("restore_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(mda.getDoi()));
+                    DataCite.register(mda);
+                } catch ( IOException e ) {
+                    // if DataCite registration failed, say why
+                    log.warn("DataCite UNHIDE ERROR: " + e.getMessage());
+                    return ErrorResponse
+                            .internalServerError("The DOI registration service is currently unavailable, please try to submit your record later. If the issue persists, please contact doecode@osti.gov.")
+                            .build();
+                }
+            }
+
+            // restore to index, if ever approved
+            if (everApproved) {
+                data.put("restore_to_index", DATACITE_BASE_URL + codeId);
+                sendToIndex(em, mda);
+            }
+
+
+
+            // if previously unhidden, remove old record
+            if (mtu != null) {
+                em.getTransaction().begin();
+                em.remove(mtu);
+                em.getTransaction().commit();
+            }
+
+
+            // store new data
+            em.getTransaction().begin();
+
+            // remove old hidden record            
+            em.remove(mth);
+
+            // if APPROVED, we need to unhide the Snapshot record, to allow re-indexing.
+            if (everApproved) {
+                MetadataSnapshot snap = snapshotResults.get(0);
+
+                // store the snapshot copy of APPROVED MetadataSnapshot, without changing dates
+                MetadataSnapshot snapshot = new MetadataSnapshot();
+                snapshot.getSnapshotKey().setCodeId(snap.getSnapshotKey().getCodeId());
+                snapshot.getSnapshotKey().setSnapshotStatus(Status.Approved);
+                snapshot.setDoi(snap.getDoi());
+                snapshot.setDoiIsMinted(snap.getDoiIsMinted());
+                snapshot.setJson(snap.getJson());
+                snapshot.setHideAction(true);
+                snapshot.setDateRecordAdded(snap.getDateRecordAdded());
+                snapshot.setDateRecordUpdated(snap.getDateRecordUpdated());
+
+                em.persist(snapshot);
+                em.remove(snap);
+            }
+
+            // restore metadata
+            em.persist(md);
+          
+
+            // store the snapshot copy of Metadata and Approved data, if available
+            MetadataTombstone tombstone = new MetadataTombstone();
+            tombstone.getTombstoneKey().setCodeId(mth.getTombstoneKey().getCodeId());
+            tombstone.getTombstoneKey().setTombstoneStatus(MetadataTombstone.Status.Unhidden);
+            tombstone.setDoi(mth.getDoi());
+            tombstone.setDoiIsMinted(mth.getDoiIsMinted());
+            tombstone.setJson(mth.getJson());
+            if (everApproved)
+                tombstone.setApprovedJson(approvedJson);  
+            tombstone.setRestrictedMetadata(mth.getRestrictedMetadata());
+
+            em.persist(tombstone);
+
+            // if we make it this far, go ahead and commit the transaction
+            em.getTransaction().commit();
+
+            // send UNHIDE notification
+            if (everApproved) {
+                sendStateNotification(mda, "UNHIDDEN", user.getEmail(), data);
+            }
+            else {
+                sendStateNotification(md, "UNHIDDEN", user.getEmail(), data);
+            }
+
+            // and we're happy
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
+        } catch ( IOException e ) {
+            return ErrorResponse
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .build();
+        } catch ( NotFoundException e ) {
+            return ErrorResponse
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+
+    /**
+     * DELETE endpoint; sends the Metadata of a targeted project to History.
+     *
+     * Will return a FORBIDDEN response if the OWNER logged in does not match
+     * as RECORD ADMIN.
+     *
+     * @param codeId the CODE ID of the record to DELETE.
+     * @return a Response containing the JSON of the record if successful, or
+     * error information if not
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @DELETE
+    @Path ("{codeId}")
+    @Produces (MediaType.APPLICATION_JSON)
+    @RequiresAuthentication
+    @RequiresRoles("RecordAdmin")
+    public Response delete(@PathParam("codeId") Long codeId, @QueryParam("restricted") boolean restrict) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+
+        try {
+            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+
+            if ( null==md )
+                return ErrorResponse
+                        .notFound("Code ID not on file.")
+                        .build();
+
+            ObjectNode data = mapper.createObjectNode();
+
+            // handle upload file cleanup
+            java.nio.file.Path targetUploadDirectory = Paths.get(FILE_UPLOADS, String.valueOf(codeId));
+            java.nio.file.Path targetContainerUploadDirectory = Paths.get(CONTAINER_UPLOADS, String.valueOf(codeId));
+            java.nio.file.Path targetContainerApprovedUploadDirectory = Paths.get(CONTAINER_UPLOADS_APPROVED, String.valueOf(codeId));
+            if (Files.exists(targetUploadDirectory)) {
+                try {
+                    FileUtils.deleteDirectory(targetUploadDirectory.toFile());
+                    data.put("file_upload_dir", targetUploadDirectory.toString());
+                }
+                catch (Exception e) {
+                    data.put("failed_file_upload_dir", targetUploadDirectory.toString());
+                }
+            }
+            if (Files.exists(targetContainerUploadDirectory)) {
+                try {
+                    FileUtils.deleteDirectory(targetContainerUploadDirectory.toFile());
+                    data.put("container_upload_dir", targetContainerUploadDirectory.toString());
+                }
+                catch (Exception e) {
+                    data.put("failed_container_upload_dir", targetContainerUploadDirectory.toString());
+                }
+            }
+            if (Files.exists(targetContainerApprovedUploadDirectory)) {
+                try {
+                    FileUtils.deleteDirectory(targetContainerApprovedUploadDirectory.toFile());
+                    data.put("approved_container_dir", targetContainerApprovedUploadDirectory.toString());
+                }
+                catch (Exception e) {
+                    data.put("failed_approved_container_dir", targetContainerApprovedUploadDirectory.toString());
+                }
+            }
+
+            // handle archiver file cleanup
+            removeFromArchiver(codeId, user.getEmail());
+
+            MetadataSnapshot approvedSnap = null;
+
+            // gather snapshot data
+            TypedQuery<MetadataSnapshot> querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Announced);
+            List<MetadataSnapshot> snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean everAnnounced = snapshotResults.size() > 0;
+
+            querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Hidden);
+            snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean isHidden = snapshotResults.size() > 0;
+            if (isHidden) {
+                approvedSnap = snapshotResults.get(0);
+                isHidden = !StringUtils.isBlank(approvedSnap.getJson());
+            }
+
+            querySnapshot = em.createNamedQuery("MetadataSnapshot.findByCodeIdAndStatus", MetadataSnapshot.class)
+                .setParameter("codeId", codeId)
+                .setParameter("status", DOECodeMetadata.Status.Approved);
+            snapshotResults = querySnapshot.setMaxResults(1).getResultList();
+            boolean everApproved = snapshotResults.size() > 0;
+            if (everApproved) {
+                approvedSnap = snapshotResults.get(0);
+            }
+            everApproved = isHidden || everApproved;
+
+            
+            // if ever announced and approved, remove from OSTI
+            if (everAnnounced && everApproved) {
+                data.put("remove_from_osti", String.format(OSTI_REMOVAL_SQL, codeId));
+            }
+
+            // remove from Datacite, if approved with DOI and release date
+            if (everApproved) {
+                if (DataCite.canRegister(approvedSnap.getDoi()) && approvedSnap.getDoiIsMinted()) {
+                    data.put("update_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(approvedSnap.getDoi()));
+                }
+            }
+
+            // remove from index, if ever approved
+            if (everApproved) {
+                data.put("removed_from_index", DATACITE_BASE_URL + codeId);
+                removeFromIndex(codeId);
+            }
+
+
+            em.getTransaction().begin();
+
+            // remove record
+            em.remove(md);
+            
+            // remove snapshots
+            TypedQuery<MetadataSnapshot> querySnapshotRemovals = em.createNamedQuery("MetadataSnapshot.findAllByCodeId", MetadataSnapshot.class)
+                .setParameter("codeId", codeId);
+            List<MetadataSnapshot> snapshotRemovals = querySnapshotRemovals.getResultList();
+            
+            for (int i = 0; i < snapshotRemovals.size(); i++) {
+                MetadataSnapshot snap = snapshotRemovals.get(i);
+                em.remove(snap);
+            }
+
+            // store the snapshot copy of Metadata and Approved data, if available
+            MetadataTombstone tombstone = new MetadataTombstone();
+            tombstone.getTombstoneKey().setCodeId(md.getCodeId());
+            tombstone.getTombstoneKey().setTombstoneStatus(MetadataTombstone.Status.Deleted);
+            tombstone.setDoi(md.getDoi());
+            tombstone.setDoiIsMinted(StringUtils.isNotBlank(md.getDoi()) && md.getReleaseDate() != null);
+            tombstone.setJson(md.toJson().toString());
+            if (everApproved)
+                tombstone.setApprovedJson(approvedSnap.getJson());
+            tombstone.setRestrictedMetadata(restrict);
+
+            em.persist(tombstone);
+
+            // if we make it this far, go ahead and commit the transaction
+            em.getTransaction().commit();
+
+            // send DELETION notification
+            if (everApproved) {
+                DOECodeMetadata mda = DOECodeMetadata.parseJson(new StringReader(approvedSnap.getJson()));
+                sendStateNotification(mda, "DELETED", user.getEmail(), data);
+            }
+            else {
+                sendStateNotification(md, "DELETED", user.getEmail(), data);
+            }
+
+            // and we're happy
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
+        } catch ( IOException e ) {
+            return ErrorResponse
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .build();
+        } catch ( NotFoundException e ) {
+            return ErrorResponse
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+
 
     
     /**
@@ -3316,6 +3933,152 @@ public class Metadata {
             email.send();
         } catch ( EmailException e ) {
             log.error("Failed to send submission/announcement notification message for #" + md.getCodeId());
+            log.error("Message: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Send a NOTIFICATION EMAIL (if configured) when a record is DELETED/HIDDEN/UNHIDDEN.
+     *
+     * @param md the METADATA in question
+     */
+    private static void sendStateNotification(DOECodeMetadata md, String state, String user, ObjectNode data) {
+        HtmlEmail email = new HtmlEmail();
+        email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
+        email.setHostName(EMAIL_HOST);
+
+        Long codeId = md.getCodeId();
+        user = user != null ? user : "Unknown";
+
+        // if EMAIL or DESTINATION ADDRESS are not set, abort
+        if (StringUtils.isEmpty(EMAIL_HOST) ||
+            StringUtils.isEmpty(EMAIL_FROM) ||
+            StringUtils.isEmpty(EMAIL_STATE_CHANGE) ||
+            codeId == null)
+            return;
+
+        // get the SITE information
+        String siteCode = md.getSiteOwnershipCode();
+        Site site = SiteServices.findSiteBySiteCode(siteCode);
+        if (null == site) {
+            log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
+            return;
+        }
+        String lab = site.getLab();
+        lab = lab.isEmpty() ? siteCode : lab;
+
+        String fileInfo;
+        try {
+            fileInfo = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(data);
+        } catch (JsonProcessingException e1) {
+            fileInfo = "Metadata Delete Error:  Unable to retreive Deletion Info!";
+		}
+
+
+        String removed_from_index =  data.path("removed_from_index").isMissingNode() ? null : data.get("removed_from_index").asText();
+        String remove_from_osti = data.path("remove_from_osti").isMissingNode() ? null : data.get("remove_from_osti").asText();
+        String update_datacite = data.path("update_datacite").isMissingNode() ? null : data.get("update_datacite").asText();
+        
+        String restore_to_index =  data.path("restore_to_index").isMissingNode() ? null : data.get("restore_to_index").asText();
+        String restore_to_osti = data.path("restore_to_osti").isMissingNode() ? null : data.get("restore_to_osti").asText();
+        String restore_datacite = data.path("restore_datacite").isMissingNode() ? null : data.get("restore_datacite").asText();
+        
+        String file_upload_dir = data.path("file_upload_dir").isMissingNode() ? null : data.get("file_upload_dir").asText();
+        String container_upload_dir = data.path("container_upload_dir").isMissingNode() ? null : data.get("container_upload_dir").asText();
+        String approved_container_dir = data.path("approved_container_dir").isMissingNode() ? null : data.get("approved_container_dir").asText();
+
+        String failed_file_upload_dir = data.path("failed_file_upload_dir").isMissingNode() ? null : data.get("failed_file_upload_dir").asText();
+        String failed_container_upload_dir = data.path("failed_container_upload_dir").isMissingNode() ? null : data.get("failed_container_upload_dir").asText();
+        String failed_approved_container_dir = data.path("failed_approved_container_dir").isMissingNode() ? null : data.get("failed_approved_container_dir").asText();
+
+
+        try {
+
+            String[] ccList = EMAIL_STATE_CHANGE.split(", ?");
+
+            email.setFrom(EMAIL_FROM);
+            email.setSubject("DOE CODE Record " + codeId + " was " + state + "!");
+            for (String cc : ccList) 
+                email.addCc(cc);
+
+            String softwareTitle = md.getSoftwareTitle();
+            softwareTitle = softwareTitle != null ? softwareTitle : "Unknown";
+            softwareTitle = softwareTitle.replaceAll("^\\h+|\\h+$","");
+
+            StringBuilder msg = new StringBuilder();
+            msg.append("<html>");
+            msg.append("A DOE CODE record has been ")
+               .append(state)
+               .append(" for ")
+               .append(lab)
+               .append(" and may require attention:");
+
+            msg.append("<P>" + Character.toUpperCase(state.charAt(0)) + state.toLowerCase().substring(1) + " by: ").append(user);
+
+            msg.append("<P>Code ID: ").append(codeId);
+            if (!StringUtils.isBlank(md.getDoi())) {                
+                msg.append("<BR>DOI: ").append(md.getDoi());
+            }
+            msg.append("<BR>Software Title: ").append(softwareTitle);
+
+            if (!StringUtils.isBlank(removed_from_index)) {                
+                msg.append("<BR>Biblio removed: ").append(removed_from_index);
+            }
+
+            if (!StringUtils.isBlank(remove_from_osti)) {                
+                msg.append("<P><BR><span style='color:red'>Please remove from OSTI.GOV: </span><pre>").append(remove_from_osti).append("</pre>");
+            }
+
+            if (!StringUtils.isBlank(update_datacite)) {                
+                msg.append("<P><BR><span style='color:red'>Please update Datacite: </span>").append(update_datacite);
+            }
+
+            if (!StringUtils.isBlank(restore_to_index)) {                
+                msg.append("<BR>Biblio restored: ").append(restore_to_index);
+            }
+
+            if (!StringUtils.isBlank(restore_to_osti)) {                
+                msg.append("<P><BR><span style='color:red'>Please restore to OSTI.GOV: </span><pre>").append(restore_to_osti).append("</pre>");
+            }
+
+            if (!StringUtils.isBlank(restore_datacite)) {                
+                msg.append("<P><BR><span style='color:red'>Please check Datacite: </span>").append(restore_datacite);
+            }
+
+            if (!StringUtils.isBlank(failed_file_upload_dir) || !StringUtils.isBlank(failed_container_upload_dir) || !StringUtils.isBlank(failed_approved_container_dir)) {                
+                msg.append("<P><BR><span style='color:red'>Files failed removed: </span>").append("<pre>");
+                if (!StringUtils.isBlank(failed_file_upload_dir)) {                
+                    msg.append(failed_file_upload_dir).append("<br>");
+                }
+                if (!StringUtils.isBlank(failed_container_upload_dir)) {                
+                    msg.append(failed_container_upload_dir).append("<br>");
+                }
+                if (!StringUtils.isBlank(failed_approved_container_dir)) {                
+                    msg.append(failed_approved_container_dir).append("<br>");
+                }
+                msg.append("</pre>");
+            }
+
+            if (!StringUtils.isBlank(file_upload_dir) || !StringUtils.isBlank(container_upload_dir) || !StringUtils.isBlank(approved_container_dir)) {                
+                msg.append("<P><BR>Files removed: ").append("<pre>");
+                if (!StringUtils.isBlank(file_upload_dir)) {                
+                    msg.append(file_upload_dir).append("<br>");
+                }
+                if (!StringUtils.isBlank(container_upload_dir)) {                
+                    msg.append(container_upload_dir).append("<br>");
+                }
+                if (!StringUtils.isBlank(approved_container_dir)) {                
+                    msg.append(approved_container_dir).append("<br>");
+                }
+                msg.append("</pre>");
+            }  
+            msg.append("</html>");       
+
+            email.setHtmlMsg(msg.toString());
+
+            email.send();
+        } catch ( EmailException e ) {
+            log.error("Failed to send state notification message for #" + md.getCodeId());
             log.error("Message: " + e.getMessage());
         }
     }

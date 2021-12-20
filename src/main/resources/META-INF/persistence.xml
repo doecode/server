@@ -17,6 +17,7 @@
     <class>gov.osti.entity.DoiStatus</class>
     <class>gov.osti.entity.DoiReservation</class>
     <class>gov.osti.entity.MetadataSnapshot</class>
+    <class>gov.osti.entity.MetadataTombstone</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="${database.url}"/>
       <property name="javax.persistence.jdbc.user" value="${database.user}"/>

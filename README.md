@@ -60,10 +60,12 @@ datacite.prefix | (optional) DataCite registration DOI prefix value
 datacite.url | (optional) DataCite MDS URL for sending metadata
 index.url | (optional) URL to indexing service (e.g., SOLR, see below)
 search.url | (optional) base URL to searching service (SOLR, see below)
+index.removal.url | (optional) URL to indexing service for index removal (e.g., SOLR, see below)
 site.url | base URL of the client front-end services
 email.host | SMTP host name for sending confirmation emails
 email.from | the address to use for sending above emails
 email.notification | (optional) the address to use for sending notification emails when projects are submitted/announced
+email.state.notification | (optional) the address to use for sending notification emails when projects have a state change for: deleted/hidden/unhidden
 github.user | (optional) GitHub user account name for using GitHub API without access limitations
 github.apikey | (optional) the GitHub user's API key
 file.uploads | the server path used for saving uploaded files
@@ -281,7 +283,7 @@ $ bin/solr create -c doecode -p {port}
 $ curl http://localhost:{port}/solr/admin/cores?action=RELOAD\&core=doecode
 ```
 
-SOLR should be ready to use with the back-end.  Configure the ${index.url} and ${search.url} appropriately and 
+SOLR should be ready to use with the back-end.  Configure the ${index.url} and ${search.url} and ${index.removal.url} appropriately and 
 redeploy/restart the back-end services.  Any records POSTed to the /publish and /submit endpoints should automatically
 be indexed by the SOLR server.
 
@@ -296,6 +298,12 @@ ${search.url} should be configured to
 http://localhost:{port}/solr/doecode/query 
 ```
 in order to get JSON results back in expected formats for the dissemination/searching service.  
+
+${index.removal.url} should be configured to 
+```
+http://localhost:{port}/solr/doecode/update?commit=true 
+```
+in order to send JSON index removal request. 
 
 These values assume that the DOE CODE back-end is deployed on the same server as the SOLR standalone service.  If not, alter the
 URL host names and ports appropriately.  In order to terminate the SOLR standalone server, issue the command:

@@ -501,7 +501,7 @@ public class DataCite {
         
         // ensure the DOI to be registered is recognized and valid for this record
         // do we know this prefix?
-        if (!m.getDoi().startsWith(DATACITE_PREFIX))
+        if (!canRegister(m.getDoi()))
             return;
         
         // check to make sure we can proceed ( SHOULD NOT BE REGISTERED ELSEWHERE )
@@ -511,5 +511,15 @@ public class DataCite {
         // try the registration, throws IOException if failed
         registerMetadata(m);
         registerDoi(m);
+    }
+    
+    /**
+     * Get boolean indicating if DOI prifix is able to be registered.
+     * 
+     * @param doi the DOI to check
+     */
+    public static boolean canRegister(String doi) {
+        // if value matches prefix expectation
+        return (!StringUtils.isEmpty(doi) && doi.startsWith(DATACITE_PREFIX));
     }
 }

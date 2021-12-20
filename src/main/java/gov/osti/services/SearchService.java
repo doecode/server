@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import gov.osti.entity.DOECodeMetadata;
+import gov.osti.entity.MetadataTombstone;
 import gov.osti.search.SearchData;
 import gov.osti.search.SolrDocument;
 import gov.osti.search.SolrResult;
@@ -61,6 +62,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 
 /**
  * Implement a search interface with a SOLR backend.
@@ -141,12 +144,96 @@ public class SearchService {
             .configure(SerializationFeature.WRAP_ROOT_VALUE, true)
             .addMixIn(Object.class, PropertyFilterMixIn.class)
             .setTimeZone(TimeZone.getDefault());
+    protected static final ObjectMapper TOMBSTONE_WRAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .addMixIn(Object.class, PropertyFilterMixIn.class)
+            .setTimeZone(TimeZone.getDefault());
 
     // a JSON mapper
     protected static final ObjectMapper mapper = new ObjectMapper().setTimeZone(TimeZone.getDefault());
 
     // configured location of the search service endpoint
     private static final String SEARCH_URL = DoeServletContextListener.getConfigurationProperty("search.url");
+
+    /**
+     * Acquire tombstone information from the database if possible.  This endpoint
+     * should ONLY return Approved records that have been indexed for searching.
+     * Requires that searching be configured.
+     *
+     * Response Codes:
+     * 200 - OK, record found, and returned in desired format
+     * 206 - No content, searching is not configured/unavailable
+     * 404 - Record was not found
+     * 500 - IO error or search malformed
+     *
+     * @param codeId the CODE ID to find
+     * @param format the desired FORMAT; may be "yaml" or "xml".  Default is JSON
+     * unless specified
+     * @return the record in the desired format, if found
+     */
+    @GET
+    @Path("tombstone/{codeId}")
+    @Produces ({MediaType.APPLICATION_JSON})
+    public Response getTombstoneRecord(@PathParam("codeId") Long codeId) {
+        try {
+            EntityManager em = DoeServletContextListener.createEntityManager();
+            DOECodeMetadata md = null;
+
+            // gather tombstone data
+            TypedQuery<MetadataTombstone> queryTombstone = em.createNamedQuery("MetadataTombstone.findLatestByCodeId", MetadataTombstone.class)
+                .setParameter("codeId", codeId);
+            List<MetadataTombstone> tombstoneResults = queryTombstone.setMaxResults(1).getResultList();
+            boolean everRemoved = tombstoneResults.size() > 0;
+
+            String approvedJson = null;
+            boolean isRestrictedMetadata = true;
+            if (everRemoved) {
+                MetadataTombstone mt = tombstoneResults.get(0);                
+                approvedJson = mt.getApprovedJson();
+                isRestrictedMetadata = mt.getRestrictedMetadata();
+            }
+            
+            // if has JSON, get object and DOI state
+            boolean hasDoi = false;
+            if (!StringUtils.isBlank(approvedJson)) {
+                // load JSON into object
+                md = DOECodeMetadata.parseJson(new StringReader(approvedJson));
+                hasDoi = !StringUtils.isBlank(md.getDoi());
+            }
+            
+            // if never announced, or no DOI, do nothing
+            if (!everRemoved || !hasDoi) {            
+                return Response
+                        .status(Response.Status.NO_CONTENT)
+                        .build();
+            }
+
+            // get data into object, if not restricted data
+            ObjectNode obj = TOMBSTONE_WRAPPER.createObjectNode();
+            ObjectNode subObj = TOMBSTONE_WRAPPER.createObjectNode();
+            if (isRestrictedMetadata) {
+                subObj.put("doi", md.getDoi());
+                subObj.put("is_restricted_metadata", true);
+            }
+            else {
+                subObj = (ObjectNode) md.toJson();
+            }
+            obj.put("metadata", subObj);
+
+            // send back the JSON (named object "metadata")
+            return Response
+                .ok()
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .entity(TOMBSTONE_WRAPPER
+                        .writer(filter)
+                        .writeValueAsString(obj))
+                .build();
+        } catch ( IOException e ) {
+            log.warn("Searching Error.", e);
+            return ErrorResponse.internalServerError("Search error encountered.").build();
+        }
+    }
 
     /**
      * Acquire information from the searching index if possible.  This endpoint

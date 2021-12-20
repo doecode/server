@@ -88,12 +88,14 @@ public class DOECodeMetadata implements Serializable {
      * Submitted - validated to business logic rules, and/or sent to OSTI
      * Approved - ready to be sent to SOLR/search services
      * Announced - sent to OSTI
+     * Hidden - hidden from usage
      */
     public enum Status {
         Saved,
         Submitted,
         Announced,
-        Approved
+        Approved,
+        Hidden
     }
 
     // Project Type values

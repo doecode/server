@@ -32,6 +32,7 @@ import javax.persistence.UniqueConstraint;
         )
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
+    @NamedQuery (name = "MetadataSnapshot.findAllByCodeId", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId"),
     @NamedQuery (name = "MetadataSnapshot.findByCodeIdAndStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus=:status"),
     @NamedQuery (name = "MetadataSnapshot.findAllByStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.snapshotStatus=:status ORDER BY s.snapshotKey.codeId"),
     @NamedQuery (name = "MetadataSnapshot.findByCodeIdLastNotStatus", query = "SELECT s FROM MetadataSnapshot s WHERE s.snapshotKey.codeId=:codeId AND s.snapshotKey.snapshotStatus<>:status ORDER BY s.dateRecordUpdated DESC"),
@@ -59,6 +60,7 @@ public class MetadataSnapshot implements Serializable {
     @Column (name = "date_record_updated", insertable = true, updatable = true)
     @Temporal (TemporalType.TIMESTAMP)
     private Date dateRecordUpdated;
+    private transient boolean hideAction = false;
 
     /**
      * Get the SnapshotKey of the Metadata Object.
@@ -125,6 +127,22 @@ public class MetadataSnapshot implements Serializable {
     }
 
     /**
+     * Get the hide action value.
+     * @return a boolean representing the DOI Minted state
+     */
+    public boolean getHideAction() {
+        return hideAction;
+    }
+
+    /**
+     * Set the hide action for the Snapshot Object.
+     * @param isHideAction boolean state Snapshot representing a hide action, to avoid updating added/updated dates
+     */
+    public void setHideAction(boolean isHideAction) {
+        this.hideAction = isHideAction;
+    }
+
+    /**
      * Method called when a record is first created.  Sets dates added and
      * updated.
      */
@@ -162,6 +180,8 @@ public class MetadataSnapshot implements Serializable {
      * Set the DATE ADDED to now.
      */
     public void setDateRecordAdded() {
+        if (hideAction) return;
+
         setDateRecordAdded(new Date());
     }
 
@@ -183,6 +203,8 @@ public class MetadataSnapshot implements Serializable {
      * Set DATE UPDATED to now.
      */
     public void setDateRecordUpdated() {
+        if (hideAction) return;
+
         setDateRecordUpdated(new Date());
     }
 }
