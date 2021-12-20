@@ -36,6 +36,7 @@ import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.DOECodeMetadata.Status;
+import gov.osti.entity.MetadataHistory;
 import gov.osti.entity.MetadataTombstone;
 import gov.osti.entity.MetadataTombstoneKey;
 import gov.osti.entity.RelatedIdentifier.RelationType;
@@ -1263,6 +1264,16 @@ public class Metadata {
                 throw new NotFoundException("Record Code ID " + md.getCodeId() + " not on file.");
             }
         }
+
+        // log history
+        MetadataHistory mh = new MetadataHistory();
+        mh.setCodeId(md.getCodeId());
+        mh.setHistoryStatus(md.getWorkflowStatus());
+        mh.setDoi(md.getDoi());
+        mh.setDoiIsMinted(StringUtils.isNotBlank(md.getDoi()) && md.getReleaseDate() != null);
+        mh.setJson(md.toJson().toString());
+
+        em.persist(mh);
     }
 
     /**
