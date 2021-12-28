@@ -45,6 +45,7 @@ public class DoeServletContextListener implements ServletContextListener {
             try {
                 in = DoeServletContextListener.class.getClassLoader().getResourceAsStream("doecode.properties");
                 if (null!=in) configuration.load(in);
+                if (in != null) try{in.close();} catch (Exception e) {}
             } catch ( IOException e ) {
                 log.warn("Context Initialization Failure: " + e.getMessage());
             }

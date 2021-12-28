@@ -2190,22 +2190,24 @@ public class Metadata {
             // send this file upload along to archiver if configured
             try {
                 // if no file/container, but previously Saved with a file/container, we need to attach to those streams and send to Archiver
+                boolean previouslySavedWithFile = false;
+                boolean previouslySavedWithContainer = false;
                 if (previouslySaved) {
                     if (null==file && !StringUtils.isBlank(md.getFileName())) {
                         java.nio.file.Path destination = Paths.get(FILE_UPLOADS, String.valueOf(md.getCodeId()), md.getFileName());
                         fullFileName = destination.toString();
-                        file = Files.newInputStream(destination);
+                        previouslySavedWithFile = true;
                     }
                     if (null==container && !StringUtils.isBlank(md.getContainerName())) {
                         java.nio.file.Path destination = Paths.get(CONTAINER_UPLOADS, String.valueOf(md.getCodeId()), md.getContainerName());
                         fullContainerName = destination.toString();
-                        container = Files.newInputStream(destination);
+                        previouslySavedWithContainer = true;
                     }
                 }
 
                 // if a FILE or CONTAINER was sent, create a File Object from it
-                File archiveFile = (null==file) ? null : new File(fullFileName);
-                File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
+                File archiveFile = (null != file || previouslySavedWithFile) ? new File(fullFileName) : null;
+                File archiveContainer = null; //(null==container && !previouslySavedWithContainer) ? null : new File(fullContainerName);
                 List<String> accessLims = md.getAccessLimitations();
                 boolean isLimited = accessLims != null && !accessLims.isEmpty() && !accessLims.contains("UNL");
                 sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor(), isLimited);
@@ -2367,22 +2369,24 @@ public class Metadata {
             // send this file upload along to archiver if configured
             try {
                 // if no file/container, but previously Saved with a file/container, we need to attach to those streams and send to Archiver
+                boolean previouslySavedWithFile = false;
+                boolean previouslySavedWithContainer = false;
                 if (previouslySaved) {
                     if (null==file && !StringUtils.isBlank(md.getFileName())) {
                         java.nio.file.Path destination = Paths.get(FILE_UPLOADS, String.valueOf(md.getCodeId()), md.getFileName());
                         fullFileName = destination.toString();
-                        file = Files.newInputStream(destination);
+                        previouslySavedWithFile = true;
                     }
                     if (null==container && !StringUtils.isBlank(md.getContainerName())) {
                         java.nio.file.Path destination = Paths.get(CONTAINER_UPLOADS, String.valueOf(md.getCodeId()), md.getContainerName());
                         fullContainerName = destination.toString();
-                        container = Files.newInputStream(destination);
+                        previouslySavedWithContainer = true;
                     }
                 }
 
                 // if a FILE or CONTAINER was sent, create a File Object from it
-                File archiveFile = (null==file) ? null : new File(fullFileName);
-                File archiveContainer = null; //(null==container) ? null : new File(fullContainerName);
+                File archiveFile = (null != file || previouslySavedWithFile) ? new File(fullFileName) : null;
+                File archiveContainer = null; //(null==container && !previouslySavedWithContainer) ? null : new File(fullContainerName);
                 List<String> accessLims = md.getAccessLimitations();
                 boolean isLimited = accessLims != null && !accessLims.isEmpty() && !accessLims.contains("UNL");
                 sendToArchiver(md.getCodeId(), md.getRepositoryLink(), archiveFile, archiveContainer, md.getLastEditor(), isLimited);

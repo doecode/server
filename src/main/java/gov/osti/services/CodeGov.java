@@ -16,7 +16,6 @@ import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Site;
 import gov.osti.listeners.DoeServletContextListener;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -234,7 +233,7 @@ public class CodeGov {
                         .build();
 
             // read file
-            JsonNode json = JSON_MAPPER.readTree(new FileInputStream(codegovFile.toString()));
+            JsonNode json = JSON_MAPPER.readTree(codegovFile.toFile());
 
             return Response
                     .status(Response.Status.OK)
@@ -278,7 +277,7 @@ public class CodeGov {
             }
 
             // read file
-            JsonNode json = JSON_MAPPER.readTree(new FileInputStream(codegovFile.toString()));
+            JsonNode json = JSON_MAPPER.readTree(codegovFile.toFile());
 
             // get releases
             JsonNode releases = json.get("releases");
