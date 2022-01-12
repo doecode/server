@@ -58,8 +58,7 @@ public class MetadataTest {
             "Software title is required.",
             "Description is required.",
             "A License is required.",
-            "At least one developer is required.",
-            "A valid Landing Page URL is required for non-open source submissions."
+            "At least one developer is required."
         };
         
         for ( String message : validations ) {
@@ -152,8 +151,7 @@ public class MetadataTest {
             "Software title is required.",
             "Description is required.",
             "A License is required.",
-            "At least one developer is required.",
-            "A valid Landing Page URL is required for non-open source submissions."
+            "At least one developer is required."
         };
         String[] submit_validations = {
             "Release date is required.",

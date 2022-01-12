@@ -2816,10 +2816,10 @@ public class Metadata {
         if (DOECodeMetadata.ProjectType.OS.equals(m.getProjectType())) {
             if (StringUtils.isBlank(m.getRepositoryLink()))
                 reasons.add("Repository URL is required for open source submissions.");
-        } else {
-            // non-OS submissions require a LANDING PAGE (prefix with http:// if missing)
+        } else if (DOECodeMetadata.ProjectType.ON.equals(m.getProjectType())) {
+            // "ON" submissions require a LANDING PAGE (prefix with http:// if missing)
             if (!Validation.isValidUrl(m.getLandingPage()))
-                reasons.add("A valid Landing Page URL is required for non-open source submissions.");
+                reasons.add("A valid Landing Page URL is required for non-public open source submissions.");
         }
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
