@@ -2874,6 +2874,9 @@ public class Metadata {
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !DOECodeMetadata.Accessibility.CO.equals(m.getAccessibility()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
 
+        // validate Funding
+        reasons.addAll(validateSponsorOrgsFunding(m));
+
         return reasons;
     }
 
@@ -2953,6 +2956,35 @@ public class Metadata {
 
         if (doeSponsorCount == 0)
             reasons.add("At least one DOE funded sponsoring organization is required.");
+
+        return reasons;
+    }
+
+    /**
+     * Check SPONSOR ORG FUNDING validations on metadata.
+     *
+     * @param m the Metadata to check
+     * @return a List of sponsor org funding validation errors, empty if none
+     */
+    private static List<String> validateSponsorOrgsFunding(DOECodeMetadata m) {
+        List<String> reasons = new ArrayList<>();
+
+        List<SponsoringOrganization> s = m.getSponsoringOrganizations();
+        if (null != s) {
+            for ( SponsoringOrganization o : s ) {
+                List<FundingIdentifier> fis = o.getFundingIdentifiers();
+                if (null != fis) {
+                    for ( FundingIdentifier fi : fis ) {
+                        FundingIdentifier.Type fi_type = fi.getIdentifierType();
+                        String fi_value = fi.getIdentifierValue();
+                        if (FundingIdentifier.Type.BRCode.equals(fi_type)) {
+                            if (!Validation.isBRCode(fi_value))
+                                reasons.add("[" + fi_value + "] is not a valid B&R Code.");
+                        }
+                    }
+                }
+            }
+        }
 
         return reasons;
     }

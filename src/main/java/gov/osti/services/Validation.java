@@ -113,6 +113,7 @@ public class Validation {
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     protected static final Pattern DOI_PATTERN = Pattern.compile("^(?i)(?:doi:|https?:\\/\\/(?:dx[.])?doi[.]org\\/)?10.\\d{4,9}\\/[-._;()\\/:A-Za-z0-9]+$");
     protected static final Pattern ORCID_PATTERN = Pattern.compile("(?i)^\\s*(?:(?:https?:\\/\\/)?(?:www\\.)?orcid\\.org\\/)?(\\d{4}(?:-?\\d{4}){2}(?:-?\\d{3}[\\dX]))\\s*$");
+    protected static final Pattern BRCODE_PATTERN = Pattern.compile("^[A-Za-z]{2}\\d{7}$");
 
     @JsonIgnoreProperties (ignoreUnknown = true)
     private static class ValidationRequest implements Serializable {
@@ -273,6 +274,18 @@ public class Validation {
         return ( null==value ) ?
                 false :
                 EMAIL_PATTERN.matcher(value).matches();
+    }
+
+    /**
+     * Determine whether or not this VALUE conforms to a B&R CODE pattern.
+     *
+     * @param value the value to check
+     * @return true if matches a B&R CODE pattern, false if not
+     */
+    public static boolean isBRCode(String value) {
+        return ( null==value ) ?
+                false :
+                BRCODE_PATTERN.matcher(value).matches();
     }
 
     /**
