@@ -2980,6 +2980,9 @@ public class Metadata {
             if (StringUtils.isBlank(m.getFileName()))
                 reasons.add("A file archive must be included for non-open source submissions.");
 
+        if (!StringUtils.isBlank(m.getFileName()) && !m.getIsFileCertified())
+            reasons.add("A true file certification acknowledgment must be included with any submission containing a file upload.");
+
         return reasons;
     }
 

@@ -274,6 +274,7 @@ public class DOECodeMetadata implements Serializable {
     private transient List<BiblioLink> links; 
 
     private boolean isMigration = false;
+    private boolean isFileCertified = false;
     private String lastEditor = null;
 
     // Jackson object mapper
@@ -877,6 +878,15 @@ public class DOECodeMetadata implements Serializable {
 
 	public void setIsMigration(boolean isMigration) {
 		this.isMigration = isMigration;
+	}
+
+    @Column (name="IS_FILE_CERTIFIED")
+	public boolean getIsFileCertified() {
+		return isFileCertified;
+	}
+
+	public void setIsFileCertified(boolean isCert) {
+		this.isFileCertified = isCert;
 	}
 
     /**
