@@ -987,6 +987,15 @@ public class DOECodeMetadata implements Serializable {
     }
 
     /**
+     * Determine if Limited based on Access Limitations, without exposing the limitation values.
+     *
+     * @return true if Access Limitations do NOT contain UNL value
+     */
+    public boolean getIsLimited() {
+        return !(this.accessLimitations != null && this.accessLimitations.contains("UNL"));
+    }
+
+    /**
      * Obtain the SOFTWARE TYPE: one of Type.S (scientific) or Type.B (Business)
      *
      * @return the type the SOFTWARE TYPE
