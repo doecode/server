@@ -2813,6 +2813,8 @@ public class Metadata {
                 reasons.add("Closed Source project must not have both Landing Page and Contact Email.");
             if (hasLandingPage && !Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for closed source submissions with no contact email.");
+            if (hasLandingPage && Validation.isDisallowedUrl(m.getLandingPage()))
+                reasons.add("A Landing Page URL from this domain is not allowed.");
             if (hasLandingContact && !Validation.isValidEmail(m.getLandingContact()))
                 reasons.add("A valid Contact Email is required for closed source submissions with no landing page.");
         }
@@ -2896,6 +2898,8 @@ public class Metadata {
             // "ON" submissions require a LANDING PAGE (prefix with http:// if missing)
             if (!Validation.isValidUrl(m.getLandingPage()))
                 reasons.add("A valid Landing Page URL is required for non-public open source submissions.");
+            else if (Validation.isDisallowedUrl(m.getLandingPage()))
+                reasons.add("A Landing Page URL from this domain is not allowed.");
         }
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
