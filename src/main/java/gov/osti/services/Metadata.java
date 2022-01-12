@@ -1762,6 +1762,14 @@ public class Metadata {
         try {
             DOECodeMetadata md = DOECodeMetadata.parseJson(new StringReader(json));
 
+            List<String> accessLims = md.getAccessLimitations();
+            if (accessLims == null || accessLims.size() == 0) {
+                log.error ("Cannot Save, No Access Limitation Provided: " + md.getCodeId());
+                return ErrorResponse
+                        .internalServerError("In order to Save, an Access Limitation must be provided.")
+                        .build();
+            }
+
             validateUploads(fileInfo, containerInfo, md);
 
             em.getTransaction().begin();
@@ -1883,6 +1891,14 @@ public class Metadata {
                 log.error ("Cannot Submit, Previously Announced: " + currentCodeId);
                 return ErrorResponse
                         .internalServerError("This record was previously Announced to E-Link, if you need to update the metadata, please change your endpoint to \"/announce.\"")
+                        .build();
+            }
+
+            List<String> currentLimitations = md.getAccessLimitations();
+            if (currentLimitations != null && !currentLimitations.isEmpty() && !currentLimitations.contains("UNL")) {
+                log.error ("Cannot Submit, Limited projects must be Announced: " + currentCodeId);
+                return ErrorResponse
+                        .internalServerError("This record is Limited Software and cannot be Submitted, only Announced. Please change your endpoint to \"/announce.\"")
                         .build();
             }
 
