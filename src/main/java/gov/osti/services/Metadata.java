@@ -2889,6 +2889,28 @@ public class Metadata {
                 if (StringUtils.isBlank(ouo.getProgramOffice()))
                     reasons.add("PDOUO project requires Program Office.");
 
+                // TODO - validate PO against Site data?
+            }
+        }
+
+        // must not have extra fields
+        if (!isOUO && !StringUtils.isBlank(ouo.getProgramOffice()))
+            reasons.add("OUO project does not require Exemption Number.");
+            
+        if (!isOUO || !isPROT) {
+            if (ouo.getOuoReleaseDate() != null)
+                reasons.add("Non-PROT project does not require Release Date.");
+                
+            if (ouo.getProtection() != null)
+                reasons.add("Non-PROT project does not require Protection designation.");
+            
+            if (!StringUtils.isBlank(ouo.getProtectionReason()))
+                reasons.add("Non-PROT project does not require protection reason.");
+        }
+        if (!isOUO || !isPDOUO) {
+            if (!StringUtils.isBlank(ouo.getProgramOffice()))
+                reasons.add("Non-PDOUO project does not require Program Office.");
+        }
 
         // validate Funding
         reasons.addAll(validateSponsorOrgsFunding(m));
