@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 import gov.osti.entity.BiblioLink;
+import gov.osti.entity.OfficialUseOnly;
 import gov.osti.listeners.DoeServletContextListener;
 import java.util.ArrayList;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +28,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
+import javax.persistence.SecondaryTable;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -39,6 +41,7 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.Embedded;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
@@ -47,6 +50,7 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.PrimaryKeyJoinColumn;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -55,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 @Entity
 @Table(name="metadata")
+@SecondaryTable(name = "official_use_only", pkJoinColumns = @PrimaryKeyJoinColumn(name = "code_id"))
 @JsonIgnoreProperties (ignoreUnknown = true)
 @NamedQueries ({
     @NamedQuery (name = "DOECodeMetadata.findByDoi", query = "SELECT m FROM DOECodeMetadata m WHERE m.doi = :doi"),
@@ -184,6 +189,8 @@ public class DOECodeMetadata implements Serializable {
     @JacksonXmlElementWrapper (localName = "accessLimitations")
     @JacksonXmlProperty (localName = "accessLimitation")
     private List<String> accessLimitations;
+
+    private OfficialUseOnly officialUseOnly;
     
     // Child tables -- persons
     @JacksonXmlElementWrapper (localName = "developers")
@@ -277,7 +284,7 @@ public class DOECodeMetadata implements Serializable {
 
     //for Gson
     public DOECodeMetadata() {
-
+        this.setOfficialUseOnly(new OfficialUseOnly());
     }
 
     /**
@@ -358,6 +365,30 @@ public class DOECodeMetadata implements Serializable {
      */
     public void setAccessLimitations(List<String> limitations) {
         this.accessLimitations = this.CleanList(limitations);
+    }
+
+    /**
+     * Obtain the Official Use Only values for this record.
+     * @return a OfficialUseOnly value
+     */
+
+    // OneToOne was not working (revisit that later)
+    @Embedded
+    public OfficialUseOnly getOfficialUseOnly() {
+        if (this.officialUseOnly == null)
+            setOfficialUseOnly(null);
+        return this.officialUseOnly;
+    }
+    
+    /**
+     * Set the OfficialUseOnly value for this record.
+     * @param value a OfficialUseOnly object to store
+     */
+    public void setOfficialUseOnly(OfficialUseOnly value) {
+        // JPA find() fails if this is NULL
+        if (value == null)
+            value = new OfficialUseOnly();
+        this.officialUseOnly = value;
     }
     
     /**

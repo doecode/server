@@ -28,6 +28,7 @@ import gov.osti.entity.Contributor;
 import gov.osti.entity.Award;
 import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.MetadataSnapshot;
+import gov.osti.entity.OfficialUseOnly;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
@@ -583,6 +584,14 @@ public class Metadata {
         md.setRepositoryLink(cleanStr(md.getRepositoryLink()));
         md.setLandingPage(cleanStr(md.getLandingPage()));
         md.setAccessLimitations(cleanStrList(md.getAccessLimitations()));
+        // clean OfficialUseOnly
+        OfficialUseOnly ouo = md.getOfficialUseOnly();
+        if (ouo != null) {
+            ouo.setExemptionNumber(cleanStr(ouo.getExemptionNumber()));
+            ouo.setProtectionOther(cleanStr(ouo.getProtectionOther()));
+            ouo.setProgramOffice(cleanStr(ouo.getProgramOffice()));
+            ouo.setProtectionReason(cleanStr(ouo.getProtectionReason()));
+        }
         md.setDevelopers(cleanDevList(md.getDevelopers()));
         md.setContributors(cleanConList(md.getContributors()));
         md.setContributingOrganizations(cleanConOrgList(md.getContributingOrganizations()));
@@ -2740,17 +2749,17 @@ public class Metadata {
 
         List<String> accessLimitationsList = m.getAccessLimitations();
         boolean isUNL = false;
-        boolean isSBIR = false;
-        boolean isSTTR = false;
         boolean isOUO = false;
+        boolean isPROT = false;
+        boolean isPDOUO = false;
         int accessLimitationSize = 0;
 
         if (accessLimitationsList != null) {
             accessLimitationSize = accessLimitationsList.size();
             isUNL = accessLimitationsList.contains("UNL");
-            isSBIR = accessLimitationsList.contains("SBIR");
-            isSTTR = accessLimitationsList.contains("STTR");
             isOUO = accessLimitationsList.contains("OUO");
+            isPROT = accessLimitationsList.contains("PROT");
+            isPDOUO = accessLimitationsList.contains("PDOUO");
         }
 
         if (isClosedSource && hasLicenseContactEmail)
@@ -2849,8 +2858,6 @@ public class Metadata {
         if (!isOUO) {
             int nonSubCount = 0;
             if (isUNL) nonSubCount++;
-            if (isSBIR) nonSubCount++;
-            if (isSTTR) nonSubCount++;
 
             // if Sub OUO, then must also have OUO
             if (accessLimitationSize > nonSubCount)
@@ -2858,12 +2865,29 @@ public class Metadata {
         }
         if (isUNL && isOUO)
             reasons.add("Project may not have both 'UNL' and 'OUO' Access Limitation codes.");
-        if (isSBIR && isSTTR)
-            reasons.add("Project may not have both 'SBIR' and 'STTR' Access Limitation codes.");
         if (!isClosedSource && !isUNL)
             reasons.add("Open Source Project must contain 'UNL' Access Limitation code.");
-        if (isUNL && ((accessLimitationSize == 2 && !(isSBIR || isSTTR)) || (accessLimitationSize > 2)))
-            reasons.add("Open Source Project that is 'UNL' may only also contain 'SBIR' or 'STTR' Access Limitation code.");
+        
+        OfficialUseOnly ouo = m.getOfficialUseOnly();
+        if (isOUO) {
+            // must have required fields
+            if (ouo.getExemptionNumber() == null)
+                reasons.add("OUO project requires Exemption Number.");
+            
+            if (isPROT) {
+                if (ouo.getOuoReleaseDate() == null)
+                    reasons.add("PROT project requires Release Date.");
+                    
+                if (ouo.getProtection() == null)
+                    reasons.add("PROT project requires Protection designation.");
+                
+                if (OfficialUseOnly.Protection.Other.equals(ouo.getProtection()) && StringUtils.isBlank(ouo.getProtectionOther()))
+                    reasons.add("PROT project requires protection reason for OTHER Protection type.");
+            }
+            
+            if (isPDOUO) {
+                if (StringUtils.isBlank(ouo.getProgramOffice()))
+                    reasons.add("PDOUO project requires Program Office.");
 
 
         // validate Funding
