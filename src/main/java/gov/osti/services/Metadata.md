@@ -383,7 +383,8 @@ A full JSON example is [provided below](#json_example).
 | site_ownership_code | The DOE National Laboratory, DOE Program Office, Field Office, or Major Site/Facility that is submitting the code/software.  This value is determined by the system. |
 | project_type | This refers to how the source of the project type is accessed; must be one of "OS" (open source), "ON" (open source, not public), or "CS" (closed source, site hosted) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public Repository URL should be provided here.  DOE CODE does not currently support the submission of individual branch URL paths, so this must be a primary or base URL for the repository. |
-| landing_page | If the project is not available via open source hosting site, provide a URL describing the project and contact information for obtaining binary or source |
+| landing_page | If the project is open source and not available via a publicly available repository or is a closed source project, provide a URL describing the project or contact information for obtaining binary or source code. |
+| landing_contact | If applicable, the individual or group email to refer access requests to. Please enter the Software Group email address for your site if available. |
 | developers | An array of Objects, providing information about a project's developers or creators.  Array order determines display order.  Fields are [specified below](#persons_fields). |
 | contributors | An array of information about project contributors.  Array order determines display order.  Fields are [specified below](#persons_fields). Contributors must specify a [type of contribution](#contributor_types) made to the project. |
 | sponsoring_organizations | (Array) Information about the project sponsoring organizations, including any funding identifier information. Fields are [specified below](#organization_fields). |
