@@ -7,6 +7,7 @@
     <class>gov.osti.entity.Developer</class>
     <class>gov.osti.entity.FundingIdentifier</class>
     <class>gov.osti.entity.RelatedIdentifier</class>
+    <class>gov.osti.entity.Limitation</class>
     <class>gov.osti.entity.ContributingOrganization</class>
     <class>gov.osti.entity.ResearchOrganization</class>
     <class>gov.osti.entity.SponsoringOrganization</class>

@@ -118,6 +118,7 @@ public class MetadataTest {
         
         // create something that will pass validations
         m.setProjectType(DOECodeMetadata.ProjectType.CS);
+        m.setAccessLimitations(Arrays.asList(new String[] { "UNL" }));
         m.setRepositoryLink("");
         m.setLandingPage("http://code.google.com/");
         d.setEmail("testguy@testing.com");

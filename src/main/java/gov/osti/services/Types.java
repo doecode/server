@@ -13,6 +13,7 @@ import gov.osti.entity.DOECodeMetadata.License;
 import gov.osti.entity.FundingIdentifier;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.RelatedIdentifier.RelationType;
+import gov.osti.entity.Limitation;
 import gov.osti.indexer.ProjectTypeSerializer;
 import gov.osti.indexer.ContributorTypeSerializer;
 import gov.osti.indexer.FundingIdentifierSerializer;
@@ -20,6 +21,7 @@ import gov.osti.indexer.LicenseSerializer;
 import gov.osti.indexer.RelatedIdentifierTypeSerializer;
 import gov.osti.indexer.RelationTypeSerializer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.TimeZone;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
@@ -30,6 +32,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.persistence.TypedQuery;
+import gov.osti.listeners.DoeServletContextListener;
+import javax.persistence.EntityManager;
 
 /**
  * REST Web Service
@@ -207,6 +213,38 @@ public class Types {
             return ErrorResponse
                     .internalServerError("JSON Error")
                     .build();
+        }
+    }
+    
+    /**
+     * Obtain a JSON listing of valid relation types for related identifiers.
+     * 
+     * @return JSON containing list of valid relation types
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/accesslimitationtypes")
+    public Response getAccessLimitationTypes() {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+
+        try {
+
+            TypedQuery<Limitation> query = em.createNamedQuery("Limitation.findAll", Limitation.class);
+
+            List<Limitation> limits = query.getResultList();
+
+            // return the results back
+            return Response
+                    .ok()
+                    .entity(mapper.writeValueAsString(limits))
+                    .build();
+        } catch (JsonProcessingException e) {
+            log.error("Access Limitation Lookup Error", e);
+            return ErrorResponse
+                    .internalServerError(e.getMessage())
+                    .build();
+        } finally {
+            em.close();
         }
     }
 }

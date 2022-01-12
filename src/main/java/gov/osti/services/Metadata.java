@@ -2738,6 +2738,21 @@ public class Metadata {
         boolean hasLandingPage = (!StringUtils.isEmpty(m.getLandingPage()));
         boolean hasLandingContact = (!StringUtils.isEmpty(m.getLandingContact()));
 
+        List<String> accessLimitationsList = m.getAccessLimitations();
+        boolean isUNL = false;
+        boolean isSBIR = false;
+        boolean isSTTR = false;
+        boolean isOUO = false;
+        int accessLimitationSize = 0;
+
+        if (accessLimitationsList != null) {
+            accessLimitationSize = accessLimitationsList.size();
+            isUNL = accessLimitationsList.contains("UNL");
+            isSBIR = accessLimitationsList.contains("SBIR");
+            isSTTR = accessLimitationsList.contains("STTR");
+            isOUO = accessLimitationsList.contains("OUO");
+        }
+
         if (isClosedSource && hasLicenseContactEmail)
             licenseRequired = false;
 
@@ -2829,6 +2844,27 @@ public class Metadata {
         // if repository link is present, it needs to be valid too
         if (StringUtils.isNotBlank(m.getRepositoryLink()) && !GitHub.isTagReferenceAndValid(m.getRepositoryLink()) && !Validation.isValidRepositoryLink(m.getRepositoryLink()))
             reasons.add("Repository URL is not a valid repository.");
+        if (accessLimitationSize == 0)
+            reasons.add("Access Limitation is required.");
+        if (!isOUO) {
+            int nonSubCount = 0;
+            if (isUNL) nonSubCount++;
+            if (isSBIR) nonSubCount++;
+            if (isSTTR) nonSubCount++;
+
+            // if Sub OUO, then must also have OUO
+            if (accessLimitationSize > nonSubCount)
+                reasons.add("Any OUO-categorized access limitation code must also be accompanied by the 'OUO' Access Limitation code.");
+        }
+        if (isUNL && isOUO)
+            reasons.add("Project may not have both 'UNL' and 'OUO' Access Limitation codes.");
+        if (isSBIR && isSTTR)
+            reasons.add("Project may not have both 'SBIR' and 'STTR' Access Limitation codes.");
+        if (!isClosedSource && !isUNL)
+            reasons.add("Open Source Project must contain 'UNL' Access Limitation code.");
+        if (isUNL && ((accessLimitationSize == 2 && !(isSBIR || isSTTR)) || (accessLimitationSize > 2)))
+            reasons.add("Open Source Project that is 'UNL' may only also contain 'SBIR' or 'STTR' Access Limitation code.");
+
 
         // validate Funding
         reasons.addAll(validateSponsorOrgsFunding(m));
