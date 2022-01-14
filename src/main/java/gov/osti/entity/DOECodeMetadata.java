@@ -18,6 +18,7 @@ import java.util.HashSet;
 
 import gov.osti.entity.BiblioLink;
 import gov.osti.entity.OfficialUseOnly;
+import gov.osti.entity.ChangeLog;
 import gov.osti.listeners.DoeServletContextListener;
 import java.util.ArrayList;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +52,8 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.Lob;
+import javax.persistence.FetchType;
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -221,6 +224,11 @@ public class DOECodeMetadata implements Serializable {
     @JacksonXmlProperty (localName = "awardDoi")
     private List<Award> awardDois;
 
+    // Child table -- change log
+    @JacksonXmlElementWrapper (localName = "changeLog")
+    @JacksonXmlProperty (localName = "change")
+    private List<ChangeLog> changeLog = new ArrayList<ChangeLog>();
+
     private Date releaseDate;
     private String softwareTitle = null;
     private String acronym = null;
@@ -276,6 +284,7 @@ public class DOECodeMetadata implements Serializable {
     private boolean isMigration = false;
     private boolean isFileCertified = false;
     private String lastEditor = null;
+    private String comment = null;
 
     // Jackson object mapper
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -525,6 +534,19 @@ public class DOECodeMetadata implements Serializable {
     )
     public List<Award> getAwardDois() {
         return this.awardDois;
+    }
+
+    public void setChangeLog(List<ChangeLog> changeLog) {
+        this.changeLog = changeLog;
+    }
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name="CHANGE_LOG",
+            joinColumns=@JoinColumn(name="CODE_ID")
+    )
+    public List<ChangeLog> getChangeLog() {
+        return this.changeLog;
     }
 
     @Size (max = 255, message = "Country is limited to 255 characters.")
@@ -904,6 +926,20 @@ public class DOECodeMetadata implements Serializable {
 	}
 
     /**
+     * Get the COMMENT of a record.
+     * @return the COMMENT of the record
+     */
+    @Lob
+    @Column (name="RECORD_COMMENT")
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
+
+    /**
      * Method called when a record is first created. Sets dates added and
      * updated.
      */
@@ -982,5 +1018,32 @@ public class DOECodeMetadata implements Serializable {
         }
 
         return list;
+    }
+
+    /**
+     * Log a change to the change log.
+     *
+     * @param cl the CHANGE LOG to process
+     */
+    public void LogChange(ChangeLog cl) {
+        LogChange(cl, null);
+    }
+
+    /**
+     * Log a change to the change log.
+     *
+     * @param cl the CHANGE LOG to process
+     * @param label text to PREFIX the changes with
+     */
+    public void LogChange(ChangeLog cl, String label) {
+        if (StringUtils.isBlank(cl.getChangesMade()))
+            return;
+
+        if (!StringUtils.isBlank(label))
+            cl.setChangesMade(label.toUpperCase() + ": " + cl.getChangesMade());
+
+        List<ChangeLog> changesList = this.getChangeLog();
+        changesList.add(cl);
+        this.setChangeLog(changesList);
     }
 }

@@ -1,5 +1,6 @@
 package gov.osti.services;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -26,6 +27,7 @@ import gov.osti.doi.DataCite;
 import gov.osti.entity.Agent;
 import gov.osti.entity.Contributor;
 import gov.osti.entity.Award;
+import gov.osti.entity.ChangeLog;
 import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.MetadataSnapshot;
 import gov.osti.entity.OfficialUseOnly;
@@ -46,6 +48,7 @@ import gov.osti.entity.UserRole.RoleType;
 import gov.osti.indexer.AgentSerializer;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.File;
+import java.io.Serializable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -704,6 +707,10 @@ public class Metadata {
         if (!user.hasRole("RecordAdmin") && !user.hasRole("ApprovalAdmin"))
             md.setProjectKeywords(null);
 
+        // if user is not admin, remove Change Log from the result.
+        if (!user.hasRole("RecordAdmin"))
+            md.setChangeLog(null);
+
         cleanMetadataObject(md);
 
         // if YAML is requested, return that; otherwise, default to JSON
@@ -1135,6 +1142,13 @@ public class Metadata {
                 });
                 throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
             }
+
+            // log changes
+            ChangeLog cl = new ChangeLog();
+            cl.setChangedBy(user.getEmail());
+            cl.LogChanges("Initially added as New Record.");
+            md.LogChange(cl, md.getWorkflowStatus().toString());
+
             em.persist(md);
         } else {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
@@ -1174,6 +1188,9 @@ public class Metadata {
                         throw new BadRequestException (ErrorResponse.badRequest("User may not change Access Limitations once Submitted or Announced. Please contact support for assistance.").build());
                     }
                 }
+                if (!user.hasRole("RecordAdmin")) {
+                    md.setComment(emd.getComment());
+                }
 
                 // do not modify AutoBackfill RI info
                 List<RelatedIdentifier> originalList = emd.getRelatedIdentifiers();
@@ -1201,6 +1218,12 @@ public class Metadata {
                     throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
                 }
 
+                // log changes
+                ChangeLog cl = new ChangeLog();
+                cl.setChangedBy(user.getEmail());
+                cl.LogChanges(emd, md);
+                md.LogChange(cl, md.getWorkflowStatus().toString());
+
                 // found it, "merge" Bean attributes
                 BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
                 noNulls.copyProperties(emd, md);
@@ -1221,6 +1244,71 @@ public class Metadata {
                 log.warn("Unable to locate record for " + md.getCodeId() + " to update.");
                 throw new NotFoundException("Record Code ID " + md.getCodeId() + " not on file.");
             }
+        }
+    }
+
+    /**
+     * Persist the DOECodeMetadata Object to the persistence layer.  Assumes an
+     * open Transaction is already in progress, and it's up to the caller to
+     * handle Exceptions or commit as appropriate.
+     *
+     * For Comment changes only, so "code ID" must be present in the Object to store, it will
+     * attempt to merge changes; All other fields will be preserved.
+     *
+     * @param em the EntityManager to interface with the persistence layer
+     * @param md the Object to store
+     * @param user the User performing this action (must be RecordAdmin
+     * in order to UPDATE)
+     * @throws NotFoundException when record to update is not on file
+     * @throws IllegalAccessException when attempting to update record 
+     * while not RecordAdmin
+     * @throws InvocationTargetException on reflection errors
+     */
+    private void storeComment(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException,
+            IllegalAccessException, InvocationTargetException {
+            
+        // to edit Comment, user must be a RecordAdmin
+        if (!(user.hasRole("RecordAdmin")))
+            throw new IllegalAccessException("Invalid comment edit attempt.");
+
+        ValidatorFactory validators = javax.validation.Validation.buildDefaultValidatorFactory();
+        Validator validator = validators.getValidator();
+
+        // must already be a CODE ID, attempt to look up the record first and update
+        DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
+
+        if (null==emd) {
+            // can't find record to update, that's an error
+            log.warn("Unable to locate record for " + md.getCodeId() + " to update comment.");
+            throw new BadRequestException("Comment cannot be edited on non-existant Code ID.");
+        }
+        else {
+            // perform length validations on Bean
+            Set<ConstraintViolation<DOECodeMetadata>> violations = validator.validate(md);
+            if (!violations.isEmpty()) {
+                List<String> reasons = new ArrayList<>();
+
+                violations.stream().forEach(violation->{
+                    reasons.add(violation.getMessage());
+                });
+                throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
+            }
+
+            // log changes, only Comments
+            ChangeLog cl = new ChangeLog();
+            cl.setChangedBy(user.getEmail());
+            cl.LogChanges("Comments", emd.getComment(), md.getComment());
+            md.LogChange(cl);
+
+            // found it, "merge" Bean attributes
+            BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
+            noNulls.copyProperties(emd, md);
+
+            // what comes back needs to be complete:
+            noNulls.copyProperties(md, emd);
+
+            // EntityManager should handle this attached Object
+            // NOTE: the returned Object is NOT ATTACHED to the EntityManager
         }
     }
 
@@ -2549,6 +2637,106 @@ public class Metadata {
         }
     }
 
+
+    
+    /**
+     * Static class to define the input properties of a Comment request.
+     * 
+     * comment - COMMENT for record.
+     */
+    @JsonIgnoreProperties (ignoreUnknown = true)
+    private static class CommentRequest implements Serializable {
+        private String comment;
+        
+        public CommentRequest() {
+            
+        }
+
+        /**
+         * @return the comment
+         */
+        public String getComment() {
+            return comment;
+        }
+
+        /**
+         * @param comment the comment to set
+         */
+        public void setComment(String comment) {
+            this.comment = comment;
+        }
+    }
+
+    /**
+     * COMMENT on a record for DOE CODE.
+     *
+     * Will return a FORBIDDEN attempt should a non-RecordAdmin attempt edit.
+     *
+     * @param json JSON of the CommentRequest object to use for edit.
+     * @return a Response containing the persisted metadata entity in JSON
+     * @throws InternalServerErrorException on JSON parsing or other IO errors
+     */
+    @POST
+    @Consumes ( MediaType.APPLICATION_JSON )
+    @Produces ( MediaType.APPLICATION_JSON )
+    @Path ("/comment/{codeId}")
+    @RequiresAuthentication
+    @RequiresRoles("RecordAdmin")
+    public Response comment(@PathParam("codeId") Long codeId, String json) {
+        EntityManager em = DoeServletContextListener.createEntityManager();
+        Subject subject = SecurityUtils.getSubject();
+        User user = (User) subject.getPrincipal();
+
+        try {
+            CommentRequest cr = mapper.readValue(new StringReader(json), CommentRequest.class);
+            DOECodeMetadata md = em.find(DOECodeMetadata.class, codeId);
+            em.detach(md);
+
+            if ( null==md )
+                return ErrorResponse
+                        .notFound("Code ID not on file.")
+                        .build();
+
+            em.getTransaction().begin();
+
+            md.setComment(trimUrl(cr.getComment()));
+
+            // store it
+            storeComment(em, md, user);
+
+            // commit it
+            em.getTransaction().commit();
+
+            // and we're happy
+            return Response
+                    .status(Response.Status.OK)
+                    .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
+                    .build();
+        } catch ( BadRequestException e ) {
+            return e.getResponse();
+        } catch ( NotFoundException e ) {
+            return ErrorResponse
+                    .status(Response.Status.NOT_FOUND, e.getMessage())
+                    .build();
+        } catch ( IllegalAccessException e ) {
+            log.warn("Persistence Error: Invalid owner update attempt: " + user.getEmail());
+            log.warn("Message: " + e.getMessage());
+            return ErrorResponse
+                    .status(Response.Status.FORBIDDEN, "Invalid Access:  Unable to edit comment on indicated record.")
+                    .build();
+        } catch ( IOException | InvocationTargetException e ) {
+            if ( em.getTransaction().isActive())
+                em.getTransaction().rollback();
+
+            log.warn("Persistence Error: " + e.getMessage());
+            return ErrorResponse
+                    .status(Response.Status.INTERNAL_SERVER_ERROR, "IO Error updating comment on record: " + e.getMessage())
+                    .build();
+        } finally {
+            em.close();
+        }
+    }
+
     /**
      * Send metadata JSON to OSTI.
      *
@@ -2702,6 +2890,7 @@ public class Metadata {
         md.setLandingPage(trimUrl(md.getLandingPage()));
         md.setProprietaryUrl(trimUrl(md.getProprietaryUrl()));
         md.setDocumentationUrl(trimUrl(md.getDocumentationUrl()));
+        md.setComment(trimUrl(md.getComment()));
     }
 
     /**
