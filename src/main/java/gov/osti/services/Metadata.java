@@ -2776,8 +2776,20 @@ public class Metadata {
         List<String> reasons = new ArrayList<>();
         if (null==m.getProjectType())
             reasons.add("Missing Source Project Type.");
-        if (hasLandingPage && hasLandingContact)
-            reasons.add("Closed Source project may have Landing Page or Contact Email, but not both.");
+        if (isClosedSource) {
+            if (!hasLandingPage && !hasLandingContact)
+                reasons.add("Closed Source project must have Landing Page or Landing Contact email.");
+            if (hasLandingPage && hasLandingContact)
+                reasons.add("Closed Source project must not have both Landing Page and Contact Email.");
+            if (hasLandingPage && !Validation.isValidUrl(m.getLandingPage()))
+                reasons.add("A valid Landing Page URL is required for closed source submissions with no contact email.");
+            if (hasLandingContact && !Validation.isValidEmail(m.getLandingContact()))
+                reasons.add("A valid Contact Email is required for closed source submissions with no landing page.");
+        }
+        else {
+            if (hasLandingContact)
+                reasons.add("Open Source project cannot have Landing Contact email.");
+        }
         if (StringUtils.isBlank(m.getSoftwareTitle()))
             reasons.add("Software title is required.");
         if (StringUtils.isBlank(m.getDescription()))
