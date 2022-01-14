@@ -380,6 +380,7 @@ A full JSON example is [provided below](#json_example).
 | Field Name | Description |
 | --- | --- |
 | code_id | The unique value given to a particular DOE CODE Project record once stored.  Should be *null* or not provided for new entries, and will be returned once a record is saved or submitted successfully. |
+| access_limitations | The access limitation assigned to the project as an array of strings, delimited by commas. Valid values include: UNL, OUO, ECI, PAT, PDOUO, PROP, PROT, SSI. More information on these access limitations can be found on the [DOE CODE Help page](/doecode/help#access-limitations).<br /><br />Note: UNL cannot be combined with any other access limitation.<br /><br />Note: All OUO-categorized access limitations must also include the OUO value. Example for entering an access limitation of ECI: \["OUO","ECI"\] |
 | site_ownership_code | The DOE National Laboratory, DOE Program Office, Field Office, or Major Site/Facility that is submitting the code/software.  This value is determined by the system. |
 | project_type | This refers to how the source of the project type is accessed; must be one of "OS" (open source), "ON" (open source, not public), or "CS" (closed source, site hosted) |
 | repository_link | If the software project is available via public hosting service, such as github.com, bitbucket.org, etc. the public Repository URL should be provided here.  DOE CODE does not currently support the submission of individual branch URL paths, so this must be a primary or base URL for the repository. |
@@ -514,6 +515,7 @@ metadata fields.
 "software_type":"S",
 "repository_link":"https://github.com/doecode/doecode",
 "landing_page": "",
+"access_limitations": ["UNL"],
 "developers":[
  {"first_name":"Project",
   "middle_name":"A.",
