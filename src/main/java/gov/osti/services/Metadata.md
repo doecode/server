@@ -327,7 +327,7 @@ be announced to DOE.  Workflow status remains *Submitted* for this operation. Ad
   * if DOE, must also have a valid primary award number
 * At least one research organization is required
   * each organization must have a name
-* Contact information is required
+* Contact information is required (recipient_name/email/phone/org)
   * email must be valid
   * phone number must be valid
   * organization name is required
@@ -405,6 +405,10 @@ A full JSON example is [provided below](#json_example).
 | software_title | The software title. |
 | software_type | The type of software, either "S" for Scientific, or "B" for Business related. |
 | links | (Array) Read-only set of URL links for the record.  Only "citation" link is currently provided. |
+| recipient_name | Provide the name of the submitter. This contact information will serve as the point of contact for DOE if there are questions about the submitted software. |
+| recipient_email | Provide the email address of the submitter. The best practice would be to use an email address that is a distribution list which has multiple recipients instead of a personal email address. |
+| recipient_phone | Provide the phone number of the submitter. |
+| recipient_org | Provide the organization of the submitter. |
 
 ### <a name="persons_fields"></a>Developers and Contributors
 Developers and Contributors are one-to-many Objects within a software project's metadata information.  
