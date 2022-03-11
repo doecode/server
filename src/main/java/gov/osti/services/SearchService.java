@@ -189,9 +189,11 @@ public class SearchService {
             String approvedJson = null;
             boolean isRestrictedMetadata = true;
             if (everRemoved) {
-                MetadataTombstone mt = tombstoneResults.get(0);                
-                approvedJson = mt.getApprovedJson();
-                isRestrictedMetadata = mt.getRestrictedMetadata();
+                MetadataTombstone mt = tombstoneResults.get(0);
+                if (mt.getDoiIsMinted()) {
+                    approvedJson = mt.getApprovedJson();
+                    isRestrictedMetadata = mt.getRestrictedMetadata();
+                }
             }
             
             // if has JSON, get object and DOI state
