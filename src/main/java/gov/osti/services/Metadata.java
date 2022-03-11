@@ -1861,6 +1861,10 @@ public class Metadata {
         if ("".equals(INDEX_URL))
             return;
 
+        List<String> accessLims = md.getAccessLimitations();
+        if (accessLims != null && accessLims.contains("OUO"))
+            return;
+
         // set some reasonable default timeouts
         RequestConfig rc = RequestConfig
                 .custom()
