@@ -183,7 +183,7 @@ public class Metadata {
     private static String OSTI_HIDE_SQL = DoeServletContextListener.getConfigurationProperty("osti.hide.sql");
     // SQL used to delete records from OSTI
     private static String OSTI_REMOVAL_SQL = DoeServletContextListener.getConfigurationProperty("osti.removal.sql");
-    // URL to Datacite admin services, if configured
+    // URL to DataCite admin services, if configured
     private static String DATACITE_DOI_EDIT = DoeServletContextListener.getConfigurationProperty("datacite.doi.edit");
     // URL to biblio
     private static String DATACITE_BASE_URL = DoeServletContextListener.getConfigurationProperty("datacite.baseurl");
@@ -2835,7 +2835,7 @@ public class Metadata {
                 data.put("remove_from_osti", String.format(OSTI_HIDE_SQL, "true", "Hidden", codeId));
             }
 
-            // remove from Datacite, if approved with DOI and release date
+            // remove from DataCite, if approved with DOI and release date
             if (everApproved) {
                 MetadataSnapshot ms = snapshotResults.get(0);
                 if (DataCite.canRegister(ms.getDoi()) && ms.getDoiIsMinted()) {
@@ -2995,7 +2995,7 @@ public class Metadata {
                 data.put("restore_to_osti", String.format(OSTI_HIDE_SQL, "false", "Unhidden", codeId));
             }
 
-            // restore to Datacite, if approved with DOI and release date
+            // restore to DataCite, if approved with DOI and release date
             if (everApproved && everMinted && DataCite.canRegister(mda.getDoi())) {
                 try {
                     data.put("restore_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(mda.getDoi()));
@@ -3199,7 +3199,7 @@ public class Metadata {
                 data.put("remove_from_osti", String.format(OSTI_REMOVAL_SQL, codeId));
             }
 
-            // remove from Datacite, if approved with DOI and release date
+            // remove from DataCite, if approved with DOI and release date
             if (everApproved) {
                 if (DataCite.canRegister(approvedSnap.getDoi()) && approvedSnap.getDoiIsMinted()) {
                     data.put("update_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(approvedSnap.getDoi()));
@@ -4049,7 +4049,7 @@ public class Metadata {
             }
 
             if (!StringUtils.isBlank(update_datacite)) {                
-                msg.append("<P><BR><span style='color:red'>Please update Datacite: </span>").append(update_datacite);
+                msg.append("<P><BR><span style='color:red'>Please update DataCite: </span>").append(update_datacite);
             }
 
             if (!StringUtils.isBlank(restore_to_index)) {                
@@ -4061,7 +4061,7 @@ public class Metadata {
             }
 
             if (!StringUtils.isBlank(restore_datacite)) {                
-                msg.append("<P><BR><span style='color:red'>Please check Datacite: </span>").append(restore_datacite);
+                msg.append("<P><BR><span style='color:red'>Please check DataCite: </span>").append(restore_datacite);
             }
 
             if (!StringUtils.isBlank(failed_file_upload_dir) || !StringUtils.isBlank(failed_container_upload_dir) || !StringUtils.isBlank(failed_approved_container_dir)) {                
