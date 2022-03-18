@@ -76,6 +76,9 @@ public class SearchService {
 
     // Logger
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
+    
+    // get the defined DATACITE DOI PREFIX value
+    private static String DATACITE_PREFIX = DoeServletContextListener.getConfigurationProperty("datacite.prefix");
 
     /**
      * Implement a simple JSON filter to remove named properties.
@@ -190,7 +193,10 @@ public class SearchService {
             boolean isRestrictedMetadata = true;
             if (everRemoved) {
                 MetadataTombstone mt = tombstoneResults.get(0);
-                if (mt.getDoiIsMinted()) {
+                boolean isMinted = mt.getDoiIsMinted();
+                String doi = mt.getDoi() != null ? mt.getDoi() : "";
+                boolean matchesPrefix = doi.startsWith(DATACITE_PREFIX);                
+                if (isMinted && matchesPrefix) {
                     approvedJson = mt.getApprovedJson();
                     isRestrictedMetadata = mt.getRestrictedMetadata();
                 }
