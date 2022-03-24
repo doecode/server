@@ -3597,7 +3597,7 @@ public class Metadata {
         String licenseContactEmail = m.getLicenseContactEmail();
 
         boolean hasLicense = !(licenseList == null || licenseList.isEmpty());
-        boolean isOtherLicense = m.getLicenses().contains(DOECodeMetadata.License.Other.value());
+        boolean isOtherLicense = hasLicense && licenseList.contains(DOECodeMetadata.License.Other.value());
         boolean hasPropUrl = (!StringUtils.isBlank(m.getProprietaryUrl()));
         boolean licenseRequired = true;
         boolean licenseContactRequired = false;
