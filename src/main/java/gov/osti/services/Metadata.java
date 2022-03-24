@@ -3587,6 +3587,8 @@ public class Metadata {
         String licenseContactEmail = m.getLicenseContactEmail();
 
         boolean hasLicense = !(licenseList == null || licenseList.isEmpty());
+        boolean isOtherLicense = m.getLicenses().contains(DOECodeMetadata.License.Other.value());
+        boolean hasPropUrl = (!StringUtils.isBlank(m.getProprietaryUrl()));
         boolean licenseRequired = true;
         boolean licenseContactRequired = false;
         boolean isClosedSource = (projectType != null && projectType.startsWith("C"));
@@ -3639,10 +3641,20 @@ public class Metadata {
             reasons.add("Software title is required.");
         if (StringUtils.isBlank(m.getDescription()))
             reasons.add("Description is required.");
-        if (licenseRequired && !hasLicense)
-            reasons.add("A License is required.");
-        else if (hasLicense && m.getLicenses().contains(DOECodeMetadata.License.Other.value()) && StringUtils.isBlank(m.getProprietaryUrl()))
-            reasons.add("Proprietary License URL is required.");
+        if (isClosedSource) {
+            if (licenseRequired && !isOtherLicense)
+                reasons.add("A License of 'Other' is required.");
+            if (licenseRequired && !hasPropUrl)
+                reasons.add("Proprietary License URL is required.");
+            if (licenseRequired && isOtherLicense && licenseList.size() > 1)
+                reasons.add("Only a License of 'Other' is allowed for Closed Source.");
+        }
+        else {
+            if (licenseRequired && !hasLicense)
+                reasons.add("A License is required.");
+            else if (hasLicense && isOtherLicense && !hasPropUrl)
+                reasons.add("Proprietary License URL is required.");
+        }
         if (hasLicense) {
             for (String l : licenseList) {
                 if (!DOECodeMetadata.License.contains(l))
