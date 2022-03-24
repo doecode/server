@@ -3655,6 +3655,8 @@ public class Metadata {
             else if (hasLicense && isOtherLicense && !hasPropUrl)
                 reasons.add("Proprietary License URL is required.");
         }
+        if (hasPropUrl && !Validation.isValidUrl(m.getProprietaryUrl()))        
+            reasons.add("Proprietary License URL provided is not valid!");
         if (hasLicense) {
             for (String l : licenseList) {
                 if (!DOECodeMetadata.License.contains(l))
