@@ -1194,7 +1194,8 @@ public class Metadata {
                 md.setOwner(emd.getOwner());
                 md.setSiteOwnershipCode(emd.getSiteOwnershipCode());
                 // if there's ALREADY a DOI, and we have been SUBMITTED/APPROVED, keep it
-                if (StringUtils.isNotEmpty(emd.getDoi()) &&
+                boolean isLimited = md.getAccessLimitations() != null ? md.getAccessLimitations().contains("OUO") : false;
+                if (StringUtils.isNotEmpty(emd.getDoi()) && !isLimited &&
                     (Status.Submitted.equals(emd.getWorkflowStatus()) ||
                      Status.Approved.equals(emd.getWorkflowStatus())))
                     md.setDoi(emd.getDoi());
@@ -2133,6 +2134,10 @@ public class Metadata {
 
             em.getTransaction().begin();
 
+            // Limited cannot accept DOIs
+            if (currentLimitations.contains("OUO"))
+                md.setDoi("");
+
             performDataNormalization(md);
 
             // set the ownership and workflow status
@@ -2304,6 +2309,11 @@ public class Metadata {
             }
 
             em.getTransaction().begin();
+
+            // Limited cannot accept DOIs
+            List<String> currentLimitations = md.getAccessLimitations();
+            if (currentLimitations.contains("OUO"))
+                md.setDoi("");
 
             performDataNormalization(md);
 
