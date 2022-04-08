@@ -1238,6 +1238,9 @@ public class Metadata {
                     throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
                 }
 
+                // copy in old change log, in case user is not an admin.
+                md.setChangeLog(emd.getChangeLog());
+
                 // log changes
                 ChangeLog cl = new ChangeLog();
                 cl.setChangedBy(user.getEmail());
