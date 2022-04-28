@@ -399,7 +399,7 @@ public class CodeGov {
                     if (siteResults.size() > 0) {
                         Site s = siteResults.get(0);
 
-                        String labDisplayName = s.getLab() + " (" + s.getSiteCode() + ")";
+                        String labDisplayName = s.getLabName() + " (" + s.getSiteCode() + ")";
 
                         // add "lab_display_name" info to response record
                         ((ObjectNode) objNode).put("lab_display_name", labDisplayName);

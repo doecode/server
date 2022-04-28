@@ -13,6 +13,9 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.apache.commons.lang3.StringUtils;
+
 @Entity
 @Table(name = "sites")
 @NamedQueries({
@@ -28,14 +31,15 @@ import javax.persistence.Table;
     ,
     @NamedQuery(name = "Site.findHQ", query = "SELECT s FROM Site s WHERE s.hqUsage = true ORDER BY s")
 })
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Site implements Serializable {
 
     private String siteCode;
     private List<String> emailDomains;
     private List<String> pocEmails;
-    private String lab;
-    private boolean standardUsage = false;
-    private boolean hqUsage = false;
+    private String labName;
+    private Boolean standardUsage;
+    private Boolean hqUsage;
     private String softwareGroupEmail;
 
     public Site() {
@@ -62,6 +66,14 @@ public class Site implements Serializable {
     }
 
     public void setEmailDomains(List<String> emailDomains) {
+        for (int i = emailDomains.size() - 1; i >= 0; i--) {
+            // do not allow empty strings
+            if (StringUtils.isBlank(emailDomains.get(i)))
+                emailDomains.remove(i);
+            else
+                emailDomains.set(i, emailDomains.get(i).toLowerCase());
+        }
+
         this.emailDomains = emailDomains;
     }
 
@@ -79,36 +91,50 @@ public class Site implements Serializable {
         if (pocEmails == null)
             pocEmails = new ArrayList<>();
 
-        for (int i = 0; i < pocEmails.size(); i++)
-            pocEmails.set(i, pocEmails.get(i).toLowerCase());
+        for (int i = pocEmails.size() - 1; i >= 0; i--) {
+            // do not allow empty strings
+            if (StringUtils.isBlank(pocEmails.get(i)))
+                pocEmails.remove(i);
+            else
+                pocEmails.set(i, pocEmails.get(i).toLowerCase());
+        }
 
         this.pocEmails = pocEmails;
     }
 
-    public String getLab() {
-        return lab;
+    @Column(name = "LAB_NAME")
+    public String getLabName() {
+        return labName;
     }
 
-    public void setLab(String lab) {
-        this.lab = lab;
+    public void setLabName(String lab) {
+        this.labName = lab;
     }
 
     @Column(name = "standard_usage", nullable = false)
-    public boolean isStandardUsage() {
+    public Boolean getStandardUsage() {
         return standardUsage;
     }
 
-    public void setStandardUsage(boolean usage) {
+    public void setStandardUsage(Boolean usage) {
         this.standardUsage = usage;
     }
 
+    public Boolean isStandardUsage() {
+        return standardUsage;
+    }
+
     @Column(name = "hq_usage", nullable = false)
-    public boolean isHqUsage() {
+    public Boolean getHqUsage() {
         return hqUsage;
     }
 
-    public void setHqUsage(boolean usage) {
+    public void setHqUsage(Boolean usage) {
         this.hqUsage = usage;
+    }
+
+    public Boolean isHqUsage() {
+        return hqUsage;
     }
 
     @Column(name = "SOFTWARE_GROUP_EMAIL")

@@ -3952,7 +3952,7 @@ public class Metadata {
             log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
             return;
         }
-        String lab = site.getLab();
+        String lab = site.getLabName();
         lab = lab.isEmpty() ? siteCode : lab;
 
         try {
@@ -4010,7 +4010,7 @@ public class Metadata {
             log.warn("Unable to locate SITE information for SITE CODE: " + siteCode);
             return;
         }
-        String lab = site.getLab();
+        String lab = site.getLabName();
         lab = lab.isEmpty() ? siteCode : lab;
 
         String fileInfo;
@@ -4298,7 +4298,7 @@ public class Metadata {
                 email.setCharset(org.apache.commons.mail.EmailConstants.UTF_8);
                 email.setHostName(EMAIL_HOST);
 
-                String lab = site.getLab();
+                String lab = site.getLabName();
                 lab = lab.isEmpty() ? siteCode : lab;
 
                 String softwareTitle = md.getSoftwareTitle().replaceAll("^\\h+|\\h+$","");

@@ -37,6 +37,7 @@ import javax.ws.rs.PathParam;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.commons.beanutils.BeanUtilsBean;
 
 @Path("site")
 public class SiteServices {
@@ -213,142 +214,101 @@ public class SiteServices {
     public Response editSite(String input) {
 
         EntityManager em = DoeServletContextListener.createEntityManager();
-        SiteEditRequest[] requests;
+        Site[] requests;
         try {
-            requests = mapper.readValue(input, SiteEditRequest[].class);
+            requests = mapper.readValue(input, Site[].class);
         } catch (IOException e) {
             log.error("Error in register: ", e);
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request. [" + e.getMessage() + "]")
+                    .internalServerError("Error processing request. [" + e.getMessage() + "]")
                     .build();
         }
 
         // nothing to do?
-        if (requests == null || requests.length == 0)
+        if (requests == null || requests.length == 0) {
             return ErrorResponse
                     .badRequest("Required information missing.")
                     .build();
+        }
 
-
-
-            // validate values
-            for (SiteEditRequest req : requests) {
-                List<String> emails = req.getPocEmails();
-                List<String> emailDomains = req.getEmailDomains();
-                String softwareGroupEmail = req.getSoftwareGroupEmail();
-                String siteCode = req.getSiteCode();
-
-                TypedQuery<Site> query = em.createNamedQuery("Site.findBySiteCode", Site.class)
-                        .setParameter("site", siteCode);
-
-                // look up the Site
-                Site site;
-                try {
-                    // site must be a valid one
-                    if (siteCode == null || StringUtils.isBlank(siteCode))
-                    return ErrorResponse
-                            .badRequest("Site Code is required.")
-                            .build();
-
-                    try{
-                        site = query.getSingleResult();
-                    } catch(NoResultException e) {
-                        site = null;
-                    }
-
-                    // if there's not a Site on file, cannot edit
-                    if ( site == null ) {
-                        return ErrorResponse
-                                .status(Response.Status.BAD_REQUEST, "A Site with code ["+ siteCode +"] does not exists.")
-                                .build();
-                    }
-        
-                    if (softwareGroupEmail != null) {
-                        // email must be a valid one
-                        if (!Validation.isValidEmail(softwareGroupEmail))
-                        return ErrorResponse
-                                .badRequest("Invalid Software Group Email address ["+ softwareGroupEmail +"] for Site ["+ siteCode +"].")
-                                .build();
-                    }
-
-                    if (emailDomains == null || emailDomains.size() == 0) {
-                        return ErrorResponse
-                                .badRequest("At least one Email Domain required for Site ["+ siteCode +"].")
-                                .build();
-                    }
-
-                    if (emails != null) {
-                        for (String email : emails) {
-                            // email must be a valid one
-                            if (!Validation.isValidEmail(email))
-                            return ErrorResponse
-                                    .badRequest("Invalid POC Email address ["+ email +"] for Site ["+ siteCode +"].")
-                                    .build();
-                        }
-                    }
-
-                    for (String domain : emailDomains) {
-                        // email must be a valid one
-                        if (!Validation.isValidEmail("xxxx" + domain))
-                        return ErrorResponse
-                                .badRequest("Invalid Email Domain ["+ domain +"] for Site ["+ siteCode +"].")
-                                .build();
-                    }
-                } catch (Exception e) {
-                    return ErrorResponse
-                            .badRequest("site_code: '" + siteCode + "' validation failed: " + e.getMessage())
-                            .build();
-                }
-            }
-
+        List<Site> editedSites = new ArrayList<>();
         try {
+            List<String> errors = new ArrayList<>();
+
             em.getTransaction().begin();
 
             // update the values
-            for (SiteEditRequest req : requests) {
-                List<String> emails = req.getPocEmails();
+            Site site = null;
+            for (int i = 0; i < requests.length; i++) {
+                Site req = requests[i];
                 String siteCode = req.getSiteCode();
+                Boolean isStandard = req.isStandardUsage();
 
                 TypedQuery<Site> query = em.createNamedQuery("Site.findBySiteCode", Site.class)
                         .setParameter("site", siteCode);
 
-                // look up the Site, set emails
-                Site site;
-                try {
+                try{
                     site = query.getSingleResult();
-                    site.setStandardUsage(req.isStandardUsage());
-                    site.setHqUsage(req.isHqUsage());
-                    site.setLab(req.getLabName());
-                    site.setPocEmails(req.getPocEmails());
-                    site.setEmailDomains(req.getEmailDomains());
-                    site.setSoftwareGroupEmail(req.getSoftwareGroupEmail());
-                } catch (Exception e) {
-                    return ErrorResponse
-                            .badRequest("site_code: '" + siteCode + "' update failed: " + e.getMessage())
-                            .build();
+                } catch(NoResultException e) {
+                    site = null;
                 }
 
-                em.merge(site);
+                // if there's not already a Site on file, cannot edit
+                if ( site == null ) {
+                    errors.add("A Site of ["+ siteCode +"] does not exist.");
+
+                    continue;
+                }
+
+                try{
+                    // found it, "merge" Bean attributes
+                    BeanUtilsBean noNulls = new NoNullsBeanUtilsBean();
+                    noNulls.copyProperties(site, req);
+
+                    editedSites.add(site);
+                } catch (Exception e) {
+                    errors.add("site_code: '" + siteCode + "' update failed: " + e.getMessage());
+                }
+
+                errors.addAll(validateSite(site));
+
+                // persist only if no errors
+                if ( errors.isEmpty() ) {
+                    em.merge(site);
+                }
+
             }
 
-            em.getTransaction().commit();
+            // return
+            if ( errors.isEmpty() ) {
+                em.getTransaction().commit();
 
-            // at the end, return any error message
-            return Response
-                    .ok()
-                    .entity(mapper.valueToTree(requests).toString())
-                    .build();
+                // no errors
+                return Response
+                        .ok()
+                        .entity(mapper.valueToTree(editedSites).toString())
+                        .build();
+            }
+            else {
+                em.getTransaction().rollback();
+                
+                // errors, return any error message
+                return ErrorResponse
+                        .badRequest(errors)
+                        .build();
+            }
         } catch (IllegalArgumentException e) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
             log.error("Persistence Error Updating Site info", e);
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .internalServerError(e.getMessage())
                     .build();
         } finally {
             em.close();
         }
+
     }
 
     /**
@@ -372,134 +332,88 @@ public class SiteServices {
     public Response addSite(String input) {
 
         EntityManager em = DoeServletContextListener.createEntityManager();
-        SiteEditRequest[] requests;
+        Site[] requests;
         try {
-            requests = mapper.readValue(input, SiteEditRequest[].class);
+            requests = mapper.readValue(input, Site[].class);
         } catch (IOException e) {
             log.error("Error in register: ", e);
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, "Error processing request. [" + e.getMessage() + "]")
+                    .internalServerError("Error processing request. [" + e.getMessage() + "]")
                     .build();
         }
 
         // nothing to do?
-        if (requests == null || requests.length == 0)
+        if (requests == null || requests.length == 0) {
             return ErrorResponse
                     .badRequest("Required information missing.")
                     .build();
-
-
-
-            // validate values
-            for (SiteEditRequest req : requests) {
-                List<String> emails = req.getPocEmails();
-                List<String> emailDomains = req.getEmailDomains();
-                String softwareGroupEmail = req.getSoftwareGroupEmail();
-                String siteCode = req.getSiteCode();
-
-                TypedQuery<Site> query = em.createNamedQuery("Site.findBySiteCode", Site.class)
-                        .setParameter("site", siteCode);
-
-                // look up the Site
-                Site site;
-                try {
-                    // site must be a valid one
-                    if (siteCode == null || StringUtils.isBlank(siteCode))
-                    return ErrorResponse
-                            .badRequest("Site Code is required.")
-                            .build();
-
-                    try{
-                        site = query.getSingleResult();
-                    } catch(NoResultException e) {
-                        site = null;
-                    }
-
-                    // if there's already a Site on file, cannot re-add
-                    if ( site != null ) {
-                        return ErrorResponse
-                                .status(Response.Status.BAD_REQUEST, "A Site with code ["+ siteCode +"] already exists.")
-                                .build();
-                    }
-        
-                    if (softwareGroupEmail != null) {
-                        // email must be a valid one
-                        if (!Validation.isValidEmail(softwareGroupEmail))
-                        return ErrorResponse
-                                .badRequest("Invalid Software Group Email address ["+ softwareGroupEmail +"] for Site ["+ siteCode +"].")
-                                .build();
-                    }
-
-                    if (emailDomains == null || emailDomains.size() == 0) {
-                        return ErrorResponse
-                                .badRequest("At least one Email Domain required for Site ["+ siteCode +"].")
-                                .build();
-                    }
-
-                    if (emails != null) {
-                        for (String email : emails) {
-                            // email must be a valid one
-                            if (!Validation.isValidEmail(email))
-                            return ErrorResponse
-                                    .badRequest("Invalid POC Email address ["+ email +"] for Site ["+ siteCode +"].")
-                                    .build();
-                        }
-                    }
-
-                    for (String domain : emailDomains) {
-                        // email must be a valid one
-                        if (!Validation.isValidEmail("xxxx" + domain))
-                        return ErrorResponse
-                                .badRequest("Invalid Email Domain ["+ domain +"] for Site ["+ siteCode +"].")
-                                .build();
-                    }
-                } catch (Exception e) {
-                    return ErrorResponse
-                            .badRequest("site_code: '" + siteCode + "' validation failed: " + e.getMessage())
-                            .build();
-                }
-            }
+        }
 
         try {
+            List<String> errors = new ArrayList<>();
+
+            em.getTransaction().begin();
+
             // add the values
-            for (SiteEditRequest req : requests) {
-                em.getTransaction().begin();
+            Site site;
+            //for (Site req : requests) {
+            for (int i = 0; i < requests.length; i++) {
+                Site req = requests[i];
                 String siteCode = req.getSiteCode();
 
-                // look up the Site, set emails
-                Site site;
-                try {
-                    site = new Site();
-                    site.setSiteCode(req.getSiteCode());
-                    site.setStandardUsage(req.isStandardUsage());
-                    site.setHqUsage(req.isHqUsage());
-                    site.setLab(req.getLabName());
-                    site.setPocEmails(req.getPocEmails());
-                    site.setEmailDomains(req.getEmailDomains());
-                    site.setSoftwareGroupEmail(req.getSoftwareGroupEmail());
-                } catch (Exception e) {
-                    return ErrorResponse
-                            .badRequest("site_code: '" + siteCode + "' addition failed: " + e.getMessage())
-                            .build();
+                // confirm not exists
+                TypedQuery<Site> query = em.createNamedQuery("Site.findBySiteCode", Site.class)
+                    .setParameter("site", siteCode);
+
+                try{
+                    site = query.getSingleResult();
+                } catch(NoResultException e) {
+                    site = null;
                 }
 
-                em.persist(site);
-                em.getTransaction().commit();
+                // if there's already a Site on file, cannot re-add
+                if ( site != null ) {
+                    errors.add("A Site of ["+ siteCode +"] already exists.");
+
+                    continue;
+                }
+
+                // validate
+                errors.addAll(validateSite(req));
+
+                // persist only if no errors
+                if ( errors.isEmpty() ) {
+                    em.persist(req);
+                }
+
             }
 
+            // return
+            if ( errors.isEmpty() ) {
+                em.getTransaction().commit();
 
-            // at the end, return any error message
-            return Response
-                    .ok()
-                    .entity(mapper.valueToTree(requests).toString())
-                    .build();
+                // no errors
+                return Response
+                        .ok()
+                        .entity(mapper.valueToTree(requests).toString())
+                        .build();
+            }
+            else {
+                em.getTransaction().rollback();
+                
+                // errors, return any error message
+                return ErrorResponse
+                        .badRequest(errors)
+                        .build();
+            }
+
         } catch (IllegalArgumentException e) {
             if (em.getTransaction().isActive())
                 em.getTransaction().rollback();
 
             log.error("Persistence Error Adding Site info", e);
             return ErrorResponse
-                    .status(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage())
+                    .internalServerError(e.getMessage())
                     .build();
         } finally {
             em.close();
@@ -507,144 +421,82 @@ public class SiteServices {
     }
 
     /**
-     * SiteEditRequest Request -- for Site update requests.
+     * Perform validations for SITE records.
      *
-     * siteCode - desired siteCode to alter
-     * labName - desired Lab Name value
-     * pocEmails - array of pocEmails to associate to the siteCode
-     * softwareGroupEmail - desired Software Group Email value
+     * @param s the Site information to validate
+     * @return a List of error messages if any validation errors, empty if none
      */
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class SiteEditRequest implements Serializable {
+    protected static List<String> validateSite(Site s) {
+        List<String> failures = new ArrayList<>();
 
-        private String siteCode;
-        private String labName;
-        private List<String> emailDomains;
-        private List<String> pocEmails;
-        private boolean standardUsage = false;
-        private boolean hqUsage = false;
-        private String softwareGroupEmail;
-
-        public SiteEditRequest() {
+        // allow overwrites and defaults
+        if (StringUtils.isBlank(s.getSoftwareGroupEmail())) {
+            s.setSoftwareGroupEmail(null);
+        }
+        if (s.isStandardUsage() == null) {
+            s.setStandardUsage(false);
+        }
+        if (s.isHqUsage() == null) {
+            s.setHqUsage(false);
         }
 
-        /**
-         * @return the siteCode
-         */
-        public String getSiteCode() {
-            return siteCode;
-        }
+        String siteCode = s.getSiteCode();
+        String labName = s.getLabName();
+        List<String> emails = s.getPocEmails();
+        List<String> emailDomains = s.getEmailDomains();
+        String softwareGroupEmail = s.getSoftwareGroupEmail();
+        boolean isStandard = s.isStandardUsage();
 
-        /**
-         * @param site the siteCode to set
-         */
-        public void setSiteCode(String site) {
-            this.siteCode = site;
-        }
-
-        /**
-         * @return the labName
-         */
-        public String getLabName() {
-            return labName;
-        }
-
-        /**
-         * @param lab the labName to set
-         */
-        public void setLabName(String lab) {
-            this.labName = lab;
-        }
-
-        /**
-         * @return the pocEmails
-         */
-        public List<String> getPocEmails() {
-            return pocEmails;
-        }
-
-        /**
-         * @param pocEmails associated to a siteCode
-         */
-        public void setPocEmails(List<String> pocEmails) {
-            if (pocEmails == null)
-                pocEmails = new ArrayList<String>();
-
-            for (int i = pocEmails.size() - 1; i >= 0; i--) {
-                // do not allow empty strings
-                if (StringUtils.isBlank(pocEmails.get(i)))
-                    pocEmails.remove(i);
-                else
-                    pocEmails.set(i, pocEmails.get(i).toLowerCase());
+        try {
+            // site must be a valid one
+            if (siteCode == null || StringUtils.isBlank(siteCode)) {
+                failures.add("Site Code is required.");
             }
 
-            this.pocEmails = pocEmails;
-        }
-
-        /**
-         * @return the emailDomains
-         */
-        public List<String> getEmailDomains() {
-            return emailDomains;
-        }
-
-        /**
-         * @param emailDomains domains associated to a siteCode
-         */
-        public void setEmailDomains(List<String> emailDomains) {
-            for (int i = emailDomains.size() - 1; i >= 0; i--) {
-                // do not allow empty strings
-                if (StringUtils.isBlank(emailDomains.get(i)))
-                    emailDomains.remove(i);
-                else
-                    emailDomains.set(i, emailDomains.get(i).toLowerCase());
+            if (labName == null || StringUtils.isBlank(labName)) {
+                // Lab Name must be provided
+                failures.add("Lab Name not provided for Site ["+ siteCode +"].");
             }
 
-            this.emailDomains = emailDomains;
+            if (softwareGroupEmail != null) {
+                // email must be a valid one
+                if (!Validation.isValidEmail(softwareGroupEmail)) {
+                    failures.add("Invalid Software Group Email address ["+ softwareGroupEmail +"] for Site ["+ siteCode +"].");
+                }
+            }
+
+            if (isStandard || (!isStandard && siteCode.equals("HQ"))) {
+                if (emailDomains == null || emailDomains.size() == 0) {
+                    failures.add("At least one Email Domain required for Site ["+ siteCode +"].");
+                }
+                else {
+                    for (String domain : emailDomains) {
+                        // email must be a valid one
+                        if (domain == null || !domain.startsWith("@") || !Validation.isValidEmail("xxxx" + domain)) {
+                            failures.add("Invalid Email Domain ["+ domain +"] for Site ["+ siteCode +"].");
+                        }
+                    }
+                }
+            }
+            else {
+                if (emailDomains != null && emailDomains.size() > 0) {
+                    failures.add("For Site ["+ siteCode +"], Email Domain is only allowed for site 'HQ' and standard usage sites.");
+                }
+            }
+
+            if (emails != null) {
+                for (String email : emails) {
+                    // email must be a valid one
+                    if (!Validation.isValidEmail(email)) {
+                        failures.add("Invalid POC Email address ["+ email +"] for Site ["+ siteCode +"].");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            failures.add("site_code: '" + siteCode + "' validation failed: " + e.getMessage());
         }
 
-        /**
-         * @return the isStandardUsage
-         */
-        public boolean isStandardUsage() {
-            return standardUsage;
-        }
-
-        /**
-         * @param usage boolean for Standard usage
-         */   
-        public void setStandardUsage(boolean usage) {
-            this.standardUsage = usage;
-        }
-    
-        /**
-         * @return the isHqUsage
-         */
-        public boolean isHqUsage() {
-            return hqUsage;
-        }
-
-        /**
-         * @param usage boolean for HQ usage
-         */    
-        public void setHqUsage(boolean usage) {
-            this.hqUsage = usage;
-        }
-
-        /**
-         * @return the softwareGroupEmail
-         */
-        public String getSoftwareGroupEmail() {
-            return softwareGroupEmail;
-        }
-
-        /**
-         * @param email associated to a siteCode
-         */
-        public void setSoftwareGroupEmail(String email) {
-            this.softwareGroupEmail = email;
-        }
-
+        return failures;
     }
 
     /**

@@ -102,7 +102,7 @@ public class UserRole implements Serializable {
     
                 for (Site site:siteList) {
                     String code = site.getSiteCode();
-                    String lab = site.getLab();
+                    String lab = site.getLabName();
                     roles.add(new UserRole(code, code, lab));
                 }
             } finally {

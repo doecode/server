@@ -61,7 +61,7 @@ Content-Length: 27
 Date: Mon, 14 Aug 2017 14:55:04 GMT
 ```
 ```json
-[{"site_code": "ABCD","email_domains": ["@abcd.gov"],"poc_emails": ["smith@abcd.gov","jones@abcd.gov"],"lab": "Alpha Bravo Charlie Delta","isStandardUsage":true,"isHqUsage":false},{"site_code": "EFGH","email_domains": ["@efgh.gov"],"poc_emails": [],"lab": "Echo Foxtrot Golf Hotel","isStandardUsage":true,"isHqUsage":false}]
+[{"site_code": "ABCD","email_domains": ["@abcd.gov"],"poc_emails": ["smith@abcd.gov","jones@abcd.gov"],"lab_name": "Alpha Bravo Charlie Delta","isStandardUsage":true,"isHqUsage":false},{"site_code": "EFGH","email_domains": ["@efgh.gov"],"poc_emails": [],"lab_name": "Echo Foxtrot Golf Hotel","isStandardUsage":true,"isHqUsage":false}]
 ```
 
 ### info/{site}
@@ -82,7 +82,7 @@ Authenticated OSTI role end point, retrieves Site information for a specific sit
 > Content-Type: application/json
 > ```
 > ```json
-> {"site_code": "SITE","email_domains": ["@site.gov"],"poc_emails": [],"lab": "The Site"}
+> {"site_code": "SITE","email_domains": ["@site.gov"],"poc_emails": [],"lab_name": "The Site"}
 > ```
 
 ## Site Management
