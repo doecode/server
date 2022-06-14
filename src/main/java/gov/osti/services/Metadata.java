@@ -197,6 +197,8 @@ public class Metadata {
     private static String ARCHIVER_URL = DoeServletContextListener.getConfigurationProperty("archiver.url");
     // get the SITE URL base for applications
     private static String SITE_URL = DoeServletContextListener.getConfigurationProperty("site.url");
+    // get the SITE URL base for applications
+    private static String SRC_REGISTRATION_URL = DoeServletContextListener.getConfigurationProperty("src.registration.url");
     // get Program Manager info
     private static String PM_NAME = DoeServletContextListener.getConfigurationProperty("project.manager.name");
     private static String PM_EMAIL = DoeServletContextListener.getConfigurationProperty("project.manager.email");
@@ -4150,6 +4152,8 @@ public class Metadata {
         if (!Status.Approved.equals(md.getWorkflowStatus()))
             return;
 
+        boolean is_limited = md.getIsLimited();
+
         try {
             // get the OWNER information
             User owner = UserServices.findUserByEmail(md.getOwner());
@@ -4194,13 +4198,22 @@ public class Metadata {
                .append(owner.getLastName())
                .append(":");
 
-            msg.append("<P>Thank you -- your ").append(lastApprovalFor).append(" project, DOE CODE ID: <a href=\"")
-               .append(SITE_URL)
-               .append("/biblio/")
-               .append(codeId)
-               .append("\">")
-               .append(codeId)
-               .append("</a>,");
+            msg.append("<P>Thank you -- your ").append(lastApprovalFor).append(" project, DOE CODE ID: ");
+                
+            if (is_limited) {
+                msg.append(codeId);
+            }
+            else {
+                msg.append("<a href=\"")
+                .append(SITE_URL)
+                .append("/biblio/")
+                .append(codeId)
+                .append("\">")
+                .append(codeId)
+                .append("</a>");
+            }
+
+            msg.append(",");
 
             if (showDoiUrl) {
                 String doiUrlPrefix = "https://doi.org/";
@@ -4213,10 +4226,20 @@ public class Metadata {
                     .append(doiUrlPrefix + doi)
                     .append("</a>,");
             }
-               
-            msg.append(" has been approved.  It is now <a href=\"")
-               .append(SITE_URL)
-               .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.</P>");
+
+            msg.append(" has been approved.  ");
+            
+            if (is_limited) {
+                msg.append("It is now discoverable in Science Research Connection (SRC).  For access to SRC, you must register <a href=\"")
+                .append(SRC_REGISTRATION_URL)
+                .append("\">here</a>.");
+            }
+            else {
+                msg.append("It is now <a href=\"")
+                .append(SITE_URL)
+                .append("\">searchable</a> in DOE CODE by, for example, title or CODE ID #.");
+            }
+            msg.append("</P>");
 
             // OMIT the following for BUSINESS TYPE software, or last ANNOUNCED software
             if (!DOECodeMetadata.Type.B.equals(md.getSoftwareType()) && !lastApprovalFor.equalsIgnoreCase("announced")) {
