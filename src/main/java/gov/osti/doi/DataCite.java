@@ -470,6 +470,10 @@ public class DataCite {
             // DOI is NOT currently registered to anyone, OPEN
             if (results.isEmpty())
                 return true;
+
+            // if more than one record for this DOI exists, automatically fail
+            if (results.size() > 1)
+                return false;
             
             // get to whom it IS registered
             DOECodeMetadata result = results.get(0);
