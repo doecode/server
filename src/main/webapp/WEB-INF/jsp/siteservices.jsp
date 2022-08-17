@@ -15,7 +15,7 @@
           <title>DOE CODE Site Services API Documentation</title>
 
           <!-- Flatdoc -->
-          <script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+          <script src="//ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
           <script src='${pageContext.request.contextPath}/js/legacy.js'></script>
           <script src='${pageContext.request.contextPath}/js/flatdoc-0.90-jq3.js'></script>
 
