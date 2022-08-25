@@ -358,9 +358,13 @@ public class CodeGov {
 
             // map Snapshot JSON to Metadata objects
             List<DOECodeMetadata> metadataList = new ArrayList<>();
-            for (MetadataSnapshot s : snapshots)
+            for (MetadataSnapshot s : snapshots) {
                 // pull metadata from snapshot
-                metadataList.add(JSON_MAPPER.readValue(s.getJson(), DOECodeMetadata.class));
+                DOECodeMetadata md = JSON_MAPPER.readValue(s.getJson(), DOECodeMetadata.class);
+
+                if (!md.getIsLimited())
+                    metadataList.add(md);
+            }
 
             // create a List of Metadata records, then filter down to desired results
             RecordsList records = new RecordsList(metadataList);
