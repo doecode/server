@@ -112,7 +112,7 @@ public class Validation {
     protected static final Pattern EMAIL_PATTERN = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
     protected static final Pattern URL_PATTERN = Pattern.compile("\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     protected static final Pattern DISALLOWED_URL_PATTERN = Pattern.compile("(?i)\\bhttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*?(?:dropbox[.]com|(?:docs|drive)[.]google).*");
-    protected static final Pattern DOI_PATTERN = Pattern.compile("^(?i)(?:doi:|https?:\\/\\/(?:dx[.])?doi[.]org\\/)?10.\\d{4,9}\\/[-._;()\\/:A-Za-z0-9]+$");
+    protected static final Pattern DOI_PATTERN = Pattern.compile("^(?i)(?:doi:|https?:\\/\\/(?:dx[.])?doi[.]org\\/)?10.\\d{4,9}\\/[-._;()<>\\/:A-Za-z0-9]+$");
     protected static final Pattern ORCID_PATTERN = Pattern.compile("(?i)^\\s*(?:(?:https?:\\/\\/)?(?:www\\.)?orcid\\.org\\/)?(\\d{4}(?:-?\\d{4}){2}(?:-?\\d{3}[\\dX]))\\s*$");
     protected static final Pattern BRCODE_PATTERN = Pattern.compile("^[A-Za-z]{2}\\d{7}$");
 

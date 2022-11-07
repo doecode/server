@@ -204,7 +204,7 @@ public class Metadata {
     private static String PM_EMAIL = DoeServletContextListener.getConfigurationProperty("project.manager.email");
 
     // set pattern for DOI normalization
-    private static final Pattern DOI_TRIM_PATTERN = Pattern.compile("(10.\\d{4,9}\\/[-._;()\\/:A-Za-z0-9]+)$");
+    private static final Pattern DOI_TRIM_PATTERN = Pattern.compile("(10.\\d{4,9}\\/[-._;()<>\\/:A-Za-z0-9]+)$");
     private static final Pattern URL_TRIM_PATTERN = Pattern.compile("^(.*)(?<!\\/)\\/?$");
 
     // create and start a ConnectorFactory for use by "autopopulate" service
