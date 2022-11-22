@@ -2854,7 +2854,7 @@ public class Metadata {
             if (everApproved) {
                 MetadataSnapshot ms = snapshotResults.get(0);
                 if (DataCite.canRegister(ms.getDoi()) && ms.getDoiIsMinted()) {
-                    data.put("update_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(ms.getDoi()));
+                    data.put("update_datacite", String.format(DATACITE_DOI_EDIT, URLEncoder.encode(ms.getDoi())));
                 }
             }
 
@@ -3013,7 +3013,7 @@ public class Metadata {
             // restore to DataCite, if approved with DOI and release date
             if (everApproved && everMinted && DataCite.canRegister(mda.getDoi())) {
                 try {
-                    data.put("restore_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(mda.getDoi()));
+                    data.put("restore_datacite", String.format(DATACITE_DOI_EDIT, URLEncoder.encode(mda.getDoi())));
                     DataCite.register(mda);
                 } catch ( IOException e ) {
                     // if DataCite registration failed, say why
@@ -3217,7 +3217,7 @@ public class Metadata {
             // remove from DataCite, if approved with DOI and release date
             if (everApproved) {
                 if (DataCite.canRegister(approvedSnap.getDoi()) && approvedSnap.getDoiIsMinted()) {
-                    data.put("update_datacite", DATACITE_DOI_EDIT + URLEncoder.encode(approvedSnap.getDoi()));
+                    data.put("update_datacite", String.format(DATACITE_DOI_EDIT, URLEncoder.encode(approvedSnap.getDoi())));
                 }
             }
 
