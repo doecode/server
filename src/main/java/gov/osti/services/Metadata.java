@@ -3873,6 +3873,8 @@ public class Metadata {
     private static List<String> validateSponsorOrgs(DOECodeMetadata m) {
         List<String> reasons = new ArrayList<>();
 
+        boolean isMig = m.getIsMigration();
+
         int doeSponsorCount = 0;
         if (null==m.getSponsoringOrganizations() || m.getSponsoringOrganizations().isEmpty())
             reasons.add("At least one sponsoring organization is required.");
@@ -3880,10 +3882,18 @@ public class Metadata {
             for ( SponsoringOrganization o : m.getSponsoringOrganizations() ) {
                 if (StringUtils.isBlank(o.getOrganizationName()))
                     reasons.add("Sponsoring organization name is required.");
-                if (StringUtils.isBlank(o.getPrimaryAward()) && o.isDOE())
-                    reasons.add("Primary award number is required.");
-                else if (o.isDOE() && !Validation.isValidAwardNumber(o.getPrimaryAward()))
-                    reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
+
+                if (isMig) {
+                    // if migration, must be valid if exists, but not required
+                    if (o.isDOE() && !StringUtils.isBlank(o.getPrimaryAward()) && !Validation.isValidAwardNumber(o.getPrimaryAward()))
+                        reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
+                }
+                else {
+                    if (StringUtils.isBlank(o.getPrimaryAward()) && o.isDOE())
+                        reasons.add("Primary award number is required.");
+                    else if (o.isDOE() && !Validation.isValidAwardNumber(o.getPrimaryAward()))
+                        reasons.add("Award Number " + o.getPrimaryAward() + " is not valid.");
+                }
 
                 if (o.isDOE())
                     doeSponsorCount++;
