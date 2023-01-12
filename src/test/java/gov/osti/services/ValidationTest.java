@@ -40,8 +40,27 @@ public class ValidationTest {
      */
     @Test
     public void testIsValidEmail() {
-        String[] valid = { "someguy@someplace.com", "me@anotherspot.com" };
-        String[] invalid = { "someguy", "@domain.com", "nope@", "notme#noplace.com" };
+        String[] valid = {"me@anotherspot.com",
+            "someguy@someplace.com",
+            "TeeeeeeeeNTeeeeeeeeNTeeeeeeeeNTeeeeeeeeNTeeeeeeeeNTeeeeeeeeNatuu@test.gov",
+            "a.ten@example.com",
+            "--ten@example.com",
+            "em@a-exampe.apple.com",
+            "em@example.-apple.com",
+            "eapp+em@example.-apple.com",
+            "doecode---@9-ostie.app.-le.gov"};
+        String[] invalid = { "email@-example.com",
+            "te??n@example.com",
+            "em@-exampe.app-le.com",
+            "ten.@example.com",
+            "a..ten@example.com",
+            ".ten@example.com",
+            "TeeeeeeeeNTeeeeeeeeNTeeeeeeeeNTeeeeeeeeNTeeeeeeeeNTeeeeeeeeNaetuu@test.gov",
+            "someguy",
+            "@domain.com",
+            "nope@",
+            "notme#noplace.com",
+            "example@-aoe.com"};
         
         for ( String address : valid ) {
             assertTrue  ("Should be valid: " + address, Validation.isValidEmail(address));
