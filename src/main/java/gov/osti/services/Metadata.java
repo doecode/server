@@ -66,7 +66,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
@@ -319,7 +319,7 @@ public class Metadata {
         if (StringUtils.isBlank(input))
             return input;
 
-        return Jsoup.clean(input, Whitelist.basic());
+        return Jsoup.clean(input, Safelist.basic());
     }
 
     /**
