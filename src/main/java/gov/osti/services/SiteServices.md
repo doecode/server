@@ -44,7 +44,7 @@ General or non-account-specific informational API calls.
 
 `GET /doecodeapi/services/site/info`
 
-Authenticated OSTI role end point, retrieves a list of Site information.
+Authenticated Site Admin role end point, retrieves a list of Site information.
 
 > Request:
 ```html
@@ -68,7 +68,7 @@ Date: Mon, 14 Aug 2017 14:55:04 GMT
 
 `GET /doecodeapi/services/site/info/{site}`
 
-Authenticated OSTI role end point, retrieves Site information for a specific site code.
+Authenticated Site Admin role end point, retrieves Site information for a specific site code.
 
 > Request:
 > ```html
@@ -93,12 +93,12 @@ API calls to manage site information; update information.
 
  `POST /doecodeapi/services/site/edit`
 
-Updates a Site in DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
+Updates a Site in DOE CODE.  User must be verified Site Admin role.  Primarily intended to support client front-end Site management.
 Supports Software Group Email, and POC updates.  Empty value/array will erase the data.  If successful, simply returns the new data.
 
 > Request:
 ```
-POST /doecodeapi/services/site/update
+POST /doecodeapi/services/site/edit
 Content-Type: application/json
 ```
 ```json
@@ -122,7 +122,7 @@ On success, JSON containing the updated Site information is returned.
 
  `PUT /doecodeapi/services/site/new`
 
-Adds a Site to DOE CODE.  User must be verified OSTI role.  Primarily intended to support client front-end Site management.
+Adds a Site to DOE CODE.  User must be verified Site Admin role.  Primarily intended to support client front-end Site management.
 Supports Site Code, Lab Name, Software Group Email, Standard flag, HQ flag, and POC list.  If successful, simply returns the new data.
 
 > Request:
