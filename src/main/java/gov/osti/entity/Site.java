@@ -12,6 +12,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +38,7 @@ public class Site implements Serializable {
     private String siteCode;
     private List<String> emailDomains;
     private List<String> pocEmails;
+    @NotNull( message = "Lab Name can not be Null.")
     private String labName;
     private Boolean standardUsage;
     private Boolean hqUsage;
