@@ -207,7 +207,7 @@ public class MetadataYamlTest {
         assertEquals("There should be 1 org", 1, contribs.size());
         ContributingOrganization corg = contribs.get(0);
         assertEquals("Org name wrong", "University of Wisconsin", corg.getOrganizationName());
-        assertEquals("Type wrong", Contributor.Type.DataCurator, corg.getContributorType());
+        assertEquals("Type wrong", ContributingOrganization.Type.DataCurator, corg.getContributorType());
         
         List<ResearchOrganization> research_orgs = metadata.getResearchOrganizations();
         assertEquals("There should be 2 research orgs", 2, research_orgs.size());

@@ -24,25 +24,20 @@ import javax.persistence.JoinColumn;
 @JsonIgnoreProperties ( ignoreUnknown = true )
 public class Contributor extends Agent {
     /**
-     * Static Type of Contributor.  Based on DataCite accepted mapping values.
+     * Static Type of Contributor.  Based on DataCite accepted mapping values for people ("personal").
      */
     public enum Type {
         ContactPerson("Contact Person"),
         DataCollector("Data Collector"), 
         DataCurator("Data Curator"),  
         DataManager("Data Manager"),  
-        Distributor("Distributor"), 
         Editor("Editor"), 
-        HostingInstitution("Hosting Institution"),
         Producer("Producer"),
         ProjectLeader("Project Leader"),
         ProjectManager("Project Manager"), 
         ProjectMember("Project Member"),
-        RegistrationAgency("Registration Agency"),
-        RegistrationAuthority("Registration Authority"),
         RelatedPerson("Related Person"),
         Researcher("Researcher"),
-        ResearchGroup("Research Group"),
         RightsHolder("Rights Holder"),
         Sponsor("Sponsor"),
         Supervisor("Supervisor"),
