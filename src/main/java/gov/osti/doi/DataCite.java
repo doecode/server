@@ -12,6 +12,7 @@ import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.Developer;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.SponsoringOrganization;
+import gov.osti.entity.ContributingOrganization;
 import gov.osti.listeners.DoeServletContextListener;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -111,7 +112,7 @@ public class DataCite {
         
         sw.writeEndElement();
     }
-    
+
     /**
      * Write a List of Contributors to DataCite format.
      * 
@@ -123,8 +124,6 @@ public class DataCite {
         if (null==contributors || contributors.isEmpty())
             return;
         
-        sw.writeStartElement("contributors");
-        
         for ( Contributor contributor : contributors ) {
             String given_name = (StringUtils.isEmpty(contributor.getFirstName())) ? "" : contributor.getFirstName(),
                    family_name = (StringUtils.isEmpty(contributor.getLastName())) ? "" : contributor.getLastName();
@@ -132,6 +131,7 @@ public class DataCite {
             sw.writeAttribute("contributorType", contributor.getContributorType().name());
             
             sw.writeStartElement("contributorName");
+            sw.writeAttribute("nameType", "Personal");
             sw.writeCharacters(family_name + ", " + given_name);
             sw.writeEndElement();
             
@@ -155,8 +155,30 @@ public class DataCite {
             
             sw.writeEndElement();
         }
+    }
+
+    /**
+     * Write a List of Contributing Organizations to DataCite format.
+     * 
+     * @param sw the XMLStreamWriter to write on
+     * @param contributingOrgs a List of Contributing Orgs (possibly empty)
+     * @throws XMLStreamException on XML output errors
+     */
+    private static void writeContributingOrganizations(XMLStreamWriter sw, List<ContributingOrganization> contributingOrgs) throws XMLStreamException {
+        if (null==contributingOrgs || contributingOrgs.isEmpty())
+            return;
         
-        sw.writeEndElement();
+        for ( ContributingOrganization contributingOrg : contributingOrgs ) {
+            sw.writeStartElement("contributor");
+            sw.writeAttribute("contributorType", contributingOrg.getContributorType().name());
+
+            sw.writeStartElement("contributorName");
+            sw.writeAttribute("nameType", "Organizational");
+            sw.writeCharacters(contributingOrg.getOrganizationName());
+            sw.writeEndElement();
+
+            sw.writeEndElement();
+        }
     }
     
     /**
@@ -296,8 +318,12 @@ public class DataCite {
         sw.writeEndElement();
         
         writeDevelopers(sw, m.getDevelopers());
-        writeContributors(sw, m.getContributors());
         
+        sw.writeStartElement("contributors");
+        writeContributors(sw, m.getContributors());
+        writeContributingOrganizations(sw, m.getContributingOrganizations());
+        sw.writeEndElement();
+
         sw.writeStartElement("titles");
         sw.writeStartElement("title");
         sw.writeCharacters(m.getSoftwareTitle());
