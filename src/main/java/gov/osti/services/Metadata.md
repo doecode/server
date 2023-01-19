@@ -387,9 +387,9 @@ A full JSON example is [provided below](#json_example).
 | landing_page | If the project is open source and not available via a publicly available repository or is a closed source project, provide a URL describing the project or contact information for obtaining binary or source code. |
 | landing_contact | If applicable, the individual or group email to refer access requests to. Please enter the Software Group email address for your site if available. |
 | developers | An array of Objects, providing information about a project's developers or creators.  Array order determines display order.  Fields are [specified below](#persons_fields). |
-| contributors | An array of information about project contributors.  Array order determines display order.  Fields are [specified below](#persons_fields). Contributors must specify a [type of contribution](#contributor_types) made to the project. |
+| contributors | An array of information about project contributors.  Array order determines display order.  Fields are [specified below](#persons_fields). Contributors must specify a [type of contribution](#personal_contributor_types) made to the project. |
 | sponsoring_organizations | (Array) Information about the project sponsoring organizations, including any funding identifier information. Fields are [specified below](#organization_fields). |
-| contributing_organizations | (Array) Information about any contributing organizations providing support for the software project. Fields are [specified below](#organization_fields).  As with contributors, organizations must specify a [type of contribution](#contributor_types). |
+| contributing_organizations | (Array) Information about any contributing organizations providing support for the software project. Fields are [specified below](#organization_fields).  As with contributors, organizations must specify a [type of contribution](#organizational_contributor_types). |
 | research_organizations | (Array) Information about organizations providing research information for the project. Fields are [specified below](#organization_fields). |
 | related_identifiers | (Array) Any related links, such as DOIs to published works, additional versions, or documentation information relevant to the software project. |
 | award_dois | (Array) Any Award DOI under which work or time was provided. An Award DOI is assigned to awards, contracts, equipment, facilities, grants, prizes, salary awards, and/or training grants. |
@@ -478,31 +478,45 @@ DOE contract number as a "primary_award" field.
 | contributor_type | (Contributing organizations only) The contribution made by this organization to the software project. |
 
 ### <a name="contributor_types"></a>Contributor Types
-Suggested values for Contributor Types, both for Contributors and Contributing 
-Organizations. This information helps distinguish each contributor or organization's role
+Suggested values for Contributor Types, first for Contributors (Personal) and then Contributing 
+Organizations (Organizational). This information helps distinguish each contributor or organization's role
 in the software project.
 
-| Contributor Type | Description |
+#### <a name="personal_contributor_types"></a>Personal Contributor Types
+| Personal Contributor Type | Description |
+| --- | --- |
+| ContactPerson	| Person with knowledge of how to access, troubleshoot, or otherwise field issues related to the resource. |
+| DataCollector	| Person/institution responsible for finding or gathering data under the guidelines of the author(s) or Principal Investigator. |
+| DataCurator | Person tasked with reviewing, enhancing, cleaning, or standardizing metadata and the associated data submitted. |
+| DataManager | Person (or organisation with a staff of data managers, such as a data centre) responsible for maintaining the finished resource. |
+| Editor | A person who oversees the details related to the publication format of the resource. |
+| Producer | Typically a person or organisation responsible for the artistry and form of a media product. |
+| ProjectLeader | Person officially designated as head of project team instrumental in the work necessary to development of the resource. |
+| ProjectManager| Person officially designated as manager of a project. Project may consist of one or many project teams and sub-teams. |
+| ProjectMember | Person on the membership list of a designated project/project team. |
+| RelatedPerson	| Person with no specifically defined role in the development of the resource, but who is someone the author wishes to recognize. |
+| Researcher	| A person involved in analyzing data or the results of an experiment or formal study. |
+| RightsHolder	| Person or institution owning or managing property rights, including intellectual property rights over the resource. |
+| Sponsor	| Person or organisation that issued a contract or under the auspices of which a work has been performed. |
+| Supervisor	| Designated administrator over one or more groups working to produce a resource or over one or more steps of development process. |
+| WorkPackageLeader	| A Work Package is a recognized data product, not all of which is included in publication. |
+| Other	| Any person or institution making a significant contribution, but whose contribution does not "fit". |
+
+#### <a name="organizational_contributor_types"></a>Organizational Contributor Types
+| Organizational Contributor Type | Description |
 | --- | --- |
 | ContactPerson	| Person with knowledge of how to access, troubleshoot, or otherwise field issues related to the resource. |
 | DataCollector	| Person/institution responsible for finding or gathering data under the guidelines of the author(s) or Principal Investigator. |
 | DataCurator | Person tasked with reviewing, enhancing, cleaning, or standardizing metadata and the associated data submitted. |
 | DataManager | Person (or organisation with a staff of data managers, such as a data centre) responsible for maintaining the finished resource. |
 | Distributor | Institution tasked with responsibility to generate/disseminate copies of the resource in either electronic or print form. |
-| Editor | A person who oversees the details related to the publication format of the resource. |
 | HostingInstitution | The organisation allowing the resource to be available on the internet. |
 | Producer | Typically a person or organisation responsible for the artistry and form of a media product. |
-| ProjectLeader | Person officially designated as head of project team instrumental in the work necessary to development of the resource. |
-| ProjectManager| Person officially designated as manager of a project. Project may consist of one or many project teams and sub-teams. |
-| ProjectMember | Person on the membership list of a designated project/project team. |
 | RegistrationAgency | Institution officially appointed by a Registration Authority to handle specific tasks within a defined area of responsibility. |
 | RegistrationAuthority	| A standards-setting body from which Registration Agencies obtain official recognition and guidance. |
-| RelatedPerson	| Person with no specifically defined role in the development of the resource, but who is someone the author wishes to recognize. |
-| Researcher	| A person involved in analyzing data or the results of an experiment or formal study. |
 | ResearchGroup	| Refers to a group of individuals with a lab, department, or division; the group has a particular, defined focus of activity. |
 | RightsHolder	| Person or institution owning or managing property rights, including intellectual property rights over the resource. |
 | Sponsor	| Person or organisation that issued a contract or under the auspices of which a work has been performed. |
-| Supervisor	| Designated administrator over one or more groups working to produce a resource or over one or more steps of development process. |
 | WorkPackageLeader	| A Work Package is a recognized data product, not all of which is included in publication. |
 | Other	| Any person or institution making a significant contribution, but whose contribution does not "fit". |
 
