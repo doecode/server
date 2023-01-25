@@ -538,7 +538,7 @@ body.no-literate .content pre > code:hover::-webkit-scrollbar-thumb {
   body:not(.no-literate) .content > h2,
   body:not(.no-literate) .content > h3 {
     clear: both;
-    width: 100%;
+    width: 60%;
   }
   body:not(.no-literate) .content > pre,
   body:not(.no-literate) .content > blockquote {
