@@ -1025,7 +1025,12 @@ public class UserServices {
             // if user was not active, and is now, send email
             boolean sendNotification = (null != source.isActive() && !source.isActive()) && (null != userRequest.isActive() && userRequest.isActive());
 
-
+            // Verify that recordAdmin, userAdmin, and/or siteAdmin aren't being added to a non-OSTI user
+            if((userRequest.getRoles().contains("SiteAdmin") || userRequest.getRoles().contains("UserAdmin") ||  userRequest.getRoles().contains("RecordAdmin")) && !("OSTI".equals(source.getSiteId())) ) {
+                return ErrorResponse
+                        .badRequest("Must be an OSTI user to be assigned SiteAdmin, UserAdmin, and/or RecordAdmin roles.")
+                        .build();
+            }
 
             // start a TRANSACTION to persist changes to SOURCE
             em.getTransaction().begin();
