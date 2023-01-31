@@ -31,7 +31,7 @@ following endpoints.  Each share a common set of response codes, detailed below.
 | 200 | OK, value validates successful |
 | 400 | Bad Request, value is not valid for the requested type |
 
-Responses are also common to each of these individual valiation endpoints, all will
+Responses are also common to each of these individual validation endpoints, all will
 be of the form shown.  An example of success and failure for email validation is
 shown here.
 

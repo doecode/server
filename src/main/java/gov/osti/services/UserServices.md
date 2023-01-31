@@ -114,7 +114,7 @@ API calls to manage user session state; log in and out of authenticated sessions
  `POST /doecodeapi/services/user/login`
 
 Logs a user session into DOE CODE.  User account must be verified and active to successfully log in.  Primarily intended to support client front-end and 
-HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one time token use.
+HTTP session management.   Requests may log in via email and password OR confirmation code (in case of forgotten passwords) for one-time token use.
 Repeated login attempts via password authentication WILL result in the account being locked. 
 Locked accounts will receive an email message indicating administrative intervention is required to
 unlock the account.  Additionally, if the password expiration date is due, the login will fail, and
@@ -352,7 +352,7 @@ there is no upper limit.
 `GET /doecodeapi/services/user/roles`
 
 Returns JSON object containing "admin", "standard", and "hq" roles.
-Requires administrative access to veiw "admin" roles.
+Requires administrative access to view "admin" roles.
 Each role contains a value, label, and description.
 
 >  Request:

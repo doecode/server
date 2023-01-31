@@ -20,7 +20,7 @@ API calls [for site services](/doecodeapi/services/docs/site) for management of 
 
 ### Search
 
-API calls [for search/disseminiation](/doecodeapi/services/docs/search) for retrieval and search capabilities for Approved records.
+API calls [for search/dissemination](/doecodeapi/services/docs/search) for retrieval and search capabilities for Approved records.
 
 ### Types
 
