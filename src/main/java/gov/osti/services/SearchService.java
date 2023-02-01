@@ -662,7 +662,10 @@ public class SearchService {
             return_string += "C2  - Sponsor Org.: ";
             for(int i = 0; i < sponsors.size();i++) {
                 return_string += sponsors.get(i).getOrganizationName();
-                contract_numbers.add(sponsors.get(i).getPrimaryAward());
+                String awardNum = sponsors.get(i).getPrimaryAward();
+                if(awardNum != null && !awardNum.trim().isEmpty()) {
+                    contract_numbers.add(sponsors.get(i).getPrimaryAward());
+                }
                 if(i == sponsors.size() - 1) {
                     return_string += "\n";
                 }else{
@@ -732,17 +735,16 @@ public class SearchService {
             return_string += "%D" + cal.get(Calendar.YEAR) + "\n";
         }
             return_string += "%GEnglish\n";
-        
-        // for(ResearchOrganization researchOrg : md.getResearchOrganizations()) {
-        //     return_string += "C1  - Research Org.: " + researchOrg.getOrganizationName() + "\n"; 
-        // }
 
         List<String> contract_numbers = new ArrayList<String>();
         List<SponsoringOrganization> sponsors = md.getSponsoringOrganizations();
         if(sponsors != null && sponsors.size() > 0) {
             for(int i = 0; i < sponsors.size();i++) {
                 return_string += "%2" + sponsors.get(i).getOrganizationName() + "\n";
-                contract_numbers.add(sponsors.get(i).getPrimaryAward());
+                String awardNum = sponsors.get(i).getPrimaryAward();
+                if(awardNum != null && !awardNum.trim().isEmpty()) {
+                    contract_numbers.add(sponsors.get(i).getPrimaryAward());
+                }
             }
         }
         if(contract_numbers != null && contract_numbers.size() > 0) {
