@@ -19,6 +19,12 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.MetadataTombstone;
+import gov.osti.entity.Developer;
+import gov.osti.entity.SponsoringOrganization;
+import gov.osti.entity.BiblioLink;
+import gov.osti.entity.ContributingOrganization;
+import gov.osti.entity.Contributor;
+import gov.osti.entity.ResearchOrganization;
 import gov.osti.search.SearchData;
 import gov.osti.search.SolrDocument;
 import gov.osti.search.SolrResult;
@@ -32,8 +38,13 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -319,6 +330,18 @@ public class SearchService {
                             .entity(XML_MAPPER
                                     .writer(filter).writeValueAsString(md))
                             .build();
+                } else if ("enw".equals(format)) {
+                    return Response
+                            .ok()
+                            .header("Content-Type", MediaType.TEXT_PLAIN)
+                            .entity(createEndNoteResponse(md))
+                            .build();
+                } else if ("ris".equals(format)) {
+                    return Response
+                            .ok()
+                            .header("Content-Type", MediaType.TEXT_PLAIN)
+                            .entity(createRISResponse(md))
+                            .build();
                 } else {
                     // send back the JSON (named object "metadata")
                     return Response
@@ -569,5 +592,178 @@ public class SearchService {
                     .internalServerError("IO Error.")
                     .build();
         }
+    }
+
+    private String createRISResponse(DOECodeMetadata md) {
+        String return_string = "TY  - COMP\n";
+
+        return_string += "TI  - " + md.getSoftwareTitle() + "\n";
+        return_string += "AB  - " + md.getDescription() + "\n";
+        
+        if(md.getDevelopers() != null) {
+            for(Developer dev : md.getDevelopers()) {
+                return_string += "AU  - " + dev.getLastName() + ", " + dev.getFirstName() + "\n";
+            }
+        }
+        if(md.getContributors() != null) {
+            for(Contributor contributor: md.getContributors()) {
+                return_string += "AU  - " + contributor.getLastName() + ", " + contributor.getFirstName() + "\n";
+            }
+        }
+        if(md.getContributingOrganizations() != null) {
+            for(ContributingOrganization contribOrg : md.getContributingOrganizations()) {
+                return_string += "AU  - "  + contribOrg.getOrganizationName() + "\n";
+            }
+        }
+
+        if(md.getDoi() != null) {
+            return_string += "DO  - " + md.getDoi() + "\n";
+        }
+        if(md.getLinks() != null) {
+            return_string += "UR  - " + md.getLinks().get(0).getHref() + "\n";
+        }
+
+        if(md.getProjectKeywords() != null) {
+            for(String keyword : md.getProjectKeywords()) {
+                return_string += "KW  - " + keyword + "\n";
+            }
+        }
+        
+        if(md.getCountryOfOrigin() != null) {
+            return_string += "CY  - " + md.getCountryOfOrigin() + "\n";
+        }
+        if(md.getReleaseDate() != null) {   
+            Date date = md.getReleaseDate();
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat  dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            
+            cal.setTime(date);
+            return_string += "PY  - " + cal.get(Calendar.YEAR) + "\n";
+            return_string += "DA  - " + dateFormat.format(cal.getTime()) + "\n";
+        }
+
+            return_string += "LA  - English\n";
+
+            List<ResearchOrganization> researchOrgs = md.getResearchOrganizations();
+            if(researchOrgs != null && researchOrgs.size() > 0) {
+                for(int i = 0; i < researchOrgs.size();i++) {
+                return_string += "C1  - Research Org.: " + researchOrgs.get(i).getOrganizationName(); 
+                if(i == researchOrgs.size() - 1) {
+                    return_string += "\n";
+                }else{
+                    return_string += "; ";
+                }
+            }
+        }
+
+        List<String> contract_numbers = new ArrayList<String>();
+        List<SponsoringOrganization> sponsors = md.getSponsoringOrganizations();
+        if(sponsors != null && sponsors.size() > 0) {
+            return_string += "C2  - Sponsor Org.: ";
+            for(int i = 0; i < sponsors.size();i++) {
+                return_string += sponsors.get(i).getOrganizationName();
+                contract_numbers.add(sponsors.get(i).getPrimaryAward());
+                if(i == sponsors.size() - 1) {
+                    return_string += "\n";
+                }else{
+                    return_string += "; ";
+                }
+            }
+        }
+        if(contract_numbers != null && contract_numbers.size() > 0) {
+            for(int i = 0; i < contract_numbers.size();i++) {
+                return_string += "C4  - Contract Number: " + contract_numbers.get(i);
+                if(i == contract_numbers.size() - 1) {
+                    return_string += "\n";
+                }else{
+                    return_string += "; ";
+                }
+            }
+        }
+
+        return_string += "ER  -";
+        return return_string;
+    }
+
+    private String createEndNoteResponse(DOECodeMetadata md) {
+        String return_string = "%0Computer Program\n";
+
+        return_string += "%T" + md.getSoftwareTitle() + "\n";
+        return_string += "%X" + md.getDescription() + "\n";
+
+        if(md.getDevelopers() != null) {
+            for(Developer dev : md.getDevelopers()) {
+                return_string += "%A" + dev.getLastName() + ", " + dev.getFirstName() + "\n";
+            }
+        }
+        if(md.getContributors() != null) {
+            for(Contributor contributor: md.getContributors()) {
+                return_string += "%A" + contributor.getLastName() + ", " + contributor.getFirstName() + "\n";
+            }
+        }
+        if(md.getContributingOrganizations() != null) {
+            for(ContributingOrganization contribOrg : md.getContributingOrganizations()) {
+                return_string += "%A"  + contribOrg.getOrganizationName() + "\n";
+            }
+        }
+
+        if(md.getDoi() != null) {
+            return_string += "%R" + md.getDoi() + "\n";
+        }
+        if(md.getLinks() != null) {
+            return_string += "%U" + md.getLinks().get(0).getHref() + "\n";
+        }
+
+        if(md.getProjectKeywords() != null) {
+            for(String keyword : md.getProjectKeywords()) {
+                return_string += "%K" + keyword + "\n";
+            }
+        }
+
+        if(md.getCountryOfOrigin() != null) {
+            return_string += "%C" + md.getCountryOfOrigin() + "\n";
+        }
+        if(md.getReleaseDate() != null) {
+            Date date = md.getReleaseDate();
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat  dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            
+            cal.setTime(date);
+            return_string += "%D" + cal.get(Calendar.YEAR) + "\n";
+        }
+            return_string += "%GEnglish\n";
+        
+        // for(ResearchOrganization researchOrg : md.getResearchOrganizations()) {
+        //     return_string += "C1  - Research Org.: " + researchOrg.getOrganizationName() + "\n"; 
+        // }
+
+        List<String> contract_numbers = new ArrayList<String>();
+        List<SponsoringOrganization> sponsors = md.getSponsoringOrganizations();
+        if(sponsors != null && sponsors.size() > 0) {
+            for(int i = 0; i < sponsors.size();i++) {
+                return_string += "%2" + sponsors.get(i).getOrganizationName() + "\n";
+                contract_numbers.add(sponsors.get(i).getPrimaryAward());
+            }
+        }
+        if(contract_numbers != null && contract_numbers.size() > 0) {
+            for(int i = 0; i < contract_numbers.size();i++) {
+                return_string += "%1" + contract_numbers.get(i);
+                if(i == contract_numbers.size() - 1) {
+                    return_string += "\n";
+                }else{
+                    return_string += "; ";
+                }
+            }
+        }
+
+        if(md.getReleaseDate() != null) {
+            Date date = md.getReleaseDate();
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat  dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            
+            cal.setTime(date);
+            return_string += dateFormat.format(cal.getTime())+ "\n";
+        }
+        return return_string;
     }
 }
