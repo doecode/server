@@ -525,5 +525,5 @@
     <copyField source="contributors.orcid" dest="_orcids"/>
 
     <!-- persistence object reference -->
-    <field name="json" indexed="false" stored="true" type="string"/>
+    <field name="json" indexed="false" stored="true" type="text_en"/>
 </schema>
