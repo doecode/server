@@ -3701,6 +3701,9 @@ public class Metadata {
                     if (!Validation.isValidORCID(developer.getOrcid()))
                         reasons.add("Developer ORCID \"" + developer.getOrcid() +"\" is not valid.");
                 }
+                if(!(null == developer.getAffiliations() || developer.getAffiliations().isEmpty()) && !Validation.isValidAffiliations(developer.getAffiliations())) {
+                    reasons.add("Affiliations must be less than 900 characters in total length.");
+                }
             }
         }
         if (!(null==m.getContributors() || m.getContributors().isEmpty())) {
@@ -3712,7 +3715,10 @@ public class Metadata {
                 if (StringUtils.isBlank(contributor.getFirstName()) || StringUtils.isBlank(contributor.getLastName()) || (null == contributor.getContributorType())) {
                     reasons.add("Contributor must include first name, last name, and contributor type.");
                 }
-            }
+                if(!(null == contributor.getAffiliations() || contributor.getAffiliations().isEmpty()) && !Validation.isValidAffiliations(contributor.getAffiliations())) {
+                    reasons.add("Affiliations must be less than 900 characters in total length.");
+                }
+            } 
         }
         if (!(null==m.getAwardDois() || m.getAwardDois().isEmpty())) {
             for ( Award award : m.getAwardDois() ) {

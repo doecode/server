@@ -48,7 +48,7 @@ public class Agent implements Serializable {
         this.agentId = id;
     }
     
-    @Size (max = 255, message = "First name is limited to 255 characters.")
+    @Size (max = 50, message = "First name is limited to 50 characters.")
     @Column (name = "FIRST_NAME")
     public String getFirstName() {
             return firstName;
@@ -56,7 +56,7 @@ public class Agent implements Serializable {
     public void setFirstName(String firstName) {
             this.firstName = firstName;
     }
-    @Size (max = 255, message = "Last name is limited to 255 characters.")
+    @Size (max = 60, message = "Last name is limited to 60 characters.")
     @Column (name = "LAST_NAME")
     public String getLastName() {
             return lastName;
@@ -64,7 +64,7 @@ public class Agent implements Serializable {
     public void setLastName(String lastName) {
             this.lastName = lastName;
     }
-    @Size (max = 255, message = "Middle name is limited to 255 characters.")
+    @Size (max = 50, message = "Middle name is limited to 50 characters.")
     @Column (name = "MIDDLE_NAME")
     public String getMiddleName() {
             return middleName;

@@ -18,6 +18,7 @@ import gov.osti.connectors.GitHub;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -335,6 +336,24 @@ public class Validation {
             log.warn("Phone Number error: " + e.getMessage());
         }
         return false;
+    }
+
+    /**
+     * Determine whether or not affiliations is smaller than the max
+     * length, 900chars.
+     *
+     * @param value all affiliations
+     * @return true if total length is less than 900
+     */
+    public static boolean isValidAffiliations(List<String> value) {
+        int affiliationsCharCount = 0;
+        for (String affiliation : value) {
+            affiliationsCharCount += affiliation.length();
+        }
+
+        if(affiliationsCharCount > 900)
+            return false;   
+        return true;
     }
 
     /**
