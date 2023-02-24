@@ -548,6 +548,9 @@ body.no-literate .content pre > code:hover::-webkit-scrollbar-thumb {
     float: right;
     clear: right;
   }
+  code.lang-json {
+    white-space: pre-wrap;
+  }
   body:not(.no-literate) .content > pre + p,
   body:not(.no-literate) .content > blockquote + p,
   body:not(.no-literate) .content > pre + ul,
