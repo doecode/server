@@ -114,10 +114,6 @@ public class SearchService {
         "disclaimers",
         "licenseContactEmail",
         "license_contact_email",
-        "awardDoi",
-        "award_doi",
-        "awardDois",
-        "award_dois",
         "isMigration",
         "is_migration"
     };
