@@ -27,7 +27,6 @@ public class LicenseSerializer extends StdSerializer<License> {
         jg.writeStartObject();
         jg.writeStringField("label", t.label());
         jg.writeStringField("value", t.value());
-        jg.writeStringField("key", t.name());
         jg.writeEndObject();
     }
     

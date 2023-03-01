@@ -102,20 +102,20 @@ Content-Type: application/json
 ```
 ```json
 {"licenses":[
-{"label":"Other","value":"Other","key":"Other"},
-{"label":"Apache License 2.0","value":"Apache License 2.0","key":"Apache"},
-{"label":"GNU General Public License v3.0","value":"GNU General Public License v3.0","key":"GNU3"},
-{"label":"MIT License","value":"MIT License","key":"MIT"},
+{"label":"Other","value":"Other"},
+{"label":"Apache License 2.0","value":"Apache License 2.0"},
+{"label":"GNU General Public License v3.0","value":"GNU General Public License v3.0"},
+{"label":"MIT License","value":"MIT License"},
 {"label":"BSD 2-clause \"Simplified\" License","value":"BSD 2-clause \"Simplified\" License","key":"BSD2"},
-{"label":"BSD 3-clause \"New\" or \"Revised\" License","value":"BSD 3-clause \"New\" or \"Revised\" License","key":"BSD3"},
-{"label":"Eclipse Public License 1.0","value":"Eclipse Public License 1.0","key":"Eclipse1"},
-{"label":"GNU Affero General Public License v3.0","value":"GNU Affero General Public License v3.0","key":"GNUAffero3"},
-{"label":"GNU General Public License v2.0","value":"GNU General Public License v2.0","key":"GNUpublic2"},
-{"label":"GNU General Public License v2.1","value":"GNU General Public License v2.1","key":"GNUpublic21"},
-{"label":"GNU Lesser General Public License v2.1","value":"GNU Lesser General Public License v2.1","key":"GNUlesser21"},
-{"label":"GNU Lesser General Public License v3.0","value":"GNU Lesser General Public License v3.0","key":"GNUlesser3"},
-{"label":"Mozilla Public License 2.0","value":"Mozilla Public License 2.0","key":"MOZ2"},
-{"label":"The Unlicense","value":"The Unlicense","key":"Unlicense"}]}
+{"label":"BSD 3-clause \"New\" or \"Revised\" License","value":"BSD 3-clause \"New\" or \"Revised\" License"},
+{"label":"Eclipse Public License 1.0","value":"Eclipse Public License 1.0"},
+{"label":"GNU Affero General Public License v3.0","value":"GNU Affero General Public License v3.0"},
+{"label":"GNU General Public License v2.0","value":"GNU General Public License v2.0"},
+{"label":"GNU General Public License v2.1","value":"GNU General Public License v2.1"},
+{"label":"GNU Lesser General Public License v2.1","value":"GNU Lesser General Public License v2.1"},
+{"label":"GNU Lesser General Public License v3.0","value":"GNU Lesser General Public License v3.0"},
+{"label":"Mozilla Public License 2.0","value":"Mozilla Public License 2.0"},
+{"label":"The Unlicense","value":"The Unlicense"}]}
 ```
 
 ### relationtypes
@@ -188,7 +188,8 @@ Content-Type: application/json
 ```json
 {"relatedIdentiferTypes":[
 {"label":"DOI","value":"DOI"},
-{"label":"URL","value":"URL"}]}
+{"label":"URL","value":"URL"},
+{"label": "AWARD","value": "AWARD"}]}
 ```
 
 ### fundingidentifiertypes
@@ -235,3 +236,86 @@ A listing of valid project type codes and descriptions.
 > {"label":"Open Source, No Public Access","value":"ON"},
 > {"label":"Closed Source","value":"CS"}]}
 > ```
+
+### accesslimitationtypes 
+
+`GET /doecodeapi/services/types/accesslimitationtypes`
+
+A Listing of accepted access limitation type values.
+
+> Request:
+```
+GET /doecodeapi/services/types/accesslimitationtypes
+Content-Type: application/json
+```
+> Response:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+```json
+{
+    "accessLimitationTypes": [
+        {
+            "accessCode": "UNL",
+            "accessDescription": "Unlimited",
+            "accessGroup": "UNL",
+            "displayOrder": 0
+        },
+        {
+            "accessCode": "SBIR",
+            "accessDescription": "Small Business Innovation Research",
+            "accessGroup": "SBR",
+            "displayOrder": 5
+        },
+        {
+            "accessCode": "STTR",
+            "accessDescription": "Small Business Technology Transfer Research",
+            "accessGroup": "SBR",
+            "displayOrder": 5
+        },
+        {
+            "accessCode": "OUO",
+            "accessDescription": "Official Use Only",
+            "accessGroup": "OUO",
+            "displayOrder": 10
+        },
+        {
+            "accessCode": "ECI",
+            "accessDescription": "Export Controlled Information",
+            "accessGroup": "OUO",
+            "displayOrder": 15
+        },
+        {
+            "accessCode": "PAT",
+            "accessDescription": "Patent Pending",
+            "accessGroup": "OUO",
+            "displayOrder": 15
+        },
+        {
+            "accessCode": "PDOUO",
+            "accessDescription": "Program-Determined Official Use Only",
+            "accessGroup": "OUO",
+            "displayOrder": 15
+        },
+        {
+            "accessCode": "PROP",
+            "accessDescription": "Limited Rights Data",
+            "accessGroup": "OUO",
+            "displayOrder": 15
+        },
+        {
+            "accessCode": "PROT",
+            "accessDescription": "Protected Data CRADA/EPACT/OTHER",
+            "accessGroup": "OUO",
+            "displayOrder": 15
+        },
+        {
+            "accessCode": "SSI",
+            "accessDescription": "Security Sensitive Information",
+            "accessGroup": "OUO",
+            "displayOrder": 15
+        }
+    ]
+}
+```

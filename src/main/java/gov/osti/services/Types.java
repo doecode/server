@@ -82,13 +82,13 @@ public class Types {
     public Response getProjectType() {
         try {
             return Response
-                    .ok()
-                    .entity(mapper
-                            .createObjectNode()
-                            .putPOJO("project_type", 
-                                    mapper.writeValueAsString(Arrays.asList(DOECodeMetadata.ProjectType.values()))).toString())
-                    .build();
-        } catch ( JsonProcessingException e ) {
+                        .ok()
+                        .entity(mapper
+                                .createObjectNode()
+                                .putPOJO("projectType", 
+                                    mapper.valueToTree(DOECodeMetadata.ProjectType.values())).toString())
+                        .build();
+        } catch (Exception e ) {
             log.warn("JSON Output Error", e);
             return ErrorResponse
                     .internalServerError("JSON Error")
@@ -110,9 +110,9 @@ public class Types {
                     .entity(mapper
                             .createObjectNode()
                             .putPOJO("licenses", 
-                                    mapper.writeValueAsString(Arrays.asList(DOECodeMetadata.License.values()))).toString())
+                                mapper.valueToTree(DOECodeMetadata.License.values())).toString())
                     .build();
-        } catch ( JsonProcessingException e ) {
+        } catch (Exception e ) {
             log.warn("JSON Output Error", e);
             return ErrorResponse
                     .internalServerError("JSON Error")
@@ -157,12 +157,13 @@ public class Types {
     public Response getRelatedIdentifierTypes() {
         try {
         return Response
-                .ok()
-                .entity(mapper
-                        .createObjectNode()
-                        .putPOJO("relatedIdentiferTypes", mapper.writeValueAsString(RelatedIdentifier.Type.values())).toString())
-                .build();
-        } catch ( JsonProcessingException e ) {
+        .ok()
+        .entity(mapper
+                .createObjectNode()
+                .putPOJO("relatedIdentifierTypes", 
+                    mapper.valueToTree(RelatedIdentifier.Type.values())).toString())
+                    .build();
+        } catch (Exception e ) {
             log.warn("JSON Error: " + e.getMessage());
             return ErrorResponse
                     .internalServerError("JSON Error")
@@ -185,9 +186,9 @@ public class Types {
                     .entity(mapper
                             .createObjectNode()
                             .putPOJO("relationTypes", 
-                                    mapper.writeValueAsString(RelatedIdentifier.RelationType.values())).toString())
+                                    mapper.valueToTree(RelatedIdentifier.RelationType.values())).toString())
                     .build();
-        } catch ( JsonProcessingException e ) {
+        } catch (Exception e ) {
             log.warn("JSON Error: " + e.getMessage());
             return ErrorResponse
                     .internalServerError("JSON Error")
@@ -210,9 +211,9 @@ public class Types {
                     .entity(mapper
                             .createObjectNode()
                             .putPOJO("fundingIdentifierTypes", 
-                                    mapper.writeValueAsString(FundingIdentifier.Type.values())).toString())
+                                    mapper.valueToTree(FundingIdentifier.Type.values())).toString())
                     .build();
-        } catch ( JsonProcessingException e ) {
+        } catch (Exception e ) {
             log.warn("JSON Error: " + e.getMessage());
             return ErrorResponse
                     .internalServerError("JSON Error")
@@ -240,9 +241,12 @@ public class Types {
             // return the results back
             return Response
                     .ok()
-                    .entity(mapper.writeValueAsString(limits))
+                    .entity(mapper
+                             .createObjectNode()
+                             .putPOJO("accessLimitationTypes", 
+                                      (limits)).toString())
                     .build();
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Access Limitation Lookup Error", e);
             return ErrorResponse
                     .internalServerError(e.getMessage())
