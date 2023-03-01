@@ -467,6 +467,7 @@
     <field name="developers.orcid" type="text_en" multiValued="true" indexed="true" stored="true"/>
     <field name="doi" type="text_en" indexed="true" stored="true"/>
     <field name="doiStatus" type="string" indexed="true" stored="true"/>
+    <field name="awardDois.awardDoi" type="text_en" multiValued="true" indexed="true" stored="true"/> 
     <field name="keywords" type="text_general" indexed="true"/>
     <field name="projectKeywords" type="text_general" multiValued="true" indexed="true" stored="true"/>
     <field name="licenses" type="string" multiValued="true" indexed="true" stored="true"/>
@@ -511,6 +512,7 @@
     <copyField source="sponsoringOrganizations.primaryAward" dest="_id_numbers"/>
     <copyField source="relatedIdentifiers.identifierValue" dest="_id_numbers"/>
     <copyField source="siteAccessionNumber" dest="_id_numbers"/>
+    <copyField source="awardDois.awardDoi" dest="_id_numbers"/> 
     <copyField source="codeId" dest="_id_numbers"/>
     <copyField source="developers.orcid" dest="_id_numbers"/>
     <copyField source="contributors.orcid" dest="_id_numbers"/>
