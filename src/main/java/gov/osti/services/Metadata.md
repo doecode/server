@@ -557,7 +557,7 @@ metadata fields.
     {"identifier_type":"AwardNumber",
      "identifier_value":"DE-OR-1234"},
     {"identifier_type":"BRCode",
-     "identifier_value":"BR-549"}]},
+     "identifier_value":"BR5494569"}]},
   {"organization_name":"University of Tennessee, Knoxville",
    "funding_identifiers":[
      {"identifier_type":"AwardNumber",
@@ -571,7 +571,7 @@ metadata fields.
      {"identifier_type":"AwardNumber",
       "identifier_value":"ORNL-IDNO-001"}]}],
 "contributing_organizations":[
-  {"organization_Name":"ORNL",
+  {"organization_name":"ORNL",
    "contributor_type":"DataManager"},
   {"organization_name":"DOE OSTI",
    "contributor_type":"HostingInstitution"}],
@@ -599,7 +599,11 @@ metadata fields.
 "release_date":"2017-08-23",
 "links": [
     {"rel": "citation",
-     "href": "https://www.osti.gov/doecode/biblio/2651"}]
+     "href": "https://www.osti.gov/doecode/biblio/2651"}],
+"recipient_name": "Test Name",
+"recipient_email": "test@email.com", 
+"recipient_phone": "8655545555",
+"recipient_org": "OSTI" 
 }
 ```
 
