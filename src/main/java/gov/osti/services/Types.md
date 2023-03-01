@@ -50,26 +50,36 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 ```
 ```json
-{"contributorTypes":[
+{"personalContributorTypes":[
+{"label":"Contact Person","value":"ContactPerson"},
+{"label":"Data Collector","value":"DataCollector"},
+{"label":"Data Curator","value":"DataCurator"},
+{"label":"Data Manager","value":"DataManager"},
+{"label":"Editor","value":"Editor"},
+{"label":"Producer","value":"Producer"},
+{"label":"Project Leader","value":"ProjectLeader"},
+{"label":"Project Manager","value":"ProjectManager"},
+{"label":"Project Member","value":"ProjectMember"},
+{"label":"Related Person","value":"RelatedPerson"},
+{"label":"Researcher","value":"Researcher"},
+{"label":"Rights Holder","value":"RightsHolder"},
+{"label":"Sponsor","value":"Sponsor"},
+{"label":"Supervisor","value":"Supervisor"},
+{"label":"Work Package Leader","value":"WorkPackageLeader"},
+{"label":"Other","value":"Other"}],
+"organizationalContributorTypes":[
 {"label":"Contact Person","value":"ContactPerson"},
 {"label":"Data Collector","value":"DataCollector"},
 {"label":"Data Curator","value":"DataCurator"},
 {"label":"Data Manager","value":"DataManager"},
 {"label":"Distributor","value":"Distributor"},
-{"label":"Editor","value":"Editor"},
 {"label":"Hosting Institution","value":"HostingInstitution"},
 {"label":"Producer","value":"Producer"},
-{"label":"Project Leader","value":"ProjectLeader"},
-{"label":"Project Manager","value":"ProjectManager"},
-{"label":"Project Member","value":"ProjectMember"},
 {"label":"Registration Agency","value":"RegistrationAgency"},
 {"label":"Registration Authority","value":"RegistrationAuthority"},
-{"label":"Related Person","value":"RelatedPerson"},
-{"label":"Researcher","value":"Researcher"},
 {"label":"Research Group","value":"ResearchGroup"},
 {"label":"Rights Holder","value":"RightsHolder"},
 {"label":"Sponsor","value":"Sponsor"},
-{"label":"Supervisor","value":"Supervisor"},
 {"label":"Work Package Leader","value":"WorkPackageLeader"},
 {"label":"Other","value":"Other"}]}
 ```

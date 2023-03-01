@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import gov.osti.entity.Contributor;
-import gov.osti.entity.Contributor.Type;
+import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
@@ -16,6 +16,7 @@ import gov.osti.entity.RelatedIdentifier.RelationType;
 import gov.osti.entity.Limitation;
 import gov.osti.indexer.ProjectTypeSerializer;
 import gov.osti.indexer.ContributorTypeSerializer;
+import gov.osti.indexer.ContributingOrgTypeSerializer;
 import gov.osti.indexer.FundingIdentifierSerializer;
 import gov.osti.indexer.LicenseSerializer;
 import gov.osti.indexer.RelatedIdentifierTypeSerializer;
@@ -55,7 +56,8 @@ public class Types {
         // customized serializer module for Agent names consolidation
         SimpleModule module = new SimpleModule()
             .addSerializer(License.class, new LicenseSerializer())
-            .addSerializer(Type.class, new ContributorTypeSerializer())
+            .addSerializer(Contributor.Type.class, new ContributorTypeSerializer())
+            .addSerializer(ContributingOrganization.Type.class, new ContributingOrgTypeSerializer())
             .addSerializer(RelationType.class, new RelationTypeSerializer())
             .addSerializer(RelatedIdentifier.Type.class, new RelatedIdentifierTypeSerializer())
             .addSerializer(FundingIdentifier.Type.class, new FundingIdentifierSerializer())
@@ -131,10 +133,12 @@ public class Types {
                     .ok()
                     .entity(mapper
                             .createObjectNode()
-                            .putPOJO("contributorTypes",
-                                    mapper.writeValueAsString(Arrays.asList(Contributor.Type.values()))).toString())
+                            .putPOJO("personalContributorTypes",
+                                    mapper.valueToTree(Contributor.Type.values()))
+                            .putPOJO("organizationalContributorTypes",
+                                    mapper.valueToTree(ContributingOrganization.Type.values())).toString())
                     .build();
-        } catch ( JsonProcessingException e ) {
+        } catch (Exception e ) {
             log.warn("JSON Error: " + e.getMessage());
             return ErrorResponse
                     .internalServerError("JSON Error")
