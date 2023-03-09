@@ -179,6 +179,56 @@ public class DOECodeMetadata implements Serializable {
             return this.label;
         }
     }
+
+    public enum Limitation {
+        UNL("UNL", "UNL", "Unlimited", 0),
+        OUO("OUO", "OUO", "Official Use Only", 10),
+        ECI("ECI", "OUO", "Export Controlled Information", 15),
+        PAT("PAT", "OUO", "Patent Pending", 15),
+        PDOUO("PDOUO", "OUO", "Program-Determined Official Use Only", 15),
+        PROP("PROP", "OUO", "Limited Rights Data", 15),
+        PROT("PROT", "OUO", "Protected Data CRADA/EPACT/OTHER", 15),
+        SSI("SSI", "OUO", "Security Sensitive Information", 15);
+
+        private final String label;
+        private final String accessGroup;
+        private final String description;
+        private final int displayOrder;
+
+        private static final Set<String> values = new HashSet<String>(Limitation.values().length);
+
+        static{
+            for(Limitation l: Limitation.values())
+                values.add(l.label());
+        }
+
+        private Limitation(String label, String accessGroup, String description, int displayOrder) {
+            this.label = label;
+            this.accessGroup = accessGroup;
+            this.description = description;
+            this.displayOrder = displayOrder;
+        }
+
+        public String label() {
+            return this.label;
+        }
+
+        public String accessGroup() {
+            return this.accessGroup;
+        }
+
+        public String description() {
+            return this.description;
+        }
+
+        public int displayOrder() {
+            return this.displayOrder;
+        }
+
+        public static boolean contains(String value) {
+            return values.contains(value);
+        }
+    }
     
     // Attributes
     private Long codeId;

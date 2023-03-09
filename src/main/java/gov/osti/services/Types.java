@@ -10,15 +10,16 @@ import gov.osti.entity.ContributingOrganization;
 import gov.osti.entity.DOECodeMetadata;
 import gov.osti.entity.DOECodeMetadata.ProjectType;
 import gov.osti.entity.DOECodeMetadata.License;
+import gov.osti.entity.DOECodeMetadata.Limitation;
 import gov.osti.entity.FundingIdentifier;
 import gov.osti.entity.RelatedIdentifier;
 import gov.osti.entity.RelatedIdentifier.RelationType;
-import gov.osti.entity.Limitation;
 import gov.osti.indexer.ProjectTypeSerializer;
 import gov.osti.indexer.ContributorTypeSerializer;
 import gov.osti.indexer.ContributingOrgTypeSerializer;
 import gov.osti.indexer.FundingIdentifierSerializer;
 import gov.osti.indexer.LicenseSerializer;
+import gov.osti.indexer.LimitationSerializer;
 import gov.osti.indexer.RelatedIdentifierTypeSerializer;
 import gov.osti.indexer.RelationTypeSerializer;
 import java.util.Arrays;
@@ -61,7 +62,8 @@ public class Types {
             .addSerializer(RelationType.class, new RelationTypeSerializer())
             .addSerializer(RelatedIdentifier.Type.class, new RelatedIdentifierTypeSerializer())
             .addSerializer(FundingIdentifier.Type.class, new FundingIdentifierSerializer())
-            .addSerializer(ProjectType.class, new ProjectTypeSerializer());
+            .addSerializer(ProjectType.class, new ProjectTypeSerializer())
+            .addSerializer(Limitation.class, new LimitationSerializer());
         
         mapper.registerModule(module);
     }
@@ -220,39 +222,34 @@ public class Types {
                     .build();
         }
     }
-    
+
     /**
-     * Obtain a JSON listing of valid relation types for related identifiers.
+     * Enumerate the valid ACCESS LIMITATION types.
      * 
-     * @return JSON containing list of valid relation types
+     * @return JSON containing a single array "types" listing all the valid ACCESS LIMITATION TYPES.
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/accesslimitationtypes")
     public Response getAccessLimitationTypes() {
-        EntityManager em = DoeServletContextListener.createEntityManager();
-
         try {
+            Limitation[] limitedLimitations = DOECodeMetadata.Limitation.values();
+            Limitation[] unlimitedLimitations = Arrays.copyOf(limitedLimitations, 1);
 
-            TypedQuery<Limitation> query = em.createNamedQuery("Limitation.findAll", Limitation.class);
-
-            List<Limitation> limits = query.getResultList();
-
-            // return the results back
             return Response
                     .ok()
                     .entity(mapper
-                             .createObjectNode()
-                             .putPOJO("accessLimitationTypes", 
-                                      (limits)).toString())
+                            .createObjectNode()
+                            .putPOJO("unlimitedTypes", 
+                                    mapper.valueToTree(unlimitedLimitations))
+                            .putPOJO("limitedTypes", 
+                                    mapper.valueToTree(Arrays.copyOfRange(limitedLimitations, 1, limitedLimitations.length))).toString())
                     .build();
-        } catch (Exception e) {
-            log.error("Access Limitation Lookup Error", e);
+        } catch (Exception e ) {
+            log.warn("JSON Error: " + e.getMessage());
             return ErrorResponse
-                    .internalServerError(e.getMessage())
+                    .internalServerError("JSON Error")
                     .build();
-        } finally {
-            em.close();
         }
     }
 }

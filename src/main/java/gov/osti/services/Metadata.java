@@ -3756,6 +3756,12 @@ public class Metadata {
             reasons.add("Repository URL is not a valid repository.");
         if (accessLimitationSize == 0)
             reasons.add("Access Limitation is required.");
+        else {
+            for (String l : accessLimitationsList) {
+                if (!DOECodeMetadata.Limitation.contains(l))
+                    reasons.add("Limitation not valid: [" + l +"]");
+            }
+        }
         if (!isOUO) {
             int nonSubCount = 0;
             if (isUNL) nonSubCount++;

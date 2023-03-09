@@ -255,67 +255,19 @@ Content-Type: application/json
 ```
 ```json
 {
-    "accessLimitationTypes": [
-        {
-            "accessCode": "UNL",
-            "accessDescription": "Unlimited",
-            "accessGroup": "UNL",
-            "displayOrder": 0
-        },
-        {
-            "accessCode": "SBIR",
-            "accessDescription": "Small Business Innovation Research",
-            "accessGroup": "SBR",
-            "displayOrder": 5
-        },
-        {
-            "accessCode": "STTR",
-            "accessDescription": "Small Business Technology Transfer Research",
-            "accessGroup": "SBR",
-            "displayOrder": 5
-        },
-        {
-            "accessCode": "OUO",
-            "accessDescription": "Official Use Only",
-            "accessGroup": "OUO",
-            "displayOrder": 10
-        },
-        {
-            "accessCode": "ECI",
-            "accessDescription": "Export Controlled Information",
-            "accessGroup": "OUO",
-            "displayOrder": 15
-        },
-        {
-            "accessCode": "PAT",
-            "accessDescription": "Patent Pending",
-            "accessGroup": "OUO",
-            "displayOrder": 15
-        },
-        {
-            "accessCode": "PDOUO",
-            "accessDescription": "Program-Determined Official Use Only",
-            "accessGroup": "OUO",
-            "displayOrder": 15
-        },
-        {
-            "accessCode": "PROP",
-            "accessDescription": "Limited Rights Data",
-            "accessGroup": "OUO",
-            "displayOrder": 15
-        },
-        {
-            "accessCode": "PROT",
-            "accessDescription": "Protected Data CRADA/EPACT/OTHER",
-            "accessGroup": "OUO",
-            "displayOrder": 15
-        },
-        {
-            "accessCode": "SSI",
-            "accessDescription": "Security Sensitive Information",
-            "accessGroup": "OUO",
-            "displayOrder": 15
-        }
+    "unlimitedLimitationTypes": [
+        {"label": "UNL", "value": "UNL"}
+    ],
+    "limitedLimitationTypes": [
+        {"label": "SBIR","value": "SBIR"},
+        {"label": "STTR","value": "STTR"},
+        {"label": "OUO","value": "OUO"},
+        {"label": "ECI","value": "ECI"},
+        {"label": "PAT","value": "PAT"},
+        {"label": "PDOUO","value": "PDOUO"},
+        {"label": "PROP","value": "PROP"},
+        {"label": "PROT","value": "PROT"},
+        {"label": "SSI","value": "SSI"}
     ]
 }
 ```
