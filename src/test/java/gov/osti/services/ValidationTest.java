@@ -48,7 +48,8 @@ public class ValidationTest {
             "em@a-exampe.apple.com",
             "em@example.-apple.com",
             "eapp+em@example.-apple.com",
-            "doecode---@9-ostie.app.-le.gov"};
+            "doecode---@9-ostie.app.-le.gov", 
+            "t@s.com"};
         String[] invalid = { "email@-example.com",
             "te??n@example.com",
             "em@-exampe.app-le.com",
