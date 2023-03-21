@@ -158,13 +158,16 @@ public class Types {
     @Path("/relatedidentifiertypes")
     public Response getRelatedIdentifierTypes() {
         try {
-        return Response
-        .ok()
-        .entity(mapper
-                .createObjectNode()
-                .putPOJO("relatedIdentifierTypes", 
-                    mapper.valueToTree(RelatedIdentifier.Type.values())).toString())
-                    .build();
+            // Remove AWARD from the values sent
+            RelatedIdentifier.Type[] relatedIdentifiers = Arrays.stream(RelatedIdentifier.Type.values()).filter(r -> r.name() != "AWARD").toArray(RelatedIdentifier.Type[]::new); 
+
+            return Response
+            .ok()
+            .entity(mapper
+                    .createObjectNode()
+                    .putPOJO("relatedIdentifierTypes", 
+                        mapper.valueToTree(relatedIdentifiers)).toString())
+                        .build();
         } catch (Exception e ) {
             log.warn("JSON Error: " + e.getMessage());
             return ErrorResponse

@@ -188,8 +188,7 @@ Content-Type: application/json
 ```json
 {"relatedIdentiferTypes":[
 {"label":"DOI","value":"DOI"},
-{"label":"URL","value":"URL"},
-{"label": "AWARD","value": "AWARD"}]}
+{"label":"URL","value":"URL"}]}
 ```
 
 ### fundingidentifiertypes
