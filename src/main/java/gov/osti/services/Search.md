@@ -4,7 +4,7 @@ DOE CODE Search API
 Introduction
 ------------
 Description of services provided by the API back end of DOE CODE.  Searching is based around
-the <a href="http://lucene.apache.org/solr/" target="_blank">Apache SOLR</a> search product.  The HTTP
+the <a rel="noopener noreferrer" href="http://lucene.apache.org/solr/" target="_blank">Apache SOLR</a> search product.  The HTTP
 verb `GET` is used to retrieve single records, while a `POST` request may be
 issued to perform a general search request.
 
