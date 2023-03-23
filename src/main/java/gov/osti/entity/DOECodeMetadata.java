@@ -186,7 +186,7 @@ public class DOECodeMetadata implements Serializable {
         ECI("ECI", "OUO", "Export Controlled Information", 15),
         PAT("PAT", "OUO", "Patent Pending", 15),
         PDOUO("PDOUO", "OUO", "Program-Determined Official Use Only", 15),
-        PROP("PROP", "OUO", "Limited Rights Data", 15),
+        LRD("LRD", "OUO", "Limited Rights Data (Proprietary/Trade Secret)", 15),
         PROT("PROT", "OUO", "Protected Data CRADA/EPACT/OTHER", 15),
         SSI("SSI", "OUO", "Security Sensitive Information", 15);
 

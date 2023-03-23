@@ -264,7 +264,7 @@ Content-Type: application/json
         {"label": "ECI","value": "ECI"},
         {"label": "PAT","value": "PAT"},
         {"label": "PDOUO","value": "PDOUO"},
-        {"label": "PROP","value": "PROP"},
+        {"label": "LRD","value": "LRD"},
         {"label": "PROT","value": "PROT"},
         {"label": "SSI","value": "SSI"}
     ]
