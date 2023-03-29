@@ -254,10 +254,10 @@ Content-Type: application/json
 ```
 ```json
 {
-    "unlimitedLimitationTypes": [
+    "unlimitedTypes": [
         {"label": "UNL", "value": "UNL"}
     ],
-    "limitedLimitationTypes": [
+    "limitedTypes": [
         {"label": "SBIR","value": "SBIR"},
         {"label": "STTR","value": "STTR"},
         {"label": "OUO","value": "OUO"},
