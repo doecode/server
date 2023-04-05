@@ -3379,6 +3379,27 @@ public class Metadata {
                 }
             } 
         }
+        if(!(null==m.getContributingOrganizations() || m.getContributingOrganizations().isEmpty())) {
+            for ( ContributingOrganization org : m.getContributingOrganizations()) {
+                if ( StringUtils.isBlank(org.getOrganizationName()) || null == org.getContributorType()) {
+                    reasons.add("Contributing Organizations must include both the organization name and contributor type.");
+                }
+            }
+        }
+        if(!(null==m.getSponsoringOrganizations() || m.getSponsoringOrganizations().isEmpty())) {
+            for ( SponsoringOrganization org : m.getSponsoringOrganizations()) {
+                if ( StringUtils.isBlank(org.getOrganizationName())) {
+                    reasons.add("Sponsoring Organizations must include the organization name.");
+                }
+            }
+        }
+        if(!(null==m.getResearchOrganizations() || m.getResearchOrganizations().isEmpty())) {
+            for ( ResearchOrganization org : m.getResearchOrganizations()) {
+                if ( StringUtils.isBlank(org.getOrganizationName())) {
+                    reasons.add("Research Organizations must include the organization name.");
+                }
+            }
+        }
         if (!(null==m.getAwardDois() || m.getAwardDois().isEmpty())) {
             for ( Award award : m.getAwardDois() ) {
                 if ( StringUtils.isBlank(award.getAwardDoi()) || StringUtils.isBlank(award.getFunderName()) ) {
