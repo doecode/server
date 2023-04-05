@@ -169,6 +169,8 @@ public class DataCite {
             return;
         
         for ( ContributingOrganization contributingOrg : contributingOrgs ) {
+            if( null == contributingOrg.getContributorType() || StringUtils.isBlank(contributingOrg.getOrganizationName()))
+                continue;
             sw.writeStartElement("contributor");
             sw.writeAttribute("contributorType", contributingOrg.getContributorType().name());
 
