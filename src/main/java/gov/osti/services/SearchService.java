@@ -115,7 +115,9 @@ public class SearchService {
         "licenseContactEmail",
         "license_contact_email",
         "isMigration",
-        "is_migration"
+        "is_migration",
+        "changeLog",
+        "change_log"
     };
     protected static FilterProvider filter = new SimpleFilterProvider()
             .addFilter("filter properties by name",
@@ -320,6 +322,7 @@ public class SearchService {
                                 .writer(filter).writeValueAsString(md))
                         .build();
                 } else if ("xml".equals(format)) {
+                    md.setChangeLog(null);
                     return Response
                             .ok()
                             .header("Content-Type", MediaType.APPLICATION_XML)
