@@ -526,7 +526,7 @@ public class SearchService {
                         // if no release date, don't return the DOI for display in search results.
                         if (!StringUtils.isBlank(md.getDoi()) && md.getReleaseDate() == null)
                             md.setDoi(null);
-
+                        md.setChangeLog(null);
                         query.add(md);
                     }
                     if (showFacets) {
