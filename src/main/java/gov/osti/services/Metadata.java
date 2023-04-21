@@ -527,9 +527,11 @@ public class Metadata {
             allowedSites.retainAll(roles);
 
             TypedQuery<DOECodeMetadata> query;
+            boolean isRecordAdmin = false;
             // admins see ALL PROJECTS
             if (roles.contains("RecordAdmin")) {
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md", DOECodeMetadata.class);
+                isRecordAdmin = true;
             } else if (!allowedSites.isEmpty()) {
                 // if you have any allowed site ROLE, it is assumed to be a SITE ADMIN; see all those records plus their own
                 query = em.createQuery("SELECT md FROM DOECodeMetadata md WHERE md.owner = :owner OR md.siteOwnershipCode IN :site", DOECodeMetadata.class)
@@ -564,6 +566,7 @@ public class Metadata {
                     .setParameter("status", DOECodeMetadata.Status.Approved);
 
             JsonNode recordNode = recordsObject.get("records");
+
             if (recordNode.isArray()) {
                 int rowCount = 0;
                 for (JsonNode objNode : recordNode) {
@@ -593,6 +596,9 @@ public class Metadata {
                     // add "system status" indicator to response record, if not blank
                     if (!StringUtils.isBlank(lastApprovalFor))
                         ((ObjectNode) objNode).put("system_status", systemStatus);
+                    
+                    if (!isRecordAdmin)
+                        ((ObjectNode) objNode).remove("change_log");
                 }
 
                 recordsObject.put("total", rowCount);
@@ -1710,6 +1716,10 @@ public class Metadata {
             // we're done here
             em.getTransaction().commit();
 
+            // provide check to prevent change log showing to non-admins.
+            if (!user.hasRole("RecordAdmin"))
+                md.setChangeLog(null);
+
             return Response
                     .status(200)
                     .entity(mapper.createObjectNode().putPOJO("metadata", md.toJson()).toString())
@@ -1907,6 +1917,9 @@ public class Metadata {
             // send NOTIFICATION if configured to do so
             sendStatusNotification(md);
 
+            // provide check to prevent change log showing to non-admins.
+            if (!user.hasRole("RecordAdmin"))
+                md.setChangeLog(null);
             // we are done here
             return Response
                     .ok()
@@ -2090,6 +2103,10 @@ public class Metadata {
 
             // send NOTIFICATION if configured
             sendStatusNotification(md);
+
+            // provide check to prevent change log showing to non-admins.
+            if (!user.hasRole("RecordAdmin"))
+                md.setChangeLog(null);
 
             // and we're happy
             return Response
