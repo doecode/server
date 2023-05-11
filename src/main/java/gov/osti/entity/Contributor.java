@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
+import javax.validation.constraints.Size;
 
 /**
  * The Contributor Embeddable entity class.
@@ -80,6 +81,7 @@ public class Contributor extends Agent {
             name = "CONTRIBUTOR_AFFILIATIONS",
             joinColumns=@JoinColumn(name="AGENT_ID")
     )
+    @Size (max = 900, message = "Contributor Affiliation is limited to 900 characters.")
     @Column (name = "AFFILIATION")
     public List<String> getAffiliations() {
             return affiliations;

@@ -8,6 +8,7 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
+import javax.validation.constraints.Size;
 
 /**
  * The Developer Agent mapping.
@@ -37,6 +38,7 @@ public class Developer extends Agent {
             name = "DEVELOPER_AFFILIATIONS",
             joinColumns=@JoinColumn(name="AGENT_ID")
     )
+    @Size (max = 900, message = "Developer Affiliation is limited to 900 characters.")
     @Column (name = "AFFILIATION")
     public List<String> getAffiliations() {
             return affiliations;
