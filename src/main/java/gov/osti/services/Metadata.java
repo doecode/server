@@ -800,7 +800,7 @@ public class Metadata {
      * owned by User
      * @throws InvocationTargetException on reflection errors
      */
-    private void store(EntityManager em, DOECodeMetadata md, User user) throws NotFoundException,
+    private void store(EntityManager em, DOECodeMetadata md, User user, boolean hasFile) throws NotFoundException,
             IllegalAccessException, InvocationTargetException {
         // fix the open source value before storing
         md.setOpenSource(
@@ -814,6 +814,9 @@ public class Metadata {
         List<String> projectKeywords = md.getProjectKeywords();
         if (projectKeywords != null && !projectKeywords.isEmpty() && !user.hasRole("RecordAdmin") && !user.hasRole("ApprovalAdmin"))
             throw new ValidationException("Project Keywords can only be set by authorized users.");
+
+        // has FileName?
+        boolean hasFilename = !StringUtils.isBlank(md.getFileName());
 
         // if there's a CODE ID, attempt to look up the record first and
         // copy attributes into it
@@ -829,6 +832,11 @@ public class Metadata {
                 throw new BadRequestException (ErrorResponse.badRequest(reasons).build());
             }
 
+            if (hasFilename && !hasFile) {
+                // trying to set a filename without a file, ignore the filename
+                md.setFileName(null);
+            }
+
             // log changes
             ChangeLog cl = new ChangeLog();
             cl.setChangedBy(user.getEmail());
@@ -838,6 +846,11 @@ public class Metadata {
             em.persist(md);
         } else {
             DOECodeMetadata emd = em.find(DOECodeMetadata.class, md.getCodeId());
+
+            if (hasFilename && !hasFile) {
+                // trying to set a filename without a file, keep whatever is in database already
+                md.setFileName(emd.getFileName());
+            }
 
             if ( null!=emd ) {
                 // to Approve, user must be an ApprovalAdmin and record must be previously Submitted/Announced
@@ -1682,13 +1695,16 @@ public class Metadata {
 
             md.setLastEditor(md.getOwner());
 
-            store(em, md, user);
+            // was file uploaded?
+            boolean hasFile = null!=file && null!=fileInfo;
+
+            store(em, md, user, hasFile);
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
 
             // if there's a FILE associated here, store it
-            if ( null!=file && null!=fileInfo ) {
+            if ( hasFile ) {
                 try {
                     String fileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
                     md.setFileName(fileName);
@@ -1821,15 +1837,18 @@ public class Metadata {
 
             md.setLastEditor(md.getOwner());
 
+            // was file uploaded?
+            boolean hasFile = null!=file && null!=fileInfo;
+
             // store it
-            store(em, md, user);
+            store(em, md, user, hasFile);
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
 
             // if there's a FILE associated here, store it
             String fullFileName = "";
-            if ( null!=file && null!=fileInfo ) {
+            if ( hasFile ) {
                 try {
                     fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
                     md.setFileName(fullFileName);
@@ -2015,15 +2034,18 @@ public class Metadata {
                 md.setDoi(reservation.getReservedDoi());
             }
 
+            // was file uploaded?
+            boolean hasFile = null!=file && null!=fileInfo;
+
             // persist this to the database
-            store(em, md, user);
+            store(em, md, user, hasFile);
 
             // re-attach metadata to transaction in order to store any changes beyond this point
             md = em.find(DOECodeMetadata.class, md.getCodeId());
 
             // if there's a FILE associated here, store it
             String fullFileName = "";
-            if ( null!=file && null!=fileInfo ) {
+            if ( hasFile ) {
                 try {
                     fullFileName = writeFile(file, md.getCodeId(), fileInfo.getFileName(), FILE_UPLOADS);
                     md.setFileName(fullFileName);
@@ -2392,7 +2414,7 @@ public class Metadata {
             md.setWorkflowStatus(Status.Approved);
 
             // persist this to the database, as validations should already be complete at this stage.
-            store(em, md, user);
+            store(em, md, user, false);
 
             // send any updates to DataCite as well (if RELEASE DATE is set)
             if (StringUtils.isNotEmpty(md.getDoi()) && null!=md.getReleaseDate()) {
