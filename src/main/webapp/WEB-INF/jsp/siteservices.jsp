@@ -31,7 +31,7 @@
           <!-- Initializer -->
           <script>
               Flatdoc.run({
-                  fetcher: Flatdoc.github('doecode/server', 'src/main/java/gov/osti/services/SiteServices.md' )
+                  fetcher: Flatdoc.file('${pageContext.request.contextPath}/markdown/SiteServices.md')
               });
           </script>
      </head>
@@ -42,13 +42,7 @@
                     <h1>DOE CODE API</h1>
                     <ul>
                          <li><a href='/doecodeapi/services/docs'>API Services Documentation</a></li>
-                         <li><a href='https://github.com/doecode/server'>View on GitHub</a></li>
-                         <li><a href='https://github.com/doecode/server/issues'>Issues</a></li>
                     </ul>
-               </div>
-               <div class='right'>
-                    <!-- GitHub buttons: see http://ghbtns.com -->
-                    <iframe src="https://ghbtns.com/github-btn.html?user=doecode&repo=server&type=watch&count=true&v=2" frameborder="0" scrolling="0" width="170" height="20"></iframe>
                </div>
           </div>
 

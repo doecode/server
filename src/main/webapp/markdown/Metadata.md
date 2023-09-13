@@ -8,8 +8,6 @@ Description of services provided by the API back end of DOE CODE.  The HTTP `GET
 
 > The API is available via `/doecodeapi/services/docs/metadata` on the DOE CODE server.
 
-[DOE CODE on GitHub >](https://github.com/doecode/doecode)
-
 HTTP Request Methods
 --------------------
 
