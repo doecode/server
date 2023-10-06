@@ -1,3 +1,6 @@
+# NOTICE:
+**This repository has been archived and is no longer actively maintained. Please visit [DOE CODE](https://www.osti.gov/doecode/) for more information, or for any questions, please contact [doecoderepositories@osti.gov](mailto:doecoderepositories@osti.gov?subject=[DOE%20CODE%20GitHub]%20More%20Information).**
+
 # DOE CODE Web Application
 
 Consists of the "back-end" services and JAX/RS API calls for DOE CODE, to be
